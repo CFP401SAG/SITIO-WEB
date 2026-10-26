@@ -1,0 +1,24 @@
+/* ADAPTABILIDAD A PANTALLAS MÓVILES Y TABLETS */
+@media (max-width: 768px) {
+  #app-screen {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .modulo-row-header {
+    flex-direction: column;
+  }
+
+  .modulo-row-header input {
+    width: 100% !important;
+  }
+}

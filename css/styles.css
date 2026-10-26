@@ -1,0 +1,1363 @@
+Styles · CSS
+:root {
+  /* Paleta Institucional Dark */
+  --bg-main: #0b111e;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b111e 75%);
+  --surface: #151f32;
+  --surface-dark: #0f172a;
+  --surface-card: #1e2d4a;
+  --border: #2b3b55;
+  --border-glow: rgba(234, 179, 8, 0.3);
+ 
+  /* Colores de Identidad (Logo) */
+  --primary-blue: #2563eb;
+  --primary-hover: #1d4ed8;
+  --accent-gold: #eab308;
+  --accent-gold-hover: #ca8a04;
+  --accent-red: #ef4444;
+ 
+  /* Textos */
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-gold: #fde047;
+ 
+  /* Marcas de contacto */
+  --whatsapp: #25d366;
+  --whatsapp-hover: #20ba5a;
+  --ig-gradient: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+ 
+  /* Bordes, Sombras y Animaciones */
+  --radius-pill: 50px;
+  --radius-card: 16px;
+  --radius-sm: 8px;
+  --shadow-glow: 0 0 25px rgba(234, 179, 8, 0.12);
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+ 
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+ 
+body {
+  background: var(--bg-main);
+  background-image: var(--bg-gradient);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+ 
+/* Animación Global Smooth */
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+ 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+ 
+/* ==========================================
+   HEADER
+   ========================================== */
+.main-header {
+  background: rgba(21, 31, 50, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+ 
+.header-brand-center {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+ 
+.header-logo-lg {
+  height: 85px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+}
+ 
+.header-title-lg {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+ 
+.header-action-right {
+  grid-column: 3;
+  justify-self: end;
+}
+ 
+/* ==========================================
+   BOTONES Y ESTILOS CÁPSULA
+   ========================================== */
+.btn {
+  padding: 0.65rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+ 
+.btn-primary {
+  background-color: var(--primary-blue);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+ 
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+ 
+.btn-gold {
+  background-color: var(--accent-gold);
+  color: #0f172a;
+  font-weight: 700;
+}
+ 
+.btn-gold:hover {
+  background-color: var(--accent-gold-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.35);
+}
+ 
+.btn-outline {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+ 
+.btn-outline:hover {
+  border-color: var(--accent-gold);
+  color: var(--text-gold);
+}
+ 
+/* ==========================================
+   HERO BANNER
+   ========================================== */
+.public-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  flex: 1;
+  width: 100%;
+}
+ 
+.hero-banner {
+  background: linear-gradient(135deg, rgba(30, 45, 74, 0.9) 0%, rgba(21, 31, 50, 0.95) 100%);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent-gold);
+  border-radius: var(--radius-card);
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: var(--shadow-glow), var(--shadow-card);
+  margin-bottom: 3rem;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.hero-badge {
+  display: inline-block;
+  background: rgba(234, 179, 8, 0.15);
+  color: var(--text-gold);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  padding: 0.35rem 1rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+ 
+.hero-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+}
+ 
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  max-width: 650px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+ 
+/* ==========================================
+   ESTADO VACÍO (EMPTY STATE)
+   ========================================== */
+.empty-state-card {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-card);
+  padding: 3.5rem 2rem;
+  text-align: center;
+  max-width: 550px;
+  margin: 2rem auto;
+  box-shadow: var(--shadow-card);
+}
+ 
+.empty-state-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(37, 99, 235, 0.15);
+  color: var(--accent-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem auto;
+  font-size: 1.75rem;
+  border: 1px solid rgba(234, 179, 8, 0.2);
+}
+ 
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+ 
+.empty-state-text {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+ 
+/* ==========================================
+   GRILLA DE CURSOS / TRAYECTOS
+   ========================================== */
+.trayectos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.75rem;
+  margin-top: 2rem;
+}
+ 
+.course-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+ 
+.course-card:hover {
+  transform: translateY(-7px) scale(1.01);
+  border-color: var(--accent-gold);
+  box-shadow: 0 12px 28px rgba(234, 179, 8, 0.15), var(--shadow-card);
+}
+ 
+.course-card:active {
+  transform: translateY(-2px) scale(0.98);
+  border-color: var(--accent-gold);
+  box-shadow: 0 6px 16px rgba(234, 179, 8, 0.2);
+}
+ 
+.course-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+ 
+.course-icon {
+  background: rgba(234, 179, 8, 0.1);
+  color: var(--accent-gold);
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+ 
+.course-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+ 
+.course-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+ 
+.course-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+ 
+.course-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+ 
+.modulo-card {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+ 
+.modulo-card:hover {
+  border-color: var(--accent-gold) !important;
+  transform: translateX(3px);
+}
+ 
+/* ==========================================
+   FOOTER INSTITUCIONAL
+   ========================================== */
+.main-footer {
+  background: var(--surface-dark);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 2.5rem 1.5rem 1.5rem;
+}
+ 
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  align-items: start;
+}
+ 
+.footer-title-gold {
+  color: var(--accent-gold);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+ 
+.footer-title {
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+ 
+.footer-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+ 
+.footer-contact-group,
+.footer-community-group,
+.footer-contact-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+ 
+.footer-contact-list {
+  list-style: none;
+}
+ 
+/* Enlaces de texto (ubicación, teléfono, etc.) */
+.contact-link,
+.contact-link-location {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s ease;
+}
+ 
+.contact-link:hover,
+.contact-link-location:hover {
+  color: var(--accent-gold);
+}
+ 
+.contact-link-location span {
+  border-bottom: 1px dashed var(--border);
+}
+ 
+/* ==========================================
+   BOTONES DE CONTACTO (correo, WhatsApp, etc.)
+   Base común: ícono en círculo + texto
+   ========================================== */
+.btn-contact,
+.contact-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 1.15rem 0.6rem 0.65rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  width: fit-content;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease,
+              background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+ 
+/* Círculo del ícono: funciona con <svg>, <i> o emoji dentro del botón */
+.btn-contact > svg,
+.btn-contact > i,
+.btn-contact > .icon,
+.contact-btn > svg,
+.contact-btn > i,
+.contact-btn > .icon {
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+}
+ 
+.btn-contact:hover,
+.contact-btn:hover {
+  transform: translateY(-3px);
+}
+ 
+.btn-contact:hover > svg,
+.btn-contact:hover > i,
+.btn-contact:hover > .icon,
+.contact-btn:hover > svg,
+.contact-btn:hover > i,
+.contact-btn:hover > .icon {
+  transform: rotate(-8deg) scale(1.08);
+}
+ 
+.btn-contact:active,
+.contact-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}
+ 
+/* Foco visible para teclado */
+.btn-contact:focus-visible,
+.contact-btn:focus-visible,
+.instagram-widget:focus-visible,
+.btn-instagram:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 3px;
+}
+ 
+/* ---- Correo electrónico (dorado institucional) ---- */
+.btn-email {
+  background: rgba(234, 179, 8, 0.08);
+  color: var(--text-gold);
+  border-color: rgba(234, 179, 8, 0.35);
+}
+ 
+.btn-email > svg,
+.btn-email > i,
+.btn-email > .icon {
+  background: rgba(234, 179, 8, 0.18);
+  color: var(--accent-gold);
+}
+ 
+.btn-email:hover {
+  background: var(--accent-gold);
+  color: #0f172a;
+  border-color: var(--accent-gold);
+  box-shadow: 0 8px 22px rgba(234, 179, 8, 0.35);
+}
+ 
+.btn-email:hover > svg,
+.btn-email:hover > i,
+.btn-email:hover > .icon {
+  background: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+}
+ 
+/* ---- WhatsApp ---- */
+.btn-whatsapp {
+  background: var(--whatsapp);
+  color: #052e16;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.25);
+}
+ 
+.btn-whatsapp > svg,
+.btn-whatsapp > i,
+.btn-whatsapp > .icon {
+  background: rgba(5, 46, 22, 0.15);
+  color: #052e16;
+}
+ 
+.btn-whatsapp:hover {
+  background: var(--whatsapp-hover);
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+}
+ 
+/* Brillo que cruza el botón al pasar el mouse */
+.btn-whatsapp::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+ 
+.btn-whatsapp:hover::after {
+  left: 125%;
+}
+ 
+/* ---- Instagram: versión botón ---- */
+.btn-instagram {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-pill);
+  background: var(--ig-gradient);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  width: fit-content;
+  box-shadow: 0 4px 14px rgba(253, 29, 29, 0.25);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+}
+ 
+.btn-instagram:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.08);
+  box-shadow: 0 8px 24px rgba(253, 29, 29, 0.4);
+}
+ 
+/* ---- Instagram: versión tarjeta (borde degradado) ---- */
+.instagram-widget {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  background: var(--ig-gradient);
+  padding: 2px;
+  border-radius: 14px;
+  text-decoration: none;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+ 
+.instagram-widget:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(253, 29, 29, 0.35);
+}
+ 
+.ig-header {
+  background: var(--surface);
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  transition: background-color 0.25s ease;
+}
+ 
+.instagram-widget:hover .ig-header {
+  background: #1a2740;
+}
+ 
+.ig-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--ig-gradient);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+ 
+.ig-username {
+  display: block;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-main);
+}
+ 
+.ig-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+ 
+/* Enlaces discretos (ej. "Sitio oficial DGCyE") */
+.footer-link-subtle {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+  transition: color 0.2s ease;
+}
+ 
+.footer-link-subtle:hover {
+  color: var(--text-main);
+}
+ 
+.footer-copyright {
+  max-width: 1200px;
+  margin: 2rem auto 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+ 
+/* ==========================================
+   ACCESIBILIDAD: respeta "reducir movimiento"
+   ========================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+ 
+/* ==========================================
+   RESPONSIVE (MÓVILES)
+   ========================================== */
+@media (max-width: 768px) {
+  .main-header {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1rem;
+  }
+ 
+  .header-logo-lg {
+    height: 65px;
+  }
+ 
+  .header-title-lg {
+    font-size: 1rem;
+  }
+ 
+  .header-action-right {
+    width: 100%;
+  }
+ 
+  .header-action-right button {
+    width: 100%;
+    justify-content: center;
+  }
+ 
+  .hero-banner {
+    padding: 2rem 1rem;
+  }
+ 
+  .hero-title {
+    font-size: 1.6rem;
+  }
+ 
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+ 
+  /* Botones de contacto a todo el ancho: más fáciles de tocar */
+  .footer-contact-group,
+  .footer-community-group,
+  .footer-contact-list {
+    align-items: stretch;
+  }
+ 
+  .btn-contact,
+  .contact-btn,
+  .btn-instagram {
+    width: 100%;
+    justify-content: center;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+ 
+  .instagram-widget {
+    max-width: none;
+  }
+}
+
+/* Grilla para Oferta Académica, Pasos de Inscripción y Noticias */
+.features-grid,
+.steps-grid,
+.news-grid,
+.grid-container {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 1.5rem !important;
+  width: 100% !important;
+}
+
+/* Estilos de tarjetas internas para esas grillas */
+.features-grid > *,
+.steps-grid > *,
+.news-grid > * {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.features-grid > *:hover,
+.steps-grid > *:hover,
+.news-grid > *:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-gold);
+}
+
+/* Botón Iniciar Inscripción ajustado */
+#iniciar-inscripcion, 
+.btn-inscripcion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--accent-gold);
+  color: #0f172a;
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.25);
+}
+
+/* FORZAR ANCHO COMPLETO Y DESBLOQUEAR CONTENEDORES */
+.public-container {
+  width: 100% !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 2.5rem 1.5rem !important;
+  box-sizing: border-box !important;
+}
+
+.hero-banner,
+.value-props-grid,
+.steps-grid,
+.news-grid,
+#coursesContainer {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.value-props-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 1.25rem !important;
+  margin-bottom: 3rem !important;
+}
+
+/* ==========================================
+   SOLUCIÓN DEFINITIVA DE ANCHO Y CENTRADO
+   ========================================== */
+
+/* 1. Forzar a body y html a ocupar todo el ancho */
+html, body {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden;
+}
+
+/* 2. Corregir el contenedor principal */
+main, 
+.public-container {
+  width: 100% !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 2rem 1.5rem !important;
+  box-sizing: border-box !important;
+  display: block !important; /* Desactiva flexbox que encoge el contenedor */
+}
+
+/* 3. Desbloquear las grillas y secciones */
+.hero-banner,
+.value-props-grid,
+.steps-grid,
+.news-grid,
+.features-grid,
+#coursesContainer,
+.steps-section,
+.news-section,
+#por-que,
+#cursos {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* ==========================================
+   PANTALLA Y TARJETA DE LOGIN
+   ========================================== */
+.auth-screen {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background-color: #0b0f17;
+}
+
+.auth-card {
+  background: #131b2e;
+  border: 1px solid #2b3b55;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+/* CONTROL DE TAMAÑO DEL LOGO */
+.auth-logo {
+  width: 90px !important;
+  height: 90px !important;
+  max-width: 90px !important;
+  object-fit: contain;
+  margin: 0 auto 1rem auto;
+  display: block;
+}
+
+.auth-header h2 {
+  color: #f8fafc;
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.auth-header p {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+/* Selector de pestañas superiores */
+.auth-tabs {
+  display: flex;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #2b3b55;
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab.active {
+  background: #eab308;
+  color: #0f172a;
+}
+
+/* Agrupación de campos del formulario */
+.form-group {
+  text-align: left;
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 0.4rem;
+}
+
+/* Estilo moderno para Inputs y Selects */
+.form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  border-color: #eab308;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.15);
+}
+
+/* Estilizado personalizado del Select desplegable */
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper::after {
+  content: '▾';
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #eab308;
+  pointer-events: none;
+  font-size: 1rem;
+}
+
+.custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.custom-select option {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 0.5rem;
+}
+
+/* Botones con ancho completo */
+.btn-block {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border: none;
+  transition: opacity 0.2s ease;
+}
+
+.btn-gold {
+  background: #eab308;
+  color: #0f172a;
+}
+
+.btn-gold:hover {
+  background: #d97706;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #94a3b8;
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+}
+
+/* ==========================================
+   LAYOUT PRINCIPAL DASHBOARD ADMIN
+   ========================================== */
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-body, #0b111e);
+  color: var(--text-main, #f8fafc);
+}
+
+/* SIDEBAR RESTRUCTURADO */
+.sidebar {
+  width: 260px;
+  background: rgba(15, 23, 42, 0.95);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-brand img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.sidebar-brand-text h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.sidebar-brand-text span {
+  font-size: 0.72rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* NAVEGACIÓN EN SIDEBAR */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.nav-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.nav-item-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.nav-item-btn.active {
+  background: var(--primary, #2563eb);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.nav-item-btn span.icon {
+  font-size: 1.1rem;
+}
+
+/* ÁREA DE CONTENIDO Y HEADER SUPERIOR */
+.main-wrapper {
+  margin-left: 260px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-header {
+  height: 65px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.admin-header-title h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.admin-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-badge {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.user-badge .username {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.user-badge .role {
+  font-size: 0.72rem;
+  color: #38bdf8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* SECCIONES Y CARDS DEL DASHBOARD */
+.main-content-body {
+  padding: 2rem;
+  flex: 1;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.15);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.stat-info h4 {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0 0 0.25rem 0;
+  text-transform: uppercase;
+}
+
+.stat-info .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+/* CARDS DE TRAYECTOS Y FORMULARIOS */
+.card-panel {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.card-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.modulo-item-card {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* RESPONSIVE DASHBOARD */
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .main-wrapper {
+    margin-left: 0;
+  }
+}
+
+/* ==========================================
+   OCULTAR COMPONENTES PÚBLICOS EN EL DASHBOARD
+   ========================================== */
+
+/* Cuando el dashboard está activo, oculta únicamente el landing público sin pisar el login */
+body.in-dashboard #landing-screen,
+body.in-dashboard .public-landing,
+body.in-dashboard header.main-header,
+body.in-dashboard footer.main-footer {
+  display: none !important;
+}
+
+/* ==========================================
+   CORRECCIÓN DE CLICS Y PANTALLAS OCULTAS
+   ========================================== */
+
+/* Evita que contenedores o pantallas ocultas tapen el resto de la página */
+[style*="display: none"],
+[style*="display:none"] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* Modal o pantalla de Login: solo bloquea clics cuando está activo */
+.auth-screen:not([style*="display: flex"]):not([style*="display: block"]) {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* Asegura que los botones siempre respondan cuando el elemento es visible */
+button, 
+.btn, 
+.nav-item-btn, 
+.auth-tab, 
+input, 
+select {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
+}
+
+/* ==========================================================================
+   EFECTO DE ENFOQUE Y DIFUMINADO INTERACTIVO (FOCUS & BLUR ON HOVER/TOUCH)
+   ========================================================================== */
+
+/* 1. Transición suave para las tarjetas de trayectos */
+.features-grid > *,
+.trayectos-grid > *,
+#coursesContainer > *,
+.course-card {
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 0.35s ease,
+              opacity 0.35s ease,
+              box-shadow 0.35s ease,
+              border-color 0.35s ease !important;
+  will-change: transform, filter, opacity;
+}
+
+/* 2. Cuando la grilla detecta hover/touch en una tarjeta, atenuar y difuminar las demás */
+.features-grid:has(> *:hover) > *:not(:hover),
+.trayectos-grid:has(> *:hover) > *:not(:hover),
+#coursesContainer:has(> *:hover) > *:not(:hover) {
+  filter: blur(2px) grayscale(25%);
+  opacity: 0.45;
+  transform: scale(0.97);
+}
+
+/* 3. Agrandar y destacar únicamente la tarjeta seleccionada */
+.features-grid > *:hover,
+.features-grid > *:active,
+.trayectos-grid > *:hover,
+.trayectos-grid > *:active,
+#coursesContainer > *:hover,
+#coursesContainer > *:active,
+.course-card:hover,
+.course-card:active {
+  transform: translateY(-6px) scale(1.03) !important;
+  filter: blur(0) grayscale(0%) !important;
+  opacity: 1 !important;
+  z-index: 20;
+  border-color: var(--accent-gold, #eab308) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 
+              0 0 20px rgba(234, 179, 8, 0.3) !important;
+}
+/* Reglas de Ocultación Visual por Rol */
+body[data-rol="estudiante"] .admin-only,
+body[data-rol="estudiante"] #form-cargar-clase,
+body[data-rol="estudiante"] .docente-only,
+body[data-rol="estudiante"] [id*="Cargar Nueva Clase"],
+body[data-rol="estudiante"] button:has(span:contains("Tomar Asistencia")) {
+  display: none !important;
+}

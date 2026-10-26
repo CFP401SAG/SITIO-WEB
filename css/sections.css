@@ -1,0 +1,240 @@
+/* ==========================================
+   HEADER Y LOGO INSTITUCIONAL
+   ========================================== */
+.header-top-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+.header-logo-xl {
+  height: 85px;
+  width: auto;
+  object-fit: contain;
+}
+
+.main-nav {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-link {
+  color: var(--text-muted, #94a3b8);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--accent-gold, #eab308);
+}
+
+/* ==========================================
+   ESTRUCTURA GENERAL DEL CONTENEDOR
+   ========================================== */
+.public-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ==========================================
+   PASOS: ¿CÓMO INSCRIBIRSE?
+   ========================================== */
+.steps-section {
+  padding: 3rem 0;
+  text-align: center;
+  width: 100%;
+}
+
+.section-title-center {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-main, #f8fafc);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.step-card {
+  background: var(--surface, #151f32);
+  border: 1px solid var(--border, #2b3b55);
+  border-radius: var(--radius-card, 16px);
+  padding: 1.75rem 1.25rem;
+  text-align: left;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.step-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-gold, #eab308);
+}
+
+.step-number {
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: var(--accent-gold, #eab308);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.step-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main, #f8fafc);
+  margin-bottom: 0.4rem;
+}
+
+.step-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.4;
+}
+
+/* ==========================================
+   NOVEDADES Y NOTICIAS
+   ========================================== */
+.news-section {
+  padding: 2.5rem 0;
+  width: 100%;
+}
+
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.news-card {
+  background: var(--surface, #151f32);
+  border: 1px solid var(--border, #2b3b55);
+  border-radius: var(--radius-card, 16px);
+  padding: 1.25rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  transition: border-color 0.2s ease;
+}
+
+.news-card:hover {
+  border-color: var(--accent-gold, #eab308);
+}
+
+.news-icon {
+  font-size: 1.5rem;
+  background: rgba(37, 99, 235, 0.15);
+  padding: 0.6rem;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.news-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main, #f8fafc);
+  margin-bottom: 0.25rem;
+}
+
+.news-desc {
+  font-size: 0.825rem;
+  color: var(--text-muted, #94a3b8);
+}
+/* ==========================================
+   CORRECCIÓN DEFINITIVA DE OFERTA ACADÉMICA
+   ========================================== */
+.value-props-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.25rem !important;
+  margin: 2rem 0 !important;
+  width: 100% !important;
+}
+
+.prop-card {
+  background: var(--surface, #151f32) !important;
+  border: 1px solid var(--border, #2b3b55) !important;
+  border-radius: 12px !important;
+  padding: 1.25rem 1.5rem !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  height: auto !important;
+  min-height: fit-content !important;
+}
+
+.prop-icon {
+  font-size: 1.75rem !important;
+  background: rgba(234, 179, 8, 0.12) !important;
+  padding: 0.75rem !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.prop-title {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  margin: 0 0 0.25rem 0 !important;
+}
+
+.prop-desc {
+  font-size: 0.85rem !important;
+  color: #94a3b8 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* Estirar el contenedor principal de la landing */
+.public-container {
+  width: 100% !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 2rem 1.5rem !important;
+}
+/* ==========================================
+   BOTÓN DESTACADO DE PREINSCRIPCIÓN IPFL
+   ========================================== */
+.btn-inscripcion-gold {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.6rem !important;
+  background-color: var(--accent-gold, #eab308) !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  padding: 0.85rem 2rem !important;
+  border-radius: 50px !important;
+  text-decoration: none !important;
+  box-shadow: 0 4px 15px rgba(234, 179, 8, 0.3) !important;
+  transition: all 0.25s ease !important;
+  margin-top: 1.5rem !important;
+  border: none !important;
+}
+
+.btn-inscripcion-gold:hover {
+  background-color: #facc15 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.45) !important;
+  color: #020617 !important;
+}

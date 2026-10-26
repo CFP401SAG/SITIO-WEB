@@ -1,0 +1,166 @@
+/* ==========================================
+   HEADER INSTITUCIONAL STICKY
+   ========================================== */
+.main-header {
+  background: rgba(21, 31, 50, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-brand-center {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Alineación horizontal del logo y títulos */
+.header-top-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-logo-lg,
+.header-logo-xl {
+  height: 85px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+.header-title-lg {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+/* Navegación Desktop */
+.main-nav {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--accent-gold);
+}
+
+.header-action-right {
+  grid-column: 3;
+  justify-self: end;
+}
+
+/* Botón Iniciar Sesión / Registrarse */
+.btn-header-login {
+  padding: 0.65rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.btn-header-login:hover {
+  border-color: var(--accent-gold);
+  color: var(--text-gold);
+  background: rgba(234, 179, 8, 0.1);
+}
+
+/* ==========================================
+   HEADER RESPONSIVO (MOBILE)
+   ========================================== */
+@media (max-width: 768px) {
+  .main-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.75rem;
+    gap: 1rem;
+  }
+
+  .header-brand-center {
+    width: 100%;
+  }
+
+  /* Distribución de logo y texto en móviles */
+  .header-top-brand {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-align: left;
+  }
+
+  .header-logo-lg,
+  .header-logo-xl {
+    height: 55px !important;
+    width: auto;
+  }
+
+  .header-title-lg {
+    font-size: 0.95rem;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  /* Barra de navegación deslizable (scroll horizontal) */
+  .main-nav {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 0.5rem 0;
+    gap: 1rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .main-nav::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
+
+  .nav-link {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    flex-shrink: 0;
+  }
+
+  /* Botón de acceso a todo el ancho */
+  .header-action-right {
+    width: 100%;
+  }
+
+  .btn-header-login {
+    width: 100%;
+    justify-content: center;
+    display: flex;
+    padding: 0.65rem;
+  }
+}

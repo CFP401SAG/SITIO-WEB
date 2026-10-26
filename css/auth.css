@@ -1,0 +1,172 @@
+/* ==========================================
+   MODULO AUTH / LOGIN (ACCESO AL SISTEMA)
+   ========================================== */
+
+
+.auth-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-main, #0b111e);
+  background-image: var(--bg-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  z-index: 9999;
+}
+
+.auth-card {
+  background: var(--surface, #151f32);
+  border: 1px solid var(--border, #2b3b55);
+  border-radius: var(--radius-card, 16px);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-card, 0 10px 30px rgba(0, 0, 0, 0.5));
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Control estricto del tamaño del logo en Login */
+.auth-logo {
+  width: 90px !important;
+  height: 90px !important;
+  max-width: 90px !important;
+  max-height: 90px !important;
+  object-fit: contain;
+  margin: 0 auto 1.25rem auto;
+  display: block;
+}
+
+.auth-header h2 {
+  color: var(--text-main, #f8fafc);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.auth-header p {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Selector de pestañas superiores */
+.auth-tabs {
+  display: flex;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border, #2b3b55);
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  padding: 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab.active {
+  background: var(--accent-gold, #eab308);
+  color: #0f172a;
+}
+
+/* Formularios */
+.form-group {
+  text-align: left;
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 0.4rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--surface-dark, #0f172a);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: var(--text-main, #f8fafc);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  border-color: var(--accent-gold, #eab308);
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.15);
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper::after {
+  content: '▾';
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent-gold, #eab308);
+  pointer-events: none;
+  font-size: 1rem;
+}
+
+.custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.btn-block {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border: none;
+  transition: opacity 0.2s ease;
+  display: block;
+  box-sizing: border-box;
+}
+
+.btn-gold {
+  background: var(--accent-gold, #eab308);
+  color: #0f172a;
+}
+
+.btn-gold:hover {
+  background: var(--accent-gold-hover, #ca8a04);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #334155;
+  color: var(--text-muted, #94a3b8);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main, #f8fafc);
+}

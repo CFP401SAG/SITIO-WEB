@@ -1,0 +1,372 @@
+/* ==========================================================================
+   ADMIN DASHBOARD LAYOUT & STYLES
+   Archivo: css/admin-dashboard.css
+   ========================================================================== */
+
+/* 1. ESTRUCTURA Y LAYOUT BASE */
+#app-screen.dashboard-layout {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #0b111e;
+  color: #f8fafc;
+  position: relative;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 2. OCULTAR LANDING SOLO CUANDO EL DASHBOARD ESTÁ VISIBLE */
+#app-screen[style*="display: flex"] ~ #landing-screen,
+body:has(#app-screen[style*="display: flex"]) #landing-screen,
+body:has(#app-screen[style*="display: flex"]) .public-landing,
+body:has(#app-screen[style*="display: flex"]) .main-header,
+body:has(#app-screen[style*="display: flex"]) .main-footer {
+  display: none !important;
+}
+
+/* 3. SIDEBAR LATERAL (Ancho fijo y aislamiento) */
+#app-screen .sidebar {
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
+  background: #0f172a !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 1.25rem 1rem !important;
+  min-height: 100vh;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Control de tamaño del Logo en el Sidebar */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-brand img {
+  width: 42px !important;
+  height: 42px !important;
+  max-width: 42px !important;
+  max-height: 42px !important;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-text h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.sidebar-brand-text span {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: block;
+}
+
+/* Navegación dentro del Sidebar */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.sidebar-nav .nav-item-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem;
+  width: 100% !important;
+  padding: 0.7rem 0.85rem !important;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.sidebar-nav .nav-item-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.sidebar-nav .nav-item-btn.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* 4. WRAPPER PRINCIPAL DERECHO */
+.main-wrapper {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0;
+  background: #0b111e;
+}
+
+/* Header Superior */
+.admin-header {
+  height: 65px;
+  background: #0f172a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  box-sizing: border-box;
+}
+
+.admin-header-title h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.admin-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-badge {
+  text-align: right;
+}
+
+.user-badge .username {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffffff;
+  display: block;
+}
+
+.user-badge .role {
+  font-size: 0.72rem;
+  color: #38bdf8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+/* 5. CONTENIDO Y CARDS DEL DASHBOARD */
+.main-content-body {
+  padding: 1.75rem 2rem;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.stat-card {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.2);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.stat-info h4 {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0 0 0.2rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-info .stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.card-panel {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card-panel-header h2, 
+.card-panel-header h3 {
+  margin: 0;
+  color: #ffffff;
+}
+
+/* 6. FORMULARIOS Y MÓDULOS */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.modulo-item-card {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* 7. RESPONSIVE ADAPTATIVO */
+@media (max-width: 900px) {
+  #app-screen.dashboard-layout {
+    flex-direction: column;
+  }
+
+  #app-screen .sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .main-content-body {
+    padding: 1rem;
+  }
+}
+
+/* ==========================================================
+   ESTILOS Y MANEJO DE OVERLAY / MODAL (#modal-alta-usuario)
+   ========================================================== */
+
+/* Overlay base (oculto por defecto y deshabilitado para clics) */
+.modal-overlay,
+#modal-alta-usuario {
+  display: none;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(4px);
+  z-index: -9999 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  box-sizing: border-box;
+}
+
+/* Estado visible (activado por JS agregando estilo display: flex o clase .open/.active) */
+.modal-overlay.open,
+.modal-overlay.active,
+#modal-alta-usuario.open,
+#modal-alta-usuario.active,
+#modal-alta-usuario[style*="display: flex"],
+#modal-alta-usuario[style*="display:flex"] {
+  display: flex !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  z-index: 99999 !important;
+}
+
+/* Contenedor del panel dentro del modal */
+.modal-overlay .card-panel,
+#modal-alta-usuario .card-panel {
+  position: relative !important;
+  z-index: 100000 !important;
+  pointer-events: auto !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
+
+/* Corrección de interacciones y cursores de campos */
+#modal-alta-usuario input,
+#modal-alta-usuario select,
+#modal-alta-usuario textarea,
+#modal-alta-usuario button {
+  pointer-events: auto !important;
+  user-select: text !important;
+}
+
+#modal-alta-usuario input[type="text"],
+#modal-alta-usuario input[type="email"],
+#modal-alta-usuario input[type="date"],
+#modal-alta-usuario textarea {
+  cursor: text !important;
+}
+
+#modal-alta-usuario button,
+#modal-alta-usuario select,
+#modal-alta-usuario input[type="checkbox"] {
+  cursor: pointer !important;
+}

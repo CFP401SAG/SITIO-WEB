@@ -1,0 +1,48 @@
+:root {
+  /* Paleta Institucional Dark */
+  --bg-main: #0b111e;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b111e 75%);
+  --surface: #151f32;
+  --surface-dark: #0f172a;
+  --surface-card: #1e2d4a;
+  --border: #2b3b55;
+  --border-glow: rgba(234, 179, 8, 0.3);
+
+  
+  /* Colores de Identidad */
+  --primary-blue: #2563eb;
+  --primary-hover: #1d4ed8;
+  --accent-gold: #eab308;
+  --accent-gold-hover: #ca8a04;
+
+  /* Textos */
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-gold: #fde047;
+
+  /* Redes y Marcas */
+  --whatsapp: #25d366;
+  --ig-gradient: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+
+  /* Radios y Sombras */
+  --radius-pill: 50px;
+  --radius-card: 16px;
+  --shadow-glow: 0 0 25px rgba(234, 179, 8, 0.12);
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: var(--bg-main);
+  background-image: var(--bg-gradient);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
