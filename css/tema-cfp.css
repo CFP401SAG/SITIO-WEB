@@ -1317,3 +1317,8 @@ details.seg-grupo > .seg-item { margin: .5rem .7rem; }
 .plan-tab { padding:0.35rem 0.8rem; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#94a3b8; font-size:0.8rem; font-weight:600; cursor:pointer; }
 .plan-tab.activo { background:#0284c7; color:#fff; border-color:#0284c7; }
 .plan-meta { font-size:0.78rem; color:#94a3b8; margin:0 0 0.6rem; }
+
+/* Matrícula escolar (cuadro 1.1 del Relevamiento Anual) */
+.matesc-tabla { min-width: 1100px; }
+.matesc-tabla th, .matesc-tabla td { padding: .45rem .4rem; }
+.matesc-tabla td.sec-nombre { min-width: 260px; }
