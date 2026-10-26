@@ -143,6 +143,7 @@ const FichaAlumno = {
     const { data, error } = await supabase.from('datos_inclusion').select('*').eq('dni', dni).maybeSingle();
     if (error) { box.innerHTML = '<h3>País de origen y discapacidad</h3><p class="ficha-vacio">Disponible cuando se ejecute sql/41 en Supabase.</p>'; return; }
     const d = data || {};
+    const lugarNac = ((await supabase.from('datos_estudiante').select('lugar_nacimiento').eq('dni', dni).maybeSingle()).data || {}).lugar_nacimiento || '';
     const tri = v => v === true ? 'si' : (v === false ? 'no' : '');
     box.innerHTML = `
       <h3>País de origen y discapacidad</h3>
@@ -150,9 +151,10 @@ const FichaAlumno = {
       <form class="ficha-form" onsubmit="event.preventDefault(); FichaAlumno.guardarInclusion();">
         <div class="form-group"><label for="fi-pais">País de origen</label>
           <select id="fi-pais" class="form-control">
-            <option value="">Sin dato</option>
-            ${this.PAISES.map(p => `<option value="${this.esc(p)}" ${d.pais_origen === p ? 'selected' : ''}>${this.esc(p)}</option>`).join('')}
-          </select></div>
+            <option value="">Argentina (sin confirmar)</option>
+            ${this.PAISES.map(p => `<option value="${this.esc(p)}" ${d.pais_origen === p ? 'selected' : ''}>${this.esc(p)}${p === 'Argentina' ? ' (confirmado)' : ''}</option>`).join('')}
+          </select>
+          ${!d.pais_origen && this.lugarParecePaisExtranjero(lugarNac) ? `<small style="color:#B42318">El lugar de nacimiento dice «${this.esc(lugarNac)}»: revisá si corresponde otro país.</small>` : ''}</div>
         <div class="form-group"><label for="fi-disc">Discapacidad</label>
           <select id="fi-disc" class="form-control" onchange="FichaAlumno.alternarDiscapacidad()">
             <option value="" ${tri(d.discapacidad) === '' ? 'selected' : ''}>Sin dato</option>
@@ -175,6 +177,13 @@ const FichaAlumno = {
         <div class="ficha-form-acciones"><button type="submit" class="btn btn-primary">Guardar</button></div>
       </form>`;
     this.alternarDiscapacidad();
+  },
+
+  // Pista (no definitiva): el lugar de nacimiento nombra un país o ciudad de otro país
+  lugarParecePaisExtranjero(t) {
+    const n = String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (!n || /argentina/.test(n)) return false;
+    return /(^|[^a-z])(bolivia|boliviano|boliviana|brasil|brazil|brasilero|brasilera|chile|chileno|chilena|colombia|colombiano|colombiana|bogota|ecuador|ecuatoriano|ecuatoriana|quito|paraguay|paraguayo|paraguaya|asuncion|peru|peruano|peruana|uruguay|uruguayo|uruguaya|montevideo|venezuela|venezolano|venezolana|caracas|cuba|cubano|cubana|mexico|mexicano|mexicana|haiti|dominicana|nicaragua|honduras|guatemala|panama|costa rica|el salvador|espana|espanol|espanola|italia|italiano|italiana|francia|alemania|portugal|polonia|ucrania|rusia|china|japon|corea|senegal|nigeria|africa|europa|asia)([^a-z]|$)/.test(n);
   },
 
   alternarDiscapacidad() {

@@ -125,7 +125,13 @@ const MatriculaEscolar = {
     const e = inc.extranjeros || {}, p = e.paises || {}, d = inc.discapacidad || {};
     const totExt = this.PAISES_COL.reduce((a, k) => a + this.num(p[k]), 0);
     const avisos = [];
-    if (this.num(e.sin_dato)) avisos.push(`<strong>${this.num(e.sin_dato)}</strong> estudiante(s) sin país de origen cargado: no entran en el cuadro 1.2.`);
+    if (this.num(e.sin_dato)) avisos.push(`<strong>${this.num(e.sin_dato)}</strong> estudiante(s) sin país de origen cargado: se toman como <strong>argentinos (sin confirmar)</strong>, por eso no figuran en el cuadro 1.2. Conviene corroborarlo en la ficha de cada uno.`);
+    const rev = Array.isArray(e.revisar_lista) ? e.revisar_lista : [];
+    if (rev.length) {
+      avisos.push(`<strong>${this.num(e.revisar)}</strong> estudiante(s) sin país cargado tienen un lugar de nacimiento que parece de otro país. No se cuentan como extranjeros hasta que lo confirmes en la ficha:
+        <ul style="margin:.4rem 0 0 1.1rem">${rev.map(r => `<li><button type="button" class="seg-nombre" onclick="FichaAlumno.abrir('${String(r.dni).replace(/[^0-9A-Za-z_-]/g, '')}')">${this.esc(r.nombre)}</button> · nació en: ${this.esc(r.lugar)}</li>`).join('')}</ul>
+        ${this.num(e.revisar) > rev.length ? `<small>Se muestran los primeros ${rev.length}.</small>` : ''}`);
+    }
     if (this.num(d.sin_dato)) avisos.push(`<strong>${this.num(d.sin_dato)}</strong> estudiante(s) sin dato de discapacidad (se cargan en la ficha del estudiante).`);
     if (this.num(d.apoyo_sin_dato) || this.num(d.cud_sin_dato)) avisos.push('Hay estudiantes con discapacidad a los que les falta indicar el apoyo o el CUD: el total no coincide con la suma de las columnas.');
     return `<h4 style="margin:1.4rem 0 .4rem">1.2 · Alumnos extranjeros por país / continente de origen</h4>
