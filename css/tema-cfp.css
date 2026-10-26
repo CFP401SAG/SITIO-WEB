@@ -613,6 +613,11 @@ button.seg-ver { border: none; cursor: pointer; font-family: inherit; }
 .asis-estado-dia { font-size: .85rem; padding: .6rem .85rem; border-radius: 10px; margin-bottom: .9rem; }
 .asis-estado-dia.nuevo { background: var(--cfp-celeste-soft); color: var(--cfp-blue); }
 .asis-estado-dia.editando { background: var(--cfp-yellow-soft); color: #5C4200; }
+.asis-estado-dia.sinclase { background: #EEF1F6; color: #3B4658; border: 1px dashed #9AA6B8; }
+.asis-quitar-sc { margin-left: .5rem; padding: .3rem .7rem; font-size: .8rem; font-family: inherit; border: 1px solid #9AA6B8; border-radius: 8px; background: #fff; color: var(--cfp-ink); cursor: pointer; }
+.asis-quitar-sc:hover { border-color: var(--cfp-celeste); }
+.asis-sinclase-btn .btn { width: 100%; }
+.asis-dia-sc { background: #EEF1F6; border-style: dashed; }
 .asis-lote { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .9rem; }
 .asis-lote .btn { padding: .45rem .85rem !important; font-size: .85rem !important; }
 .asis-leyenda { font-size: .78rem; color: var(--cfp-muted); margin-left: auto; }
