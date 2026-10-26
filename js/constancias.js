@@ -115,8 +115,8 @@ const ConstanciasModulo = {
     direccion: 'DIRECCIÓN PROVINCIAL DE ETP Y FP',
     nombre: 'CENTRO DE FORMACIÓN PROFESIONAL N.º 401',
     apodo: '',
-    domicilio: 'DIRECCIÓN A COMPLETAR · San Andrés de Giles · Buenos Aires',
-    contacto: 'Tel. 02323 - 438133  ·  WhatsApp 2323 643809',
+    domicilio: 'Alsina 975 · San Andrés de Giles · Buenos Aires',
+    contacto: 'WhatsApp +54 9 2325 566990',
     ciudad: 'San Andrés de Giles'
   },
   DIAS: [['L', 'Lunes'], ['M', 'Martes'], ['X', 'Miércoles'], ['J', 'Jueves'], ['V', 'Viernes'], ['S', 'Sábado']],

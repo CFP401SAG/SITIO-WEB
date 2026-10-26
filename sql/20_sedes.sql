@@ -29,7 +29,7 @@ create trigger trg_auditoria after insert or update or delete on public.sedes
 
 -- La sede principal (solo si todavía no hay ninguna)
 insert into public.sedes (tipo, nombre, direccion)
-select 'sede', 'CFP N.º 401', 'DIRECCIÓN A COMPLETAR' where not exists (select 1 from public.sedes);
+select 'sede', 'CFP N.º 401', 'Alsina 975' where not exists (select 1 from public.sedes);
 
 alter table public.trayectos add column if not exists sede_id bigint references public.sedes(id) on delete set null;
 

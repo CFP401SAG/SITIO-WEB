@@ -427,7 +427,7 @@ const ActasModulo = {
 
       // Texto del acta en un solo párrafo, justificado en todo el ancho de la hoja
       ws.mergeCells(r, 1, r, ULT);
-      ws.getCell(r, 1).value = `En dependencias del Centro de Formación Profesional N° 401 de la localidad de San Andrés de Giles, domicilio en DIRECCIÓN A COMPLETAR, a los ${dia} días del mes de ${mes} del año ${anio} se reúne la Comisión Examinadora, con el objetivo de llevar a cabo la evaluación final a los alumnos del curso cuya Especialidad y N° están detallados en la presente, llegando al resultado que se consigna a continuación:`;
+      ws.getCell(r, 1).value = `En dependencias del Centro de Formación Profesional N° 401 de la localidad de San Andrés de Giles, domicilio en Alsina 975, a los ${dia} días del mes de ${mes} del año ${anio} se reúne la Comisión Examinadora, con el objetivo de llevar a cabo la evaluación final a los alumnos del curso cuya Especialidad y N° están detallados en la presente, llegando al resultado que se consigna a continuación:`;
       ws.getCell(r, 1).font = { size: 10 };
       ws.getCell(r, 1).alignment = { horizontal: 'justify', vertical: 'middle', wrapText: true };
       ws.getRow(r).height = 30;
