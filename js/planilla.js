@@ -8,7 +8,7 @@
    ========================================================================== */
 
 const PlanillaMatricula = {
-  SEDE_DIRECCION: 'LAVALLE 740',          // lugar que figura para los trayectos dictados en la sede
+  SEDE_DIRECCION: 'DIRECCIÓN A COMPLETAR', // lugar que figura para los trayectos dictados en la sede
   DIAS: ['L', 'M', 'X', 'J', 'V', 'S'],   // lunes a sábado
   MESES: [[3, 31], [4, 30], [5, 31], [6, 30], [7, 31], [8, 31], [9, 30], [10, 31], [11, 30], [12, 31]],
 
