@@ -187,7 +187,7 @@ const LibroTemasModulo = {
   async verVisados() {
     if (typeof Swal === 'undefined') return;
     const html = this.visados.length
-      ? `<div style="text-align:left; font-size:0.85rem;">${this.visados.map(v => `<p style="margin:0.3rem 0;">👁️ <b>${this.esc(v.visado_por_nombre)}</b> (${v.visado_por_rol === 'admin' ? 'Director' : 'Regente'}) · ${this.fmt(v.created_at.slice(0, 10))}</p>`).join('')}</div>`
+      ? `<div style="text-align:left; font-size:0.85rem;">${this.visados.map(v => `<p style="margin:0.3rem 0;">👁️ <b>${this.esc(v.visado_por_nombre)}</b> (${v.visado_por_rol === 'admin' ? 'Director' : (v.visado_por_rol === 'secretaria' || v.visado_por_rol === 'secretario') ? 'Secretaría' : 'Regente'}) · ${this.fmt(v.created_at.slice(0, 10))}</p>`).join('')}</div>`
       : '<p>Todavía nadie de Dirección o Regencia lo abrió.</p>';
     Swal.fire({ title: 'Visados del libro de temas', html, confirmButtonText: 'Cerrar' });
   },
@@ -222,7 +222,7 @@ const LibroTemasModulo = {
     if (typeof Swal === 'undefined') return;
     const lista = temaId === null ? this.comentariosGenerales() : this.comentariosDe(temaId);
     const html = `<div style="text-align:left; font-size:0.85rem;">${lista.map(c => `<div style="margin:0.5rem 0; padding:0.5rem; background:rgba(255,255,255,0.05); border-radius:6px;">
-      <div style="font-size:0.75rem; color:#94a3b8;">${this.esc(c.autor_nombre)} (${c.autor_rol === 'admin' ? 'Director' : 'Regente'}) · ${this.fmt(c.created_at.slice(0, 10))}${this.puedeVisar && c.autor_id === ((window.Auth && Auth.usuarioActual) || {}).id ? ` <button type="button" class="lt-mini" onclick="LibroTemasModulo.borrarComentario(${Number(c.id)})">🗑️</button>` : ''}</div>
+      <div style="font-size:0.75rem; color:#94a3b8;">${this.esc(c.autor_nombre)} (${c.autor_rol === 'admin' ? 'Director' : (c.autor_rol === 'secretaria' || c.autor_rol === 'secretario') ? 'Secretaría' : 'Regente'}) · ${this.fmt(c.created_at.slice(0, 10))}${this.puedeVisar && c.autor_id === ((window.Auth && Auth.usuarioActual) || {}).id ? ` <button type="button" class="lt-mini" onclick="LibroTemasModulo.borrarComentario(${Number(c.id)})">🗑️</button>` : ''}</div>
       <div>${this.esc(c.texto)}</div></div>`).join('')}</div>`;
     Swal.fire({
       title: temaId ? 'Observaciones sobre este tema' : 'Observaciones generales',

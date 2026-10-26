@@ -19,7 +19,8 @@ const Auth = {
 
   esAdmin(rol) {
     const r = String(rol || '').toLowerCase().trim();
-    return r === 'admin' || r === 'administrador';
+    // CFP 401 Giles: Secretaría tiene permisos plenos, igual que Dirección.
+    return r === 'admin' || r === 'administrador' || r === 'secretaria' || r === 'secretario';
   },
 
   // Regencia: casi todo lo de la administración, salvo usuarios/roles/claves, eliminar cuentas, cierre de ciclo y respaldos

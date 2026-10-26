@@ -133,7 +133,7 @@ const UI = {
     const btnCons = document.getElementById('btn-constancias');   // constancias: dirección, regencia, preceptoría y secretaría
     if (btnCons) btnCons.style.setProperty('display', (esSecretaria || isAdmin || rolNorm === 'preceptor') ? 'flex' : 'none', 'important');
     const btnCue = document.getElementById('btn-cuentas');   // restablecer claves y aprobar estudiantes: regencia y preceptoría
-    if (btnCue) btnCue.style.setProperty('display', (rolNorm === 'regente' || rolNorm === 'preceptor') ? 'flex' : 'none', 'important');
+    if (btnCue) btnCue.style.setProperty('display', (rolNorm === 'regente' || rolNorm === 'preceptor' || esSecretaria) ? 'flex' : 'none', 'important');
     const btnObs = document.getElementById('btn-observaciones');   // todo el personal (no estudiantes)
     if (btnObs) btnObs.style.setProperty('display', rolNorm !== 'estudiante' ? 'flex' : 'none', 'important');
     if (rolNorm !== 'estudiante' && window.ObservacionesModulo) setTimeout(() => ObservacionesModulo.contarPendientes(), 1000);
@@ -142,10 +142,7 @@ const UI = {
     // Cooperadora: carga (director, regente, preceptoría) y visualización (+ secretaría). Nunca docentes ni estudiantes.
     const btnCoop = document.getElementById('btn-cooperadora');
     if (btnCoop) btnCoop.style.setProperty('display', (Auth.esPersonal(rolNorm) || esSecretaria) ? 'flex' : 'none', 'important');
-    if (esSecretaria) {
-      const bt = document.getElementById('btn-trayectos');
-      if (bt) bt.style.setProperty('display', 'none', 'important');
-    }
+    // CFP 401 Giles: Secretaría tiene permisos plenos, así que ve Trayectos igual que Dirección.
 
     const btnProg = document.getElementById('btn-progreso');
     if (btnProg) btnProg.style.setProperty('display', rolNorm === 'estudiante' ? 'flex' : 'none', 'important');
@@ -154,12 +151,12 @@ const UI = {
     if (btnSeg) btnSeg.style.setProperty('display', puedeSeguir ? 'flex' : 'none', 'important');
     if (puedeSeguir && window.SeguimientoModulo) setTimeout(() => SeguimientoModulo.contarPendientes(), 800);
 
-    if (esSecretaria) {
-      this.showTab('secretaria');
-    } else if (!isAdmin) {
-      this.showTab('trayectos');
-    } else {
+    if (isAdmin) {
       this.showTab('dashboard');
+    } else if (esSecretaria) {
+      this.showTab('secretaria');
+    } else {
+      this.showTab('trayectos');
     }
   },
 
@@ -184,11 +181,12 @@ const UI = {
     }
     const isAdmin = Auth.esDireccion(perfil.rol);
     const rolPerfil = String(perfil.rol || '').toLowerCase().trim();
-    if (Auth.esSecretaria(rolPerfil) && !['secretaria', 'observaciones', 'cooperadora', 'actas'].includes(tabId)) tabId = 'secretaria';
+    // CFP 401 Giles: Secretaría tiene permisos plenos (igual que Dirección), así que no
+    // se la restringe al panel de cifras como en Luján; navega libre como el resto de dirección.
     if (tabId === 'secretaria' && !(Auth.esSecretaria(rolPerfil) || isAdmin || rolPerfil === 'preceptor')) tabId = 'trayectos';
     if (tabId === 'estadisticas' && !isAdmin) tabId = 'trayectos';
     if (tabId === 'observaciones' && rolPerfil === 'estudiante') tabId = 'trayectos';
-    if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor')) tabId = isAdmin ? 'dashboard' : 'trayectos';
+    if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor' || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'cooperadora' && !(Auth.esPersonal(rolPerfil) || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
     // Regencia: no entra a usuarios/roles ni a respaldos
     if ((tabId === 'usuarios' || tabId === 'backups') && !Auth.esAdmin(perfil.rol)) tabId = isAdmin ? 'dashboard' : 'trayectos';
