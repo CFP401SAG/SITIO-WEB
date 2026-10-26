@@ -29,19 +29,23 @@ alter table public.trayectos               enable row level security;
 alter table public.modulos                 enable row level security;
 alter table public.inscripciones           enable row level security;
 alter table public.clases                  enable row level security;
-alter table public.actividades             enable row level security;
 alter table public.entregas_actividades    enable row level security;
 alter table public.asistencias             enable row level security;
 alter table public.excepciones_estudiantes enable row level security;
 alter table public.notificaciones          enable row level security;
 alter table public.padron_estudiantes      enable row level security;
-alter table public.contenidos              enable row level security;
-alter table public.entregas                enable row level security;
-alter table public.notas_modulares         enable row level security;
-do $$ begin
-  if to_regclass('public.usuarios_legacy') is not null then
-    execute 'alter table public.usuarios_legacy enable row level security';
-  end if;
+-- Tablas viejas de una versión anterior del esquema (actividades, contenidos,
+-- entregas, notas_modulares): la plataforma actual no las usa (las reemplazó
+-- entregas_actividades). Se activa RLS solo si todavía existen.
+do $$
+declare t text;
+begin
+  foreach t in array array['usuarios_legacy', 'actividades', 'contenidos', 'entregas', 'notas_modulares']
+  loop
+    if to_regclass('public.' || t) is not null then
+      execute format('alter table public.%I enable row level security', t);
+    end if;
+  end loop;
 end $$;
 
 -- 2.2  profiles -----------------------------------------------------------------------
@@ -103,15 +107,19 @@ create policy clases_update on public.clases for update to authenticated
 create policy clases_delete on public.clases for delete to authenticated
   using (public.es_admin() or public.es_docente_de(trayecto_id));
 
-create policy actividades_select on public.actividades for select to authenticated
-  using (public.puede_ver_trayecto(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))));
-create policy actividades_insert on public.actividades for insert to authenticated
-  with check (public.es_admin() or public.es_docente_de(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))));
-create policy actividades_update on public.actividades for update to authenticated
-  using (public.es_admin() or public.es_docente_de(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))))
-  with check (public.es_admin() or public.es_docente_de(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))));
-create policy actividades_delete on public.actividades for delete to authenticated
-  using (public.es_admin() or public.es_docente_de(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))));
+do $$ begin
+  if to_regclass('public.actividades') is not null then
+    execute 'create policy actividades_select on public.actividades for select to authenticated
+      using (public.puede_ver_trayecto(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))))';
+    execute 'create policy actividades_insert on public.actividades for insert to authenticated
+      with check (public.es_admin() or public.es_docente_de(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))))';
+    execute 'create policy actividades_update on public.actividades for update to authenticated
+      using (public.es_admin() or public.es_docente_de(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))))
+      with check (public.es_admin() or public.es_docente_de(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))))';
+    execute 'create policy actividades_delete on public.actividades for delete to authenticated
+      using (public.es_admin() or public.es_docente_de(coalesce(trayecto_id, public.trayecto_de_clase(clase_id))))';
+  end if;
+end $$;
 
 -- 2.6  entregas_actividades: el estudiante responde; solo el docente/admin corrige ----------
 create policy entregas_select on public.entregas_actividades for select to authenticated
@@ -186,14 +194,16 @@ create policy padron_update on public.padron_estudiantes for update to authentic
 create policy padron_delete on public.padron_estudiantes for delete to authenticated
   using (public.es_admin());
 
--- 2.10 Tablas viejas que la plataforma actual no usa: solo administrador ----------------------
-create policy contenidos_admin      on public.contenidos      for all to authenticated using (public.es_admin()) with check (public.es_admin());
-create policy entregas_old_admin    on public.entregas        for all to authenticated using (public.es_admin()) with check (public.es_admin());
-create policy notas_modulares_admin on public.notas_modulares for all to authenticated using (public.es_admin()) with check (public.es_admin());
-do $$ begin
-  if to_regclass('public.usuarios_legacy') is not null then
-    execute 'create policy usuarios_legacy_admin on public.usuarios_legacy for all to authenticated using (public.es_admin()) with check (public.es_admin())';
-  end if;
+-- 2.10 Tablas viejas que la plataforma actual no usa: solo administrador (si existen) ----------
+do $$
+declare t text;
+begin
+  foreach t in array array['usuarios_legacy', 'contenidos', 'entregas', 'notas_modulares']
+  loop
+    if to_regclass('public.' || t) is not null then
+      execute format('create policy %I_admin on public.%I for all to authenticated using (public.es_admin()) with check (public.es_admin())', t, t);
+    end if;
+  end loop;
 end $$;
 
 -- 2.11 Verificación: todas las tablas deben figurar con rls_activo = true y policies > 0 ------
