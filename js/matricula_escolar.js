@@ -10,7 +10,11 @@
 const MatriculaEscolar = {
   abierta: false,
   datos: null,        // { ciclo, activos, filas } | null
+  inclusion: null,    // totales de país de origen y discapacidad (solo Dirección y Secretaría) | null
   error: null,
+
+  PAISES_COL: ['Bolivia', 'Brasil', 'Chile', 'Colombia', 'Ecuador', 'Paraguay', 'Perú', 'Uruguay', 'Venezuela',
+               'Otros países de América', 'Europa', 'Asia', 'África', 'Oceanía'],
 
   TRAMOS: ['Menos de 13', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24',
            '25 a 29', '30 a 34', '35 a 39', '40 a 44', '45 a 49', '50 a 54', '55 y más'],
@@ -46,6 +50,12 @@ const MatriculaEscolar = {
       const { data, error } = await supabase.rpc('matricula_escolar', { p_ciclo: ciclo, p_solo_activos: activos });
       if (error) throw error;
       this.datos = { ciclo, activos, filas: Array.isArray(data) ? data : [] };
+      // Cuadros 1.2 y 1.3: dato sensible, solo para Dirección y Secretaría (si no hay acceso, no se muestran)
+      this.inclusion = null;
+      try {
+        const r = await supabase.rpc('relevamiento_inclusion', { p_ciclo: ciclo, p_solo_activos: activos });
+        if (!r.error && r.data) this.inclusion = r.data;
+      } catch (e) { /* sin acceso o sin el SQL 41: se muestra solo el cuadro 1.1 */ }
     } catch (err) {
       console.error('Matrícula escolar:', err);
       this.datos = null;
@@ -104,7 +114,29 @@ const MatriculaEscolar = {
         </table>
       </div>
       <p class="acta-ayuda">Diseño curricular aprobado, año/nivel, turno y modalidad de dictado no se guardan en la plataforma: se completan en el formulario.</p>
+      ${this.htmlInclusion()}
     </section>`;
+  },
+
+  /* Cuadros 1.2 (extranjeros por país/continente) y 1.3 (discapacidad): solo totales */
+  htmlInclusion() {
+    const inc = this.inclusion;
+    if (!inc) return '';
+    const e = inc.extranjeros || {}, p = e.paises || {}, d = inc.discapacidad || {};
+    const totExt = this.PAISES_COL.reduce((a, k) => a + this.num(p[k]), 0);
+    const avisos = [];
+    if (this.num(e.sin_dato)) avisos.push(`<strong>${this.num(e.sin_dato)}</strong> estudiante(s) sin país de origen cargado: no entran en el cuadro 1.2.`);
+    if (this.num(d.sin_dato)) avisos.push(`<strong>${this.num(d.sin_dato)}</strong> estudiante(s) sin dato de discapacidad (se cargan en la ficha del estudiante).`);
+    if (this.num(d.apoyo_sin_dato) || this.num(d.cud_sin_dato)) avisos.push('Hay estudiantes con discapacidad a los que les falta indicar el apoyo o el CUD: el total no coincide con la suma de las columnas.');
+    return `<h4 style="margin:1.4rem 0 .4rem">1.2 · Alumnos extranjeros por país / continente de origen</h4>
+      <div class="sec-tabla-wrap"><table class="sec-tabla matesc-tabla"><thead><tr>${this.PAISES_COL.map(k => `<th>${k}</th>`).join('')}<th>Total</th></tr></thead>
+        <tbody><tr>${this.PAISES_COL.map(k => `<td>${this.num(p[k]) || '·'}</td>`).join('')}<td><b>${totExt}</b></td></tr></tbody></table></div>
+      <h4 style="margin:1.4rem 0 .4rem">1.3 · Alumnos con algún tipo de discapacidad</h4>
+      <div class="sec-tabla-wrap"><table class="sec-tabla matesc-tabla"><thead><tr>
+        <th>Con apoyo docente (a)</th><th>Con apoyo no docente (c)</th><th>Sin apoyo a la inclusión (d)</th><th>Total</th><th>Con CUD (1)</th><th>Sin CUD (2)</th></tr></thead>
+        <tbody><tr><td>${this.num(d.apoyo_docente)}</td><td>${this.num(d.apoyo_no_docente)}</td><td>${this.num(d.sin_apoyo)}</td><td><b>${this.num(d.total)}</b></td><td>${this.num(d.con_cud)}</td><td>${this.num(d.sin_cud)}</td></tr></tbody></table></div>
+      ${avisos.map(a => `<div class="asis-aviso">${a}</div>`).join('')}
+      <p class="acta-ayuda">Se cuentan personas (no inscripciones). Como el CFP es de gestión estatal, el apoyo docente va en la columna del sector estatal (a). Son solo totales: no se muestran nombres.</p>`;
   },
 
   async excel() {
@@ -142,6 +174,19 @@ const MatriculaEscolar = {
       if (c >= 2 && i > 3) cel.alignment = { horizontal: 'center', vertical: 'middle' };
     }
     ws.views = [{ state: 'frozen', xSplit: 1, ySplit: 3 }];
+    if (this.inclusion) {
+      const inc = this.inclusion, p = (inc.extranjeros || {}).paises || {}, d = inc.discapacidad || {};
+      const w2 = wb.addWorksheet('1.2 y 1.3');
+      w2.addRow([`CFP N.º 401 · Relevamiento Anual ${ciclo} · 1.2 Alumnos extranjeros por país/continente de origen`]).font = { bold: true, size: 12 };
+      const h2 = w2.addRow([...this.PAISES_COL, 'Total']); h2.font = { bold: true };
+      w2.addRow([...this.PAISES_COL.map(k => this.num(p[k])), this.PAISES_COL.reduce((a, k) => a + this.num(p[k]), 0)]);
+      w2.addRow([]);
+      w2.addRow([`1.3 Alumnos con algún tipo de discapacidad`]).font = { bold: true, size: 12 };
+      const h3 = w2.addRow(['Con apoyo docente (a)', 'Con apoyo no docente (c)', 'Sin apoyo a la inclusión (d)', 'Total', 'Con CUD (1)', 'Sin CUD (2)']); h3.font = { bold: true };
+      w2.addRow([this.num(d.apoyo_docente), this.num(d.apoyo_no_docente), this.num(d.sin_apoyo), this.num(d.total), this.num(d.con_cud), this.num(d.sin_cud)]);
+      w2.columns.forEach(c => { c.width = 18; });
+      [h2, h3].forEach(h => { h.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; });
+    }
     const buf = await wb.xlsx.writeBuffer();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));

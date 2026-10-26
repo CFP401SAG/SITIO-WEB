@@ -1322,3 +1322,6 @@ details.seg-grupo > .seg-item { margin: .5rem .7rem; }
 .matesc-tabla { min-width: 1100px; }
 .matesc-tabla th, .matesc-tabla td { padding: .45rem .4rem; }
 .matesc-tabla td.sec-nombre { min-width: 260px; }
+
+/* País de origen y discapacidad: dato sensible, no se imprime con la ficha */
+@media print { #ficha-inclusion { display: none !important; } }
