@@ -137,6 +137,8 @@ const UI = {
     const btnObs = document.getElementById('btn-observaciones');   // todo el personal (no estudiantes)
     if (btnObs) btnObs.style.setProperty('display', rolNorm !== 'estudiante' ? 'flex' : 'none', 'important');
     if (rolNorm !== 'estudiante' && window.ObservacionesModulo) setTimeout(() => ObservacionesModulo.contarPendientes(), 1000);
+    const btnPre = document.getElementById('btn-preinscripciones');   // dirección y secretaría gestionan; el docente ve las de sus trayectos
+    if (btnPre) btnPre.style.setProperty('display', (isAdmin || esSecretaria || rolNorm === 'docente') ? 'flex' : 'none', 'important');
     const btnSec = document.getElementById('btn-secretaria');
     if (btnSec) btnSec.style.setProperty('display', (esSecretaria || isAdmin || rolNorm === 'preceptor') ? 'flex' : 'none', 'important');
     // Cooperadora: carga (director, regente, preceptoría) y visualización (+ secretaría). Nunca docentes ni estudiantes.
@@ -184,6 +186,7 @@ const UI = {
     // CFP 401 Giles: Secretaría tiene permisos plenos (igual que Dirección), así que no
     // se la restringe al panel de cifras como en Luján; navega libre como el resto de dirección.
     if (tabId === 'secretaria' && !(Auth.esSecretaria(rolPerfil) || isAdmin || rolPerfil === 'preceptor')) tabId = 'trayectos';
+    if (tabId === 'preinscripciones' && !(isAdmin || Auth.esSecretaria(rolPerfil) || rolPerfil === 'docente')) tabId = 'trayectos';
     if (tabId === 'estadisticas' && !isAdmin) tabId = 'trayectos';
     if (tabId === 'observaciones' && rolPerfil === 'estudiante') tabId = 'trayectos';
     if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor' || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
@@ -226,6 +229,7 @@ const UI = {
         'progreso': 'Mi progreso',
         'seguimiento': 'Seguimiento',
         'secretaria': 'Panel de cifras por trayecto',
+        'preinscripciones': 'Preinscripciones',
         'cuentas': 'Cuentas y claves',
         'estadisticas': 'Estadísticas de trayectos',
         'observaciones': 'Observaciones',
@@ -276,6 +280,10 @@ const UI = {
 
     if (tabId === 'estadisticas' && window.EstadisticasModulo) {
       window.EstadisticasModulo.cargar();
+    }
+
+    if (tabId === 'preinscripciones' && window.PreinscripcionesModulo) {
+      window.PreinscripcionesModulo.cargar();
     }
 
     if (tabId === 'cuentas' && window.CuentasModulo) {

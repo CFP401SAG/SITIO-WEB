@@ -4,7 +4,7 @@
 // Qué hace, para cada estudiante que le manda la plataforma (CSV):
 //   1. Lo guarda en el padrón (padron_estudiantes).
 //   2. Si no tiene cuenta, la crea en Supabase Auth ya confirmada, con
-//      usuario = DNI@cfp403.ar y contraseña inicial CFP403_<DNI>,
+//      usuario = DNI@cfp401.ar y contraseña inicial CFP401_<DNI>,
 //      y deja su perfil como ESTUDIANTE / ACTIVO.
 //      Si tenía una cuenta pendiente (hecha con "Registrarse"), la reemplaza por una
 //      nueva con la contraseña inicial, para que nadie entre con una clave ajena.
@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
 
     const rolLlama = String(perfilLlama?.rol || '').toLowerCase();
     const estadoLlama = String(perfilLlama?.estado || '').toUpperCase();
-    if (!perfilLlama || !['admin', 'administrador', 'regente', 'preceptor'].includes(rolLlama) || estadoLlama !== 'ACTIVO') {
+    if (!perfilLlama || !['admin', 'administrador', 'secretaria', 'regente', 'preceptor'].includes(rolLlama) || estadoLlama !== 'ACTIVO') {
       return json({ error: 'No autorizado' }, 403);
     }
 
@@ -92,9 +92,9 @@ Deno.serve(async (req: Request) => {
       const nombre = String(e.nombre || 'SIN NOMBRE').toUpperCase();
       const apellido = String(e.apellido || 'SIN APELLIDO').toUpperCase();
       const emailReal = e.email && String(e.email).includes('@') ? String(e.email).toLowerCase() : null;
-      // El usuario de acceso es siempre DNI@cfp403.ar (así todos ingresan con el DNI).
+      // El usuario de acceso es siempre DNI@cfp401.ar (así todos ingresan con el DNI).
       // El email real, si viene en el CSV, se guarda solo como dato de contacto.
-      const email = `${dni}@cfp403.ar`;
+      const email = `${dni}@cfp401.ar`;
 
       // 3.1 Padrón
       const { error: errPad } = await admin
@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
           // Cuenta creada con "Registrarse" y nunca aprobada: no se sabe quién eligió esa
           // contraseña (podría ser otra persona usando este DNI). No se aprueba tal cual:
           // se elimina (con sus sesiones abiertas) y más abajo se crea una cuenta nueva
-          // con la contraseña inicial de siempre, CFP403_<DNI>.
+          // con la contraseña inicial de siempre, CFP401_<DNI>.
           const { error: errElim } = await admin.auth.admin.deleteUser(pf.id);
           if (errElim) {
             // Queda PENDIENTE (sin acceso a nada) y se avisa.
@@ -163,7 +163,7 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        const clave = `CFP403_${dni}`;
+        const clave = `CFP401_${dni}`;
         const { data: nuevo, error: errCrear } = await admin.auth.admin.createUser({
           email,
           password: clave,
