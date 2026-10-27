@@ -9,6 +9,18 @@
 const FichaInscripcion = {
   SI_NO: [['si', 'SÍ'], ['no', 'NO']],
   NIVEL: [['muy_bueno', 'Muy bueno'], ['bueno', 'Bueno'], ['regular', 'Regular'], ['no_sabe', 'No sabe']],
+  /* Región Educativa 10 (DGCyE): distritos y sus localidades. Son sugerencias: la persona puede escribir cualquier otra. */
+  DISTRITOS_R10: ['San Andrés de Giles', 'Luján', 'Mercedes', 'General Rodríguez', 'Marcos Paz', 'Navarro', 'Suipacha', 'Las Heras', 'Cañuelas'],
+  LOCALIDADES_R10: [
+    ['San Andrés de Giles', 'San Andrés de Giles'], ['Azcuénaga', 'San Andrés de Giles'], ['Cucullú', 'San Andrés de Giles'],
+    ['Espora', 'San Andrés de Giles'], ['Franklin', 'San Andrés de Giles'], ['Solís', 'San Andrés de Giles'], ['Villa Ruiz', 'San Andrés de Giles'],
+    ['Luján', 'Luján'], ['Carlos Keen', 'Luján'], ['Cortínez', 'Luján'], ['Jáuregui', 'Luján'], ['Lezica y Torrezuri', 'Luján'],
+    ['Olivera', 'Luján'], ['Open Door', 'Luján'], ['Torres', 'Luján'], ['Villa Flandria', 'Luján'],
+    ['Mercedes', 'Mercedes'], ['Gowland', 'Mercedes'], ['Goldney', 'Mercedes'], ['Tomás Jofré', 'Mercedes'],
+    ['General Rodríguez', 'General Rodríguez'], ['Marcos Paz', 'Marcos Paz'], ['Navarro', 'Navarro'], ['Las Marianas', 'Navarro'], ['Villa Moll', 'Navarro'],
+    ['Suipacha', 'Suipacha'], ['General Las Heras', 'Las Heras'], ['Plomer', 'Las Heras'], ['Villars', 'Las Heras'],
+    ['Cañuelas', 'Cañuelas'], ['Uribelarrea', 'Cañuelas'], ['Máximo Paz', 'Cañuelas'], ['Alejandro Petión', 'Cañuelas'], ['Vicente Casares', 'Cañuelas']
+  ],
   PAISES: ['Argentina', 'Bolivia', 'Brasil', 'Chile', 'Colombia', 'Ecuador', 'Paraguay', 'Perú', 'Uruguay', 'Venezuela',
            'Otros países de América', 'Europa', 'Asia', 'África', 'Oceanía'],
 
@@ -35,8 +47,8 @@ const FichaInscripcion = {
         { k: 'piso', l: 'Piso', t: 'text', w: 0.15, max: 6 },
         { k: 'torre', l: 'Torre', t: 'text', w: 0.15, max: 6 },
         { k: 'dpto', l: 'Dpto.', t: 'text', w: 0.15, max: 6 },
-        { k: 'localidad', l: 'Localidad', t: 'text', w: 0.4, req: true, max: 80 },
-        { k: 'distrito', l: 'Distrito', t: 'text', w: 0.35, max: 80 },
+        { k: 'localidad', l: 'Localidad', t: 'lista', lista: 'localidades', w: 0.4, req: true, max: 80 },
+        { k: 'distrito', l: 'Distrito', t: 'lista', lista: 'distritos', w: 0.35, max: 80 },
         { k: 'cp', l: 'Código postal', t: 'text', w: 0.25, max: 12 },
         { k: 'telefono', l: 'Celular / teléfono', t: 'tel', w: 0.4, req: true, max: 40 },
         { k: 'whatsapp', l: '¿Tiene WhatsApp?', t: 'radio', op: SN, w: 0.2 },
@@ -147,6 +159,10 @@ const FichaInscripcion = {
         ctl = `<div class="fi-opciones">${c.op.map(o => `<label class="fi-op"><input type="checkbox" name="fi_${c.k}" value="${this.esc(this.opVal(o))}" ${sel.includes(this.opVal(o)) ? 'checked' : ''} ${ro}> <span>${this.esc(this.opLab(o))}</span></label>`).join('')}</div>`;
       } else if (c.t === 'select') {
         ctl = `<select name="fi_${c.k}" class="fi-input" ${ro} ${c.req ? 'aria-required="true"' : ''}><option value="">Elegí…</option>${c.op.map(o => `<option value="${this.esc(this.opVal(o))}" ${String(v) === String(this.opVal(o)) ? 'selected' : ''}>${this.esc(this.opLab(o))}</option>`).join('')}</select>`;
+      } else if (c.t === 'lista') {
+        const opciones = c.lista === 'distritos' ? this.DISTRITOS_R10.map(x => [x, '']) : this.LOCALIDADES_R10;
+        ctl = `<input name="fi_${c.k}" type="text" class="fi-input" list="fi_dl_${c.k}" maxlength="${c.max || 80}" autocomplete="off" placeholder="Elegí de la lista o escribila" value="${this.esc(v)}" ${ro} ${c.req ? 'aria-required="true"' : ''}>
+          <datalist id="fi_dl_${c.k}">${opciones.map(o => `<option value="${this.esc(o[0])}">${this.esc(o[1])}</option>`).join('')}</datalist>`;
       } else {
         const tipo = ['number', 'date', 'tel', 'email'].includes(c.t) ? c.t : 'text';
         ctl = `<input name="fi_${c.k}" type="${tipo}" class="fi-input" ${c.max ? `maxlength="${c.max}"` : ''} ${tipo === 'number' ? 'min="0" max="30"' : ''} value="${this.esc(v)}" ${ro} ${c.req ? 'aria-required="true"' : ''} ${c.k === 'dni' ? 'inputmode="numeric" autocomplete="off"' : ''}>`;
