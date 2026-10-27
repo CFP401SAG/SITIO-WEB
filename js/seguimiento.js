@@ -29,7 +29,9 @@ const SeguimientoModulo = {
       const perfil = await Auth.obtenerPerfilSesion();
       const esAdmin = Auth.esPersonal ? Auth.esPersonal(perfil.rol) : Auth.esAdmin(perfil.rol);   // admin o preceptor: todos
       this.esPreceptor = Auth.esPreceptor ? Auth.esPreceptor(perfil.rol) : false;
-      this.puedeRegistrar = !!esAdmin;     // administración, regencia y preceptoría
+      this.puedeRegistrar = !!esAdmin;     // reincorporar: administración, regencia y preceptoría
+      // Registrar bajas automáticas: además de la administración, el docente (solo ve y registra las de sus trayectos)
+      this.puedeRegistrarBajas = !!esAdmin || String(perfil.rol || '').toLowerCase().trim() === 'docente';
       const anio = String(new Date().getFullYear());
 
       let q = supabase.from('trayectos').select('*');
@@ -185,7 +187,7 @@ const SeguimientoModulo = {
     // Bajas automáticas todavía sin guardar (la planilla de matrícula solo cuenta las guardadas)
     this._bajasVistas = bajas;
     this.bajasAuto = bajas.filter(b => b.tipo === 'automatica' && !b.guardada);
-    const btnRegistrar = (this.puedeRegistrar && this.bajasAuto.length)
+    const btnRegistrar = (this.puedeRegistrarBajas && this.bajasAuto.length)
       ? `<div class="seg-registrar"><span><b>${this.bajasAuto.length}</b> baja(s) automática(s) sin registrar: la planilla de matrícula todavía las cuenta como matriculados.</span>
          <button type="button" class="btn btn-gold" onclick="SeguimientoModulo.registrarBajasAuto()">Registrar bajas automáticas</button></div>` : '';
     // Con un solo trayecto con novedades, se muestra desplegado
