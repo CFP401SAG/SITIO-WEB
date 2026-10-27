@@ -36,6 +36,8 @@ const UsuariosAdmin = {
     const selectRol = document.getElementById('usr-alta-rol');
     const contenedor = document.getElementById('usr-alta-trayectos');
     if (!selectRol || !contenedor) return;
+    const optAdmin = document.getElementById('usr-alta-opt-admin');
+    if (optAdmin) optAdmin.hidden = optAdmin.disabled = !this.soyDirector();
 
     const actualizarVista = () => {
       if (selectRol.value === 'estudiante') {
@@ -143,6 +145,9 @@ const UsuariosAdmin = {
       const idPrimario = u.id || u.usuario;
       const dniMostrar = Trayectos.esc(u.dni || u.usuario || 'Sin DNI');
 
+      const esFilaAdmin = ['admin', 'administrador'].includes(String(u.rol || '').toLowerCase());
+      const bloqueada = esFilaAdmin && !this.soyDirector();
+      const dis = bloqueada ? 'disabled title="Solo la Dirección puede modificar a un administrador"' : '';
       return `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
           <td style="padding: 0.85rem 0.75rem;">
@@ -153,11 +158,11 @@ const UsuariosAdmin = {
             ${Trayectos.esc(u.email) || `${dniMostrar}@cfp401.ar`}
           </td>
           <td style="padding: 0.85rem 0.75rem;">
-            <select class="form-control" style="padding: 0.3rem 0.5rem; font-size: 0.85rem; width: auto;" onchange="UsuariosAdmin.cambiarRol('${idPrimario}', this.value)">
+            <select class="form-control" style="padding: 0.3rem 0.5rem; font-size: 0.85rem; width: auto;" onchange="UsuariosAdmin.cambiarRol('${idPrimario}', this.value)" ${bloqueada ? 'disabled title="Solo la Dirección puede modificar a un administrador"' : ''}>
               <option value="estudiante" ${u.rol === 'estudiante' ? 'selected' : ''}>Estudiante</option>
               <option value="docente" ${u.rol === 'docente' ? 'selected' : ''}>Docente</option>
               <option value="secretaria" ${u.rol === 'secretaria' ? 'selected' : ''}>Secretaría</option>
-              <option value="admin" ${u.rol === 'admin' ? 'selected' : ''}>Administrador</option>
+              ${(this.soyDirector() || esFilaAdmin) ? `<option value="admin" ${esFilaAdmin ? 'selected' : ''}>Administrador</option>` : ''}
             </select>
           </td>
           <td style="padding: 0.85rem 0.75rem;">
@@ -167,11 +172,11 @@ const UsuariosAdmin = {
           </td>
           <td style="padding: 0.85rem 0.75rem; text-align: right; display: flex; gap: 0.4rem; justify-content: flex-end; align-items: center;">
             ${!esActivo ? `
-              <button class="btn btn-gold" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="UsuariosAdmin.cambiarEstado('${idPrimario}', 'ACTIVO')">
+              <button ${dis} class="btn btn-gold" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="UsuariosAdmin.cambiarEstado('${idPrimario}', 'ACTIVO')">
                 ${estadoRaw === 'INHABILITADO' ? '↩ Reactivar' : '✓ Aprobar'}
               </button>
             ` : `
-              <button class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171;" onclick="UsuariosAdmin.cambiarEstado('${idPrimario}', 'INHABILITADO')">
+              <button ${bloqueada ? 'disabled title="Solo la Dirección puede modificar a un administrador"' : ''} class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171;" onclick="UsuariosAdmin.cambiarEstado('${idPrimario}', 'INHABILITADO')">
                 🔒 Inhabilitar
               </button>
             `}
@@ -179,10 +184,10 @@ const UsuariosAdmin = {
             <button title="Corregir apellido, nombre o correo" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #cbd5e1; border-radius: 6px; cursor: pointer;" onclick="UsuariosAdmin.editarDatos('${idPrimario}')">
               ✏️
             </button>
-            <button title="Restablecer contraseña" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; border-radius: 6px; cursor: pointer;" onclick="UsuariosAdmin.restablecerClave('${idPrimario}')">
+            <button ${bloqueada ? 'disabled' : ''} title="Restablecer contraseña" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; border-radius: 6px; cursor: pointer;" onclick="UsuariosAdmin.restablecerClave('${idPrimario}')">
               🔑
             </button>
-            <button title="Eliminar definitivamente" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 6px; cursor: pointer;" onclick="UsuariosAdmin.eliminarUsuario('${idPrimario}')">
+            <button ${bloqueada ? 'disabled' : ''} title="Eliminar definitivamente" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 6px; cursor: pointer;" onclick="UsuariosAdmin.eliminarUsuario('${idPrimario}')">
               🗑️
             </button>
           </td>
@@ -232,6 +237,10 @@ const UsuariosAdmin = {
     const dniVal = document.getElementById('usr-alta-dni')?.value.trim();
     const emailRaw = document.getElementById('usr-alta-email')?.value.trim();
     const rol = document.getElementById('usr-alta-rol')?.value || 'estudiante';
+    if (!this.soyDirector() && ['admin', 'administrador'].includes(rol)) {
+      alert('Solo la Dirección puede crear cuentas de administrador.');
+      return;
+    }
 
     if (!nombre || !apellido || !dniVal) {
       alert('Por favor completá Nombre, Apellido y DNI.');
@@ -354,6 +363,12 @@ const UsuariosAdmin = {
     });
   },
 
+  // Solo la Dirección (rol admin) maneja cuentas de administrador; Secretaría no
+  soyDirector() {
+    const r = String((window.Auth && Auth.usuarioActual && Auth.usuarioActual.rol) || '').toLowerCase().trim();
+    return r === 'admin' || r === 'administrador';
+  },
+
   esMiUsuario(userId) {
     return !!(window.Auth && Auth.usuarioActual && String(Auth.usuarioActual.id) === String(userId));
   },
@@ -414,6 +429,13 @@ const UsuariosAdmin = {
   },
 
   async cambiarRol(userId, nuevoRol) {
+    const destino = this.listaUsuarios.find(u => String(u.id || u.usuario) === String(userId));
+    const esAdm = r => ['admin', 'administrador'].includes(String(r || '').toLowerCase());
+    if (!this.soyDirector() && (esAdm(nuevoRol) || (destino && esAdm(destino.rol)))) {
+      alert('Solo la Dirección puede asignar o modificar el rol de administrador.');
+      this.renderizarTabla();
+      return;
+    }
     if (this.esMiUsuario(userId) && !Auth.esAdmin(nuevoRol)) {
       alert('No podés quitarte a vos mismo el rol de administrador.');
       this.renderizarTabla();
@@ -432,6 +454,8 @@ const UsuariosAdmin = {
       this.renderizarTabla();
     } catch (err) {
       console.error('Error al actualizar rol:', err);
+      alert('No se pudo cambiar el rol: ' + (err.message || ''));
+      this.renderizarTabla();
     }
   },
 
