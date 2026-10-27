@@ -75,8 +75,7 @@ Deno.serve(async (req: Request) => {
       ciclo: String(p.ciclo), trayecto: t.nombre || 'Sin trayecto', nombre,
       archivo_id: p.drive_archivo_id || null, pdf: aBase64(pdf),
     });
-    archivo.id = archivo.archivo_id;
-    await admin.from('preinscripciones').update({ drive_archivo_id: archivo.id, drive_subido_en: new Date().toISOString(), drive_error: null }).eq('id', id);
+    await admin.from('preinscripciones').update({ drive_archivo_id: archivo.archivo_id, drive_subido_en: new Date().toISOString(), drive_error: null }).eq('id', id);
     return json({ ok: true });
   } catch (err) {
     const msg = String((err as Error)?.message || err).slice(0, 300);
