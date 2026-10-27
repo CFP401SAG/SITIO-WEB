@@ -353,32 +353,42 @@ const CooperadoraModulo = {
     const socios = this.socios.filter(s => s.estado === 'ACTIVO');
     const { value } = await Swal.fire({
       title: tipo === 'entrada' ? 'Registrar ingreso' : 'Registrar egreso',
+      width: 560,
+      customClass: { popup: 'coop-form' },
       html: `
-        <input id="sw-fecha" type="date" class="swal2-input" value="${new Date().toISOString().slice(0, 10)}">
-        <select id="sw-rubro" class="swal2-input">
-          ${opciones.map(o => `<option value="${o.val}" data-libre="${o.libre ? '1' : ''}">${this.esc(o.label)}</option>`).join('')}
-        </select>
-        <input id="sw-rubro-libre" class="swal2-input" placeholder="Si elegiste 'Otro…', escribí el detalle" style="display:none">
-        <input id="sw-desc" class="swal2-input" placeholder="Descripción / comprobante">
-        <input id="sw-monto" type="number" step="0.01" min="0.01" class="swal2-input" placeholder="Monto $">
-        <select id="sw-medio" class="swal2-input">
-          <option value="banco_cc">Banco cuenta corriente</option>
-          <option value="caja_chica">Caja chica</option>
-          <option value="plazo_fijo">Plazo fijo</option>
-        </select>
-        ${tipo === 'entrada' ? `
-        <select id="sw-socio" class="swal2-input">
-          <option value="">(no corresponde a cuota de un socio)</option>
-          ${socios.map(s => `<option value="${s.id}">${this.esc(s.apellido)}, ${this.esc(s.nombre)} — DNI ${this.esc(s.dni)}</option>`).join('')}
-        </select>
-        <input id="sw-periodo" class="swal2-input" placeholder="Período de la cuota (AAAA-MM o AAAA, opcional)">
-        ` : ''}
-        <input id="sw-comprobante" class="swal2-input" placeholder="N.º de comprobante (opcional)">
+        <div class="cf-grid">
+          <label>Fecha<input id="sw-fecha" type="date" class="swal2-input" value="${new Date().toISOString().slice(0, 10)}"></label>
+          <label>Monto ($)<input id="sw-monto" type="number" step="0.01" min="0.01" class="swal2-input" placeholder="0,00"></label>
+          <label class="cf-full">Rubro
+            <select id="sw-rubro" class="swal2-input">
+              ${opciones.map(o => `<option value="${o.val}" data-libre="${o.libre ? '1' : ''}">${this.esc(o.label)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="cf-full" id="sw-rubro-libre-wrap" style="display:none">Detalle del rubro "Otro…"<input id="sw-rubro-libre" class="swal2-input" placeholder="Escribí el detalle"></label>
+          <label class="cf-full">Descripción<input id="sw-desc" class="swal2-input" placeholder="Ej.: Cuota Programación octubre"></label>
+          <label class="cf-full">Medio de cobro / pago
+            <select id="sw-medio" class="swal2-input">
+              <option value="banco_cc">Banco cuenta corriente (transferencia o depósito)</option>
+              <option value="caja_chica">Caja chica (efectivo)</option>
+              <option value="plazo_fijo">Plazo fijo</option>
+            </select>
+          </label>
+          ${tipo === 'entrada' ? `
+          <label class="cf-full">Socio (si es cuota social)
+            <select id="sw-socio" class="swal2-input">
+              <option value="">(no corresponde a cuota de un socio)</option>
+              ${socios.map(s => `<option value="${s.id}">${this.esc(s.apellido)}, ${this.esc(s.nombre)} — DNI ${this.esc(s.dni)}</option>`).join('')}
+            </select>
+          </label>
+          <label>Mes que cubre la cuota<input id="sw-periodo" type="month" class="swal2-input"></label>
+          ` : ''}
+          <label${tipo === 'entrada' ? '' : ' class="cf-full"'}>N.º de comprobante<input id="sw-comprobante" class="swal2-input" placeholder="Opcional"></label>
+        </div>
       `,
       didOpen: () => {
         const sel = document.getElementById('sw-rubro');
         const libreIn = document.getElementById('sw-rubro-libre');
-        const toggle = () => { libreIn.style.display = sel.selectedOptions[0]?.dataset.libre ? 'block' : 'none'; };
+        const toggle = () => { document.getElementById('sw-rubro-libre-wrap').style.display = sel.selectedOptions[0]?.dataset.libre ? 'block' : 'none'; };
         sel.addEventListener('change', toggle); toggle();
       },
       focusConfirm: false, showCancelButton: true, confirmButtonText: 'Guardar',
@@ -496,6 +506,7 @@ const CooperadoraModulo = {
         ${this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formEjercicio()">➕ Nuevo ejercicio</button>` : ''}
         ${this.ejercicioActual && this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formEjercicio(${this.ejercicioActual})">✏️ Editar datos (Cuadros 1, 3, 7)</button>` : ''}
         ${this.ejercicioActual && this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formComision(${this.ejercicioActual})">✏️ Comisión (Cuadros 4, 5, 6)</button>` : ''}
+        ${this.ejercicioActual ? `<button class="act-btn" onclick="CooperadoraModulo.imprimirComision()">🖨️ Imprimir comisión</button>` : ''}
         ${this.ejercicioActual ? `<button class="act-btn" style="background:#0f766e;" onclick="CooperadoraModulo.generarPIA()">📄 Generar PIA en PDF</button>` : ''}
       </div>
       ${!this.ejercicioActual ? '<div class="prog-vacio">Elegí o creá un ejercicio para ver y completar sus datos.</div>' : `
@@ -524,6 +535,34 @@ const CooperadoraModulo = {
         </table></div>
       `}
     `;
+  },
+
+  imprimirComision() {
+    const ej = this.ejercicios.find(e => e.id === this.ejercicioActual);
+    if (!ej) return;
+    const de = t => this.comision.filter(c => c.tipo === t && c.ejercicio_id === ej.id).sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    const tabla = (titulo, filas, venc) => `
+      <h3>${titulo}</h3>
+      <table><thead><tr><th>Cargo</th><th>Apellido y nombre</th><th>${venc ? 'CUIL' : 'DNI'}</th>${venc ? '<th>Vencimiento del mandato</th>' : ''}<th class="firma">Firma</th></tr></thead>
+      <tbody>${filas.map(c => `<tr><td>${this.esc(c.cargo)}</td><td>${this.esc(c.apellido_nombre || '')}</td><td>${this.esc(c.documento || '')}</td>${venc ? `<td>${this.esc(c.vencimiento || '')}</td>` : ''}<td></td></tr>`).join('') || `<tr><td colspan="${venc ? 5 : 4}">Sin cargar.</td></tr>`}</tbody></table>`;
+    const win = window.open('', '_blank');
+    if (!win) { Swal.fire('Ventana bloqueada', 'Permití las ventanas emergentes para imprimir.', 'info'); return; }
+    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Comisión — Cooperadora CFP ${this.esc(ej.escuela_nro || '401')}</title>
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif;margin:18mm 14mm;color:#111;font-size:11pt}
+        h1{font-size:15pt;margin:0 0 2px;text-align:center} h2{font-size:11pt;margin:0 0 14px;text-align:center;font-weight:normal}
+        h3{font-size:11pt;margin:16px 0 4px} table{width:100%;border-collapse:collapse}
+        th,td{border:1px solid #444;padding:6px 7px;text-align:left;font-size:10pt} th{background:#eee}
+        td{height:22px} .firma{width:28%}
+        @media print{body{margin:10mm}}
+      </style></head><body>
+      <h1>Asociación Cooperadora — ${this.esc(ej.escuela_nombre || 'CFP')} N.º ${this.esc(ej.escuela_nro || '401')}</h1>
+      <h2>${this.esc(ej.distrito || '')} · Ejercicio ${ej.ciclo_desde}/${ej.ciclo_hasta}${ej.cuit ? ' · CUIT ' + this.esc(ej.cuit) : ''}</h2>
+      ${tabla('Comisión Directiva', de('directiva'), true)}
+      ${tabla('Comisión Revisora de Cuentas', de('revisora'), false)}
+      ${tabla('Representante ante la Federación', de('federacion'), false)}
+      <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+    win.document.close();
   },
 
   async formEjercicio(id) {
@@ -636,40 +675,41 @@ const CooperadoraModulo = {
     const tabla = tipo => this.comision.filter(c => c.tipo === tipo && c.ejercicio_id === ejercicioId);
     const dir = tabla('directiva');
     const fila = (i, c) => `
-      <div style="display:grid; grid-template-columns:1.3fr 2fr 1.3fr 0.9fr; gap:0.3rem; margin-bottom:0.3rem;">
+      <div class="cf-fila">
         <input id="d-cargo${i}" class="swal2-input" style="margin:0;" placeholder="Cargo" value="${this.esc(c?.cargo || '')}">
         <input id="d-nombre${i}" class="swal2-input" style="margin:0;" placeholder="Apellido y nombre" value="${this.esc(c?.apellido_nombre || '')}">
         <input id="d-cuil${i}" class="swal2-input" style="margin:0;" placeholder="CUIL XX-XXXXXXXX-X" value="${this.esc(c?.documento || '')}">
         <input id="d-venc${i}" class="swal2-input" style="margin:0;" placeholder="Vencimiento" value="${this.esc(c?.vencimiento || '')}">
       </div>`;
     const { value } = await Swal.fire({
-      title: 'Comisión Directiva, Revisora y Representante (Cuadros 4, 5 y 6)', width: 760,
+      title: 'Comisión Directiva, Revisora y Representante (Cuadros 4, 5 y 6)', width: 820, customClass: { popup: 'coop-form' },
       html: `
         <strong>Comisión Directiva (hasta 14 cargos)</strong>
+        <div class="cf-fila cf-cab"><span>Cargo</span><span>Apellido y nombre</span><span>CUIL</span><span>Vencimiento</span></div>
         ${Array.from({ length: 14 }).map((_, i) => fila(i, dir[i])).join('')}
         <hr><strong>Comisión Revisora de Cuentas</strong>
-        <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:0.3rem; margin-bottom:0.3rem;"><b>Titular Docente</b>
+        <div class="cf-fila3"><b>Titular Docente</b>
           <input id="r-nombre0" class="swal2-input" style="margin:0;" placeholder="Apellido y nombre" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Titular Docente')?.apellido_nombre || '')}">
           <input id="r-dni0" class="swal2-input" style="margin:0;" placeholder="DNI" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Titular Docente')?.documento || '')}">
         </div>
-        <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:0.3rem; margin-bottom:0.3rem;"><b>Titular</b>
+        <div class="cf-fila3"><b>Titular</b>
           <input id="r-nombre1" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Titular')?.apellido_nombre || '')}">
           <input id="r-dni1" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Titular')?.documento || '')}">
         </div>
-        <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:0.3rem; margin-bottom:0.3rem;"><b>Suplente</b>
+        <div class="cf-fila3"><b>Suplente</b>
           <input id="r-nombre2" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Suplente')?.apellido_nombre || '')}">
           <input id="r-dni2" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Suplente')?.documento || '')}">
         </div>
-        <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:0.3rem; margin-bottom:0.3rem;"><b>Asesor/a</b>
+        <div class="cf-fila3"><b>Asesor/a</b>
           <input id="r-nombre3" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Asesor/a')?.apellido_nombre || '')}">
           <input id="r-dni3" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Asesor/a')?.documento || '')}">
         </div>
         <hr><strong>Representante ante la Federación</strong>
-        <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:0.3rem; margin-bottom:0.3rem;"><b>Titular</b>
+        <div class="cf-fila3"><b>Titular</b>
           <input id="f-nombre0" class="swal2-input" style="margin:0;" value="${this.esc(tabla('federacion').find(c => c.cargo === 'Titular')?.apellido_nombre || '')}">
           <input id="f-dni0" class="swal2-input" style="margin:0;" value="${this.esc(tabla('federacion').find(c => c.cargo === 'Titular')?.documento || '')}">
         </div>
-        <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:0.3rem; margin-bottom:0.3rem;"><b>Suplente</b>
+        <div class="cf-fila3"><b>Suplente</b>
           <input id="f-nombre1" class="swal2-input" style="margin:0;" value="${this.esc(tabla('federacion').find(c => c.cargo === 'Suplente')?.apellido_nombre || '')}">
           <input id="f-dni1" class="swal2-input" style="margin:0;" value="${this.esc(tabla('federacion').find(c => c.cargo === 'Suplente')?.documento || '')}">
         </div>

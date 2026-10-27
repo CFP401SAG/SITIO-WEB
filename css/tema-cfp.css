@@ -1329,3 +1329,20 @@ details.seg-grupo > .seg-item { margin: .5rem .7rem; }
 /* Fechas de inicio y fin bajo cada módulo en la sábana: solo visual (no se exporta ni se imprime) */
 .sabana-fechas::after { content: attr(data-fechas); display: block; margin-top: .2rem; font-size: .68rem; font-weight: 500; opacity: .75; white-space: nowrap; }
 @media print { .sabana-fechas::after { display: none !important; } }
+
+/* Formularios de Cooperadora (ingresos/egresos y comisión) */
+.coop-form .swal2-html-container{margin:1rem 1rem .4rem;text-align:left}
+.coop-form .cf-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem .8rem}
+.coop-form .cf-grid label,.coop-form .cf-fila3 b{font-size:.8rem;font-weight:600;color:#475569;display:flex;flex-direction:column;gap:.25rem;text-align:left}
+.coop-form .cf-full{grid-column:1/-1}
+.coop-form .swal2-input,.coop-form select.swal2-input{width:100%;max-width:100%;box-sizing:border-box;margin:0;height:2.5rem;font-size:.92rem;padding:0 .7rem}
+.coop-form .cf-fila{display:grid;grid-template-columns:1.2fr 2fr 1.3fr .9fr;gap:.3rem;margin-bottom:.3rem}
+.coop-form .cf-cab span{font-size:.72rem;font-weight:600;color:#64748b}
+.coop-form .cf-fila3{display:grid;grid-template-columns:1fr 2fr 1fr;gap:.3rem;margin-bottom:.3rem;align-items:center}
+@media (max-width:640px){
+  .coop-form .cf-grid{grid-template-columns:1fr}
+  .coop-form .cf-fila{grid-template-columns:1fr 1fr;padding-bottom:.5rem;border-bottom:1px dashed #cbd5e1;margin-bottom:.5rem}
+  .coop-form .cf-cab{display:none}
+  .coop-form .cf-fila3{grid-template-columns:1fr 1fr}
+  .coop-form .cf-fila3 b{grid-column:1/-1}
+}
