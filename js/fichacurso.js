@@ -103,8 +103,8 @@ const FichaCurso = {
         combinar(r + 2, 2, r + 2, 4); celda(r + 2, 2, 'DIRECCIÓN DE FORMACIÓN PROFESIONAL', { h: 'center', size: 9 });
         // E-G: logos
         combinar(r, 5, r + 2, 7);
-        if (idCfp !== null) ws.addImage(idCfp, { tl: { col: 4.15, row: r - 1 + 0.08 }, ext: { width: 46, height: 46 } });
-        if (idDg !== null) ws.addImage(idDg, { tl: { col: 5.25, row: r - 1 + 0.35 }, ext: { width: 120, height: 39 } });
+        if (idCfp !== null) ws.addImage(idCfp, { tl: { col: 4.15, row: r - 1 + 0.12 }, ext: { width: 40, height: 40 } });
+        if (idDg !== null) ws.addImage(idDg, { tl: { col: 5.25, row: r - 1 + 0.35 }, ext: { width: 104, height: 34 } });
         // H: Instructor
         celda(r, 8, 'Instructor:', { h: 'center', size: 10 });
         combinar(r + 1, 8, r + 2, 8); celda(r + 1, 8, docenteTxt, { h: 'center', wrap: true, bold: true, size: 9 });
