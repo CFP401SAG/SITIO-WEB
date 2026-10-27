@@ -38,8 +38,8 @@ const Preinscripcion = {
     this.raiz().innerHTML = `
       <div class="pi-card">
         <h2>Ficha de inscripción · ciclo lectivo ${this.esc(this.estado.ciclo)}</h2>
-        <p class="pi-nota">Completá tus datos, elegí el curso y enviá la preinscripción. Al terminar vas a poder <b>descargar la ficha en PDF</b> para imprimirla, firmarla y presentarla en el CFP junto con tu DNI. La preinscripción se confirma cuando el CFP revisa tus datos.</p>
-        ${this.estado.mensaje ? `<div class="pi-info">${this.esc(this.estado.mensaje)}</div>` : ''}
+        <p class="pi-nota">Completá tus datos, elegí el curso y enviá la preinscripción. Al terminar vas a poder <b>descargar la ficha en PDF</b> para imprimirla, firmarla y presentarla en el CFP junto con tu DNI y título, según corresponda al trayecto, cuando el CFP te lo comunique. La preinscripción se confirma cuando el CFP revisa tus datos.</p>
+        ${this.estado.mensaje ? `<div class="pi-info pi-aviso">${this.esc(this.estado.mensaje)}</div>` : ''}
       </div>
       <form id="pi-form" class="fi-form" novalidate autocomplete="off">
         <fieldset class="fi-seccion"><legend>Curso / trayecto</legend>
@@ -120,7 +120,7 @@ const Preinscripcion = {
     this.raiz().innerHTML = `<div class="pi-card pi-ok">
       <h2>¡Preinscripción enviada!</h2>
       <div class="pi-num">${this.esc(e.numero)}</div>
-      <p>Guardá este número. Ahora <b>descargá la ficha en PDF</b>, imprimila, firmala y presentala en el CFP junto con tu DNI para completar la inscripción.</p>
+      <p>Guardá este número. Ahora <b>descargá la ficha en PDF</b>, imprimila, firmala y presentala en el CFP junto con tu DNI y título, según corresponda al trayecto, cuando el CFP te lo comunique.</p>
       <div class="pi-acciones" style="justify-content:center">
         <button type="button" class="pi-btn" onclick="Preinscripcion.pdf()">Descargar ficha en PDF</button>
         <button type="button" class="pi-btn sec" onclick="Preinscripcion.imprimir()">Imprimir</button>
