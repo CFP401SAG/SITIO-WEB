@@ -5,7 +5,7 @@
 -- 1. Cada preinscripción nueva avisa a la función «subir-preinscripcion-drive», que arma el PDF
 --    y lo guarda en Drive. Si el aviso o la subida fallan, la preinscripción queda igual
 --    guardada en la base (Drive es una copia).
--- 2. Una misma persona (DNI) puede estar preinscripta, como máximo, en 3 trayectos por ciclo
+-- 2. Una misma persona (DNI) puede estar preinscripta, como máximo, en 5 trayectos por ciclo
 --    (se descuentan las rechazadas). Seguía valiendo: no repetir DNI en el mismo trayecto.
 -- =====================================================================================
 
@@ -38,7 +38,7 @@ create trigger preinscripciones_drive
   for each row when (old.numero is null and new.numero is not null)
   execute function public.preinscripciones_avisar_drive();
 
--- preinscribir: igual que en el paso 43, con el tope de 3 trayectos por DNI y ciclo
+-- preinscribir: igual que en el paso 43, con el tope de 5 trayectos por DNI y ciclo
 create or replace function public.preinscribir(p_trayecto bigint, p_datos jsonb, p_web text default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -83,8 +83,8 @@ begin
   end if;
 
   if (select count(*) from public.preinscripciones
-       where ciclo = cfg.ciclo and dni = dni_ and estado <> 'rechazada') >= 3 then
-    raise exception 'Este DNI ya tiene 3 preinscripciones en este ciclo. Consultá en el CFP si necesitás cambiar alguna';
+       where ciclo = cfg.ciclo and dni = dni_ and estado <> 'rechazada') >= 5 then
+    raise exception 'Este DNI ya tiene 5 preinscripciones en este ciclo. Consultá en el CFP si necesitás cambiar alguna';
   end if;
 
   insert into public.preinscripciones (ciclo, trayecto_id, dni, apellido, nombre, email, datos)
