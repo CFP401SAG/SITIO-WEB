@@ -9,7 +9,7 @@ const PreinscripcionesModulo = {
   admin: false,
   config: null,
   sel: null,
-  filtro: { estado: 'pendiente', trayecto: '', q: '' },
+  filtro: { estado: '', trayecto: '', q: '' },
 
   esc(v) { return FichaInscripcion.esc(v); },
   raiz() { return document.getElementById('preinscripciones-contenido'); },
@@ -38,8 +38,7 @@ const PreinscripcionesModulo = {
 
   filtradas() {
     const f = this.filtro, q = f.q.trim().toLowerCase();
-    return this.lista.filter(p => (!f.estado || p.estado === f.estado) && (!f.trayecto || String(p.trayecto_id) === f.trayecto) &&
-      (!q || `${p.apellido} ${p.nombre} ${p.dni} ${p.numero}`.toLowerCase().includes(q)));
+    return this.lista.filter(p => !q || `${p.apellido} ${p.nombre} ${p.dni} ${p.numero}`.toLowerCase().includes(q));
   },
 
   insignia(e) {
@@ -47,39 +46,80 @@ const PreinscripcionesModulo = {
     return `<span style="background:${m[1]};color:${m[0]};padding:.15rem .55rem;border-radius:99px;font-size:.75rem;font-weight:700">${m[2]}</span>`;
   },
 
+  /* Vista 1: una tarjeta por trayecto. Vista 2: las preinscripciones de ese trayecto.
+     Si se escribe en el buscador, se muestran los resultados de todos los trayectos. */
   dibujar() {
-    const trs = [...new Map(this.lista.filter(p => p.trayecto).map(p => [p.trayecto_id, p.trayecto.nombre])).entries()];
-    const cuenta = e => this.lista.filter(p => p.estado === e).length;
-    const filas = this.filtradas();
+    const f = this.filtro, q = f.q.trim();
+    const enTrayecto = !!f.trayecto && !q;
+    let cuerpo;
+    if (q) cuerpo = this.htmlTabla(this.filtradas(), true, `Resultados de la búsqueda (${this.filtradas().length})`);
+    else if (enTrayecto) cuerpo = this.htmlTrayecto();
+    else cuerpo = this.htmlTarjetas();
     this.raiz().innerHTML = `
-      ${this.admin ? this.htmlConfig() : ''}
-      <div class="card" style="padding:1rem;margin-bottom:1rem">
-        <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center">
-          <select class="form-control" style="max-width:190px" onchange="PreinscripcionesModulo.filtro.estado=this.value;PreinscripcionesModulo.dibujar()">
-            <option value="">Todos los estados</option>
-            ${['pendiente', 'confirmada', 'rechazada'].map(e => `<option value="${e}" ${this.filtro.estado === e ? 'selected' : ''}>${e[0].toUpperCase() + e.slice(1)}s (${cuenta(e)})</option>`).join('')}
-          </select>
-          <select class="form-control" style="max-width:260px" onchange="PreinscripcionesModulo.filtro.trayecto=this.value;PreinscripcionesModulo.dibujar()">
-            <option value="">Todos los trayectos</option>
-            ${trs.map(([id, n]) => `<option value="${id}" ${this.filtro.trayecto === String(id) ? 'selected' : ''}>${this.esc(n)}</option>`).join('')}
-          </select>
-          <input class="form-control" style="max-width:240px" placeholder="Buscar nombre, DNI o N.º" value="${this.esc(this.filtro.q)}" onchange="PreinscripcionesModulo.filtro.q=this.value;PreinscripcionesModulo.dibujar()">
-          <button class="btn-primary" style="margin-left:auto" onclick="PreinscripcionesModulo.pdfBlanco()">📄 Ficha en blanco (PDF)</button>
-        </div>
-        <div style="overflow-x:auto;margin-top:.8rem">
-          <table class="data-table" style="width:100%">
-            <thead><tr><th>N.º</th><th>Apellido y nombre</th><th>DNI</th><th>Trayecto</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
-            <tbody>${filas.map(p => `<tr>
-              <td>${this.esc(p.numero)}</td><td>${this.esc(p.apellido)}, ${this.esc(p.nombre)}</td><td>${this.esc(p.dni)}</td>
-              <td>${this.esc(p.trayecto?.nombre || '—')}</td><td>${FichaInscripcion.fechaAR(p.created_at)}</td><td>${this.insignia(p.estado)}</td>
-              <td><button class="btn-secondary" onclick="PreinscripcionesModulo.abrir(${p.id})">${this.admin ? 'Ver / editar' : 'Ver'}</button></td></tr>`).join('') ||
-              '<tr><td colspan="7" style="text-align:center;padding:1.2rem">No hay preinscripciones con este filtro.</td></tr>'}</tbody>
-          </table>
-        </div>
+      ${this.admin && !enTrayecto && !q ? this.htmlConfig() : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:1rem">
+        <input class="form-control" style="max-width:300px" placeholder="Buscar por nombre, DNI o N.º en todos los trayectos" value="${this.esc(f.q)}" onchange="PreinscripcionesModulo.filtro.q=this.value;PreinscripcionesModulo.dibujar()">
+        ${q ? '<button class="btn-secondary" onclick="PreinscripcionesModulo.filtro.q=\'\';PreinscripcionesModulo.dibujar()">Limpiar búsqueda</button>' : ''}
+        <button class="btn-primary" style="margin-left:auto" onclick="PreinscripcionesModulo.pdfBlanco()">📄 Ficha en blanco (PDF)</button>
       </div>
+      ${cuerpo}
       <div id="preinsc-detalle"></div>`;
     const qr = document.getElementById('pc-qr');
     if (qr) qr.innerHTML = this.qrSvg(122) || '<span style="font-size:.7rem">QR no disponible sin conexión</span>';
+  },
+
+  /* Trayectos que tienen preinscripciones, con sus totales por estado */
+  htmlTarjetas() {
+    const mapa = new Map();
+    this.lista.forEach(p => {
+      const id = p.trayecto_id || 0;
+      if (!mapa.has(id)) mapa.set(id, { id, nombre: p.trayecto?.nombre || 'Sin trayecto', ciclo: p.ciclo, pendiente: 0, confirmada: 0, rechazada: 0 });
+      mapa.get(id)[p.estado]++;
+    });
+    const trs = [...mapa.values()].sort((a, b) => (b.ciclo - a.ciclo) || a.nombre.localeCompare(b.nombre, 'es'));
+    if (!trs.length) return '<div class="card" style="padding:1.2rem;text-align:center">Todavía no hay preinscripciones.</div>';
+    return `<h3 style="margin:.2rem 0 .8rem">Trayectos con preinscripciones</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.9rem">
+        ${trs.map(t => `<button type="button" class="card" style="text-align:left;cursor:pointer;padding:1rem;border:1px solid #d5dbe6" onclick="PreinscripcionesModulo.filtro.trayecto='${t.id}';PreinscripcionesModulo.filtro.estado='';PreinscripcionesModulo.dibujar()">
+          <div style="font-size:.74rem;opacity:.7">Ciclo ${this.esc(t.ciclo)}</div>
+          <div style="font-weight:700;margin:.15rem 0 .6rem">${this.esc(t.nombre)}</div>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            ${t.pendiente ? `<span style="background:#fef3c7;color:#b45309;padding:.12rem .5rem;border-radius:99px;font-size:.74rem;font-weight:700">${t.pendiente} pendiente${t.pendiente > 1 ? 's' : ''}</span>` : ''}
+            ${t.confirmada ? `<span style="background:#dcfce7;color:#166534;padding:.12rem .5rem;border-radius:99px;font-size:.74rem;font-weight:700">${t.confirmada} confirmada${t.confirmada > 1 ? 's' : ''}</span>` : ''}
+            ${t.rechazada ? `<span style="background:#fee2e2;color:#991b1b;padding:.12rem .5rem;border-radius:99px;font-size:.74rem;font-weight:700">${t.rechazada} rechazada${t.rechazada > 1 ? 's' : ''}</span>` : ''}
+          </div></button>`).join('')}
+      </div>`;
+  },
+
+  htmlTrayecto() {
+    const f = this.filtro;
+    const del = this.lista.filter(p => String(p.trayecto_id || 0) === f.trayecto);
+    const nombre = del[0]?.trayecto?.nombre || 'Sin trayecto';
+    const cuenta = e => del.filter(p => p.estado === e).length;
+    const filas = del.filter(p => !f.estado || p.estado === f.estado);
+    return `<div style="display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;margin-bottom:.8rem">
+        <button class="btn-secondary" onclick="PreinscripcionesModulo.filtro.trayecto='';PreinscripcionesModulo.filtro.estado='';PreinscripcionesModulo.dibujar()">← Todos los trayectos</button>
+        <h3 style="margin:0">${this.esc(nombre)}</h3>
+        <select class="form-control" style="max-width:210px;margin-left:auto" onchange="PreinscripcionesModulo.filtro.estado=this.value;PreinscripcionesModulo.dibujar()">
+          <option value="">Todas (${del.length})</option>
+          ${['pendiente', 'confirmada', 'rechazada'].map(e => `<option value="${e}" ${f.estado === e ? 'selected' : ''}>${e[0].toUpperCase() + e.slice(1)}s (${cuenta(e)})</option>`).join('')}
+        </select></div>
+      ${this.htmlTabla(filas, false)}`;
+  },
+
+  htmlTabla(filas, conTrayecto, titulo) {
+    return `<div class="card" style="padding:1rem">
+      ${titulo ? `<h3 style="margin:0 0 .6rem">${this.esc(titulo)}</h3>` : ''}
+      <div style="overflow-x:auto">
+        <table class="data-table" style="width:100%">
+          <thead><tr><th>N.º</th><th>Apellido y nombre</th><th>DNI</th>${conTrayecto ? '<th>Trayecto</th>' : ''}<th>Fecha</th><th>Estado</th><th></th></tr></thead>
+          <tbody>${filas.map(p => `<tr>
+            <td>${this.esc(p.numero)}</td><td>${this.esc(p.apellido)}, ${this.esc(p.nombre)}</td><td>${this.esc(p.dni)}</td>
+            ${conTrayecto ? `<td>${this.esc(p.trayecto?.nombre || '—')}</td>` : ''}<td>${FichaInscripcion.fechaAR(p.created_at)}</td><td>${this.insignia(p.estado)}</td>
+            <td><button class="btn-secondary" onclick="PreinscripcionesModulo.abrir(${p.id})">${this.admin ? 'Ver / editar' : 'Ver'}</button></td></tr>`).join('') ||
+            `<tr><td colspan="${conTrayecto ? 7 : 6}" style="text-align:center;padding:1.2rem">No hay preinscripciones con este filtro.</td></tr>`}</tbody>
+        </table>
+      </div></div>`;
   },
 
   htmlConfig() {
@@ -180,7 +220,7 @@ const PreinscripcionesModulo = {
       supabase.functions.invoke('subir-preinscripcion-drive', { body: { id: p.id, forzar: true } })
         .then(async () => {
           const { data } = await supabase.from('preinscripciones').select('drive_archivo_id, drive_subido_en, drive_error').eq('id', p.id).maybeSingle();
-          if (data) { Object.assign(p, data); if (this.sel === p.id) this.dibujar(); }
+          if (data) { Object.assign(p, data); if (this.sel === p.id) { this.dibujar(); this.abrir(p.id); } }
         }).catch(() => {});
     } catch (e) { /* sin Drive no se corta nada */ }
   },
@@ -226,7 +266,9 @@ const PreinscripcionesModulo = {
     if (!r.isConfirmed) return;
     const { error } = await supabase.from('preinscripciones').delete().eq('id', p.id);
     if (error) { Swal.fire('Error', error.message, 'error'); return; }
-    this.lista = this.lista.filter(x => x.id !== p.id); this.sel = null; this.dibujar();
+    this.lista = this.lista.filter(x => x.id !== p.id); this.sel = null;
+    if (!this.lista.some(x => String(x.trayecto_id || 0) === this.filtro.trayecto)) this.filtro.trayecto = '';
+    this.dibujar();
   },
 
   /* Confirmar: crea la cuenta del estudiante (usuario DNI), lo inscribe en el trayecto y vuelca
