@@ -111,7 +111,8 @@ const PreinscripcionesModulo = {
   async guardarConfig() {
     const reg = { id: 1, ciclo: Number(document.getElementById('pc-ciclo').value), abierta: document.getElementById('pc-abierta').value === '1', mensaje: document.getElementById('pc-mensaje').value.trim() || null, actualizado: new Date().toISOString() };
     if (!reg.ciclo || reg.ciclo < 2000) { Swal.fire('Revisá el ciclo', 'Indicá un año válido.', 'warning'); return; }
-    const { error } = await supabase.from('inscripcion_config').upsert(reg, { onConflict: 'id' });
+    const { id: _id, ...cambios } = reg;
+    const { error } = await supabase.from('inscripcion_config').update(cambios).eq('id', 1);
     if (error) { Swal.fire('No se pudo guardar', error.message, 'error'); return; }
     this.config = reg;
     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Configuración guardada', showConfirmButton: false, timer: 1800 });
