@@ -145,7 +145,9 @@ const PreinscripcionesModulo = {
       <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:.8rem">
         <h3 style="margin:0">${this.esc(p.numero)} · ${this.esc(p.apellido)}, ${this.esc(p.nombre)}</h3> ${this.insignia(p.estado)}
         <span style="font-size:.85rem">Trayecto: <b>${this.esc(p.trayecto?.nombre || '—')}</b></span>
+        ${this.estadoDrive(p)}
         <button class="btn-secondary" style="margin-left:auto" onclick="PreinscripcionesModulo.pdf()">📄 PDF</button>
+        ${this.admin && !p.drive_subido_en ? '<button class="btn-secondary" onclick="PreinscripcionesModulo.subirADrive(PreinscripcionesModulo.actual());Swal.fire({toast:true,position:\'top-end\',icon:\'info\',title:\'Enviando a Drive…\',showConfirmButton:false,timer:1800})">☁ Enviar a Drive</button>' : ''}
         <button class="btn-secondary" onclick="document.getElementById('preinsc-detalle').innerHTML=''">Cerrar</button>
       </div>
       ${ro ? '<p style="font-size:.82rem;background:#eaf3ff;padding:.5rem .7rem;border-radius:8px">Solo lectura: contiene datos personales y de salud, usalos únicamente para la tarea docente.</p>' : ''}
@@ -163,6 +165,23 @@ const PreinscripcionesModulo = {
     </div>`;
     FichaInscripcion.activar(document.getElementById('pi-detalle-form'));
     d.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+
+  estadoDrive(p) {
+    if (p.drive_subido_en) return '<span style="font-size:.78rem;color:#166534">☁ Copia en Drive</span>';
+    if (p.drive_error) return `<span style="font-size:.78rem;color:#b45309" title="${this.esc(p.drive_error)}">⚠ No se pudo copiar a Drive</span>`;
+    return '';
+  },
+
+  /* Actualiza la copia de Drive (silencioso: si falla, la preinscripción sigue guardada) */
+  subirADrive(p) {
+    try {
+      supabase.functions.invoke('subir-preinscripcion-drive', { body: { id: p.id, forzar: true } })
+        .then(async () => {
+          const { data } = await supabase.from('preinscripciones').select('drive_archivo_id, drive_subido_en, drive_error').eq('id', p.id).maybeSingle();
+          if (data) { Object.assign(p, data); if (this.sel === p.id) this.dibujar(); }
+        }).catch(() => {});
+    } catch (e) { /* sin Drive no se corta nada */ }
   },
 
   datosForm() {
@@ -184,7 +203,7 @@ const PreinscripcionesModulo = {
     const { error } = await supabase.from('preinscripciones').update(reg).eq('id', p.id);
     if (error) { Swal.fire('No se pudo guardar', /unique|duplicate/i.test(error.message) ? 'Ya hay otra preinscripción con ese DNI en este trayecto.' : error.message, 'error'); return false; }
     Object.assign(p, reg);
-    if (!silencioso) { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Cambios guardados', showConfirmButton: false, timer: 1800 }); this.dibujar(); this.abrir(p.id); }
+    if (!silencioso) { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Cambios guardados', showConfirmButton: false, timer: 1800 }); this.dibujar(); this.abrir(p.id); this.subirADrive(p); }
     return true;
   },
 
@@ -244,7 +263,7 @@ const PreinscripcionesModulo = {
       const { error: e3 } = await supabase.from('preinscripciones').update({ estado: 'confirmada', confirmada_por: u?.user?.id || null, confirmada_en: new Date().toISOString() }).eq('id', p.id);
       if (e3) throw e3;
       p.estado = 'confirmada';
-      this.dibujar(); this.abrir(p.id);
+      this.dibujar(); this.abrir(p.id); this.subirADrive(p);
       const nueva = data?.creados ? `<br>Cuenta nueva: usuario <b>${this.esc(p.dni)}</b>, clave inicial <b>CFP401_${this.esc(p.dni)}</b>.` : '<br>La persona ya tenía cuenta.';
       Swal.fire({ icon: avisos.length ? 'warning' : 'success', title: 'Inscripción confirmada', html: nueva + (avisos.length ? '<br><br>Atención, no se pudo cargar: ' + this.esc(avisos.join('; ')) : '') });
     } catch (err) {
