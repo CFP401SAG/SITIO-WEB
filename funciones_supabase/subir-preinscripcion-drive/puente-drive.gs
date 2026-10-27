@@ -3,7 +3,7 @@
  * Se crea con la cuenta DUEÑA del Drive (el Drive de Giles). No usa Google Cloud ni cuesta nada.
  * Ver LEEME.md para instalarlo.
  */
-var CARPETA_RAIZ_ID = 'PEGAR_AQUI_EL_ID_DE_LA_CARPETA_Preinscripciones';
+var CARPETA_RAIZ_ID = '1-nymFK5cE2L9x6Ss5TF-Ymut_9-fWYNx';
 
 function doPost(e) {
   try {
