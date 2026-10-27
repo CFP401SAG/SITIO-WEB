@@ -984,8 +984,8 @@ const ClasesModulo = {
         const dniSeguro = String(userKey).replace(/[^0-9A-Za-z_-]/g, '');
         const rolG = this.rolGestor || '';
         const esAdminG = Auth.esDireccion(rolG);
-        // Baja manual: la dirección en cualquier trayecto; docente y preceptor en trayectos sin módulos
-        const puedeBaja = esAdminG || (!tieneModulos && (rolG === 'docente' || rolG === 'preceptor'));
+        // Baja manual (CFP 401 Giles): dirección, secretaría y docentes (en sus trayectos, con o sin módulos); también preceptoría
+        const puedeBaja = esAdminG || rolG === 'docente' || rolG === 'preceptor';
         // Reincorporar: administración, regencia y preceptoría (en cualquier trayecto)
         const puedeReinc = esAdminG || rolG === 'preceptor';
         // Fecha de inscripción (cuenta para la planilla de matrícula) y equivalencias por módulos previos aprobados
