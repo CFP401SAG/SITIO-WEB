@@ -17,9 +17,6 @@ const FichaInscripcion = {
   secciones() {
     const SN = this.SI_NO;
     return [
-      { id: 'inscripcion', titulo: 'Inscripción', campos: [
-        { k: 'pertenece_a', l: 'Pertenece a', t: 'radio', op: [['clan', 'CLAN'], ['eps', 'EPS']], w: 1 }
-      ] },
       { id: 'inscripto', titulo: 'Datos del/de la inscripto/a', campos: [
         { k: 'tipo_doc', l: 'Tipo de documento', t: 'select', op: ['DNI', 'LC', 'LE', 'Pasaporte', 'Otro'], w: 0.25, req: true, def: 'DNI' },
         { k: 'dni', l: 'N.º de documento (sin puntos)', t: 'text', w: 0.25, req: true, max: 12 },
