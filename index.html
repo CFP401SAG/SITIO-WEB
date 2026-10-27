@@ -416,7 +416,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <div>
               <h3 style="margin: 0; color: var(--text-main);">📊 Panel General de Control</h3>
-              <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Estadísticas académicas y rendimiento del CFP</p>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Estadísticas académicas y rendimiento del CFP · <a href="#" onclick="UI.showTab('secretaria');return false;">Ver cifras por trayecto (sexo, edades, bajas, asistencia y planillas) →</a></p>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               <label for="filtro-ciclo-dashboard" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Ciclo Lectivo:</label>
@@ -430,7 +430,7 @@
 
           <!-- Grilla de Tarjetas KPI -->
           <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" style="cursor:pointer" title="Ver cifras por trayecto (sexo, edades, bajas, asistencia y planillas)" onclick="UI.showTab('secretaria')">
               <div class="stat-icon" style="background:#E6F3FC;color:#1D5FA8;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.500 2.700 3 6 3s6-1.500 6-3v-5"/></svg></div>
               <div class="stat-info">
                 <h4>Trayectos Activos</h4>
@@ -438,11 +438,12 @@
               </div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card" style="cursor:pointer" title="Ver cifras por trayecto (sexo, edades, bajas, asistencia y planillas)" onclick="UI.showTab('secretaria')">
               <div class="stat-icon" style="background:#EAE8FB;color:#5B4BC4;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-6 6.5-6s6.500 2.400 6.500 6"/><path d="M16 4.500a3.500 3.500 0 0 1 0 7M18 14c2.200.800 3.500 2.700 3.500 6"/></svg></div>
               <div class="stat-info">
                 <h4>Matrícula / Inscriptos</h4>
                 <p class="stat-value" id="stat-count-inscriptos">--</p>
+                <small id="stat-inscriptos-bajas" style="color:var(--text-muted);font-size:.72rem"></small>
               </div>
             </div>
 
@@ -932,7 +933,7 @@
   <script src="js/supabase-config.js?v=70008" defer></script>
   <script src="js/avisos.js?v=70008" defer></script>
   <script src="js/reglas.js?v=70022" defer></script>
-  <script src="js/ui.js?v=70064" defer></script>
+  <script src="js/ui.js?v=70067" defer></script>
   <script src="js/auth.js?v=70028" defer></script>
   <script src="js/trayectos.js?v=70050" defer></script>
   <script src="js/usuarios.js?v=70052" defer></script>
@@ -950,7 +951,7 @@
   <script src="js/notificaciones.js?v=70007" defer></script>
   <script src="js/actas.js?v=70054" defer></script>
   <script src="js/usobase.js?v=70020" defer></script>
-  <script src="js/secretaria.js?v=70053" defer></script>
+  <script src="js/secretaria.js?v=70067" defer></script>
   <script src="js/matricula_escolar.js?v=70055" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
   <script src="js/ficha_inscripcion.js?v=70064" defer></script>

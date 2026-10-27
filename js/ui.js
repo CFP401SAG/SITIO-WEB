@@ -439,6 +439,9 @@ const DashboardAdmin = {
       // 4. Inyectar números en las tarjetas KPI
       if (elTrayectos) elTrayectos.textContent = cantTrayectos;
       if (elInscriptos) elInscriptos.textContent = cantInscriptos;
+      const cantBajas = inscripciones.filter(i => String(i.estado || '').toUpperCase() === 'BAJA').length;
+      const elBajas = document.getElementById('stat-inscriptos-bajas');
+      if (elBajas) elBajas.textContent = cantBajas ? `incluye ${cantBajas} baja${cantBajas > 1 ? 's' : ''}` : '';
       if (elAprobados) elAprobados.textContent = cantAprobados;
       if (elCertificados) elCertificados.textContent = cantCertificados;
       if (elDesaprobados) elDesaprobados.textContent = cantDesaprobados;
