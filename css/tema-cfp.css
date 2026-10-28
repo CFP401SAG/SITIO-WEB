@@ -1356,3 +1356,27 @@ details.seg-grupo > .seg-item { margin: .5rem .7rem; }
   .coop-form .cf-fila6,.coop-form .cf-fila5{grid-template-columns:1fr 1fr;padding-bottom:.5rem;border-bottom:1px dashed #cbd5e1;margin-bottom:.5rem}
   .coop-form .cf-fila5 b{grid-column:1/-1}
 }
+
+/* Ayuda por rol */
+.ay-wrap{max-width:980px}
+.ay-h{margin:0 0 .2rem;font-size:1.45rem}
+.ay-sub{margin:0 0 1rem;color:#5b7479;font-size:.9rem}
+.ay-barra{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem}
+.ay-barra input{flex:1 1 220px;max-width:420px}
+.ay-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.8rem;margin-bottom:1.1rem}
+.ay-card{background:#fff;border:1px solid #dfe7e9;border-radius:14px;padding:.9rem 1rem;text-align:left;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:.15rem}
+.ay-card:hover{border-color:#0e6a7a;box-shadow:0 2px 10px rgba(14,106,122,.12)}
+.ay-card .ay-ic{font-size:1.4rem}.ay-card b{font-size:.95rem}.ay-card small{color:#5b7479;font-size:.78rem}
+.ay-acc{background:#fff;border:1px solid #dfe7e9;border-radius:12px;margin-bottom:.5rem;overflow:hidden}
+.ay-acc[open]{border-color:#0e6a7a}
+.ay-acc summary{padding:.75rem 1rem;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:.95rem}
+.ay-acc summary::-webkit-details-marker{display:none}
+.ay-acc summary::after{content:'▸';color:#0e6a7a;margin-left:.6rem}
+.ay-acc[open] summary::after{content:'▾'}
+.ay-acc[open] summary{color:#0e6a7a}
+.ay-cuerpo{padding:0 1rem 1rem;font-size:.9rem;line-height:1.55;color:#33545a}
+.ay-cuerpo ol,.ay-cuerpo ul{padding-left:1.2rem;margin:.3rem 0 .5rem}.ay-cuerpo li{margin-bottom:.25rem}
+.ay-tip{background:#eaf6f8;border-left:4px solid #0e6a7a;border-radius:8px;padding:.55rem .8rem;margin:.5rem 0;font-size:.85rem}
+.ay-tabla{border-collapse:collapse;width:100%;font-size:.86rem}
+.ay-tabla td{border:1px solid #dfe7e9;padding:.4rem .6rem;vertical-align:top}.ay-tabla td:first-child{width:34%;font-weight:600;background:#f3f8f9}
+.ay-pie{margin:1rem 0 0;font-size:.76rem;color:#7a8f93}

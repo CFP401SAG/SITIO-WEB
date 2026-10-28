@@ -132,6 +132,8 @@ const PreinscripcionesModulo = {
         <div style="flex:1;min-width:220px"><label style="font-size:.78rem;font-weight:600">Mensaje para quien se inscribe (opcional)</label><input id="pc-mensaje" class="form-control" maxlength="300" value="${this.esc(c.mensaje || '')}"></div>
         <button class="btn-primary" onclick="PreinscripcionesModulo.guardarConfig()">Guardar</button>
       </div>
+      ${'ayuda_contacto' in c ? `<div style="margin-top:.8rem"><label style="font-size:.78rem;font-weight:600">Contacto del CFP (se muestra en la pestaña Ayuda de estudiantes, docentes y Secretaría; una línea por dato)</label>
+        <textarea id="pc-contacto" class="form-control" rows="4" maxlength="600" placeholder="Teléfono: …&#10;WhatsApp: …&#10;Mail: …&#10;Dirección y horarios: …">${this.esc(c.ayuda_contacto || '')}</textarea></div>` : ''}
       <p style="font-size:.82rem;margin:.7rem 0 .3rem">En el desplegable aparecen solo los trayectos cuyo ciclo lectivo es el indicado. Link y QR para difundir:</p>
       <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center">
         <div><input class="form-control" readonly style="min-width:280px" value="${this.esc(this.urlPublica())}" onclick="this.select()">
@@ -151,6 +153,7 @@ const PreinscripcionesModulo = {
   async guardarConfig() {
     const reg = { id: 1, ciclo: Number(document.getElementById('pc-ciclo').value), abierta: document.getElementById('pc-abierta').value === '1', mensaje: document.getElementById('pc-mensaje').value.trim() || null, actualizado: new Date().toISOString() };
     if (!reg.ciclo || reg.ciclo < 2000) { Swal.fire('Revisá el ciclo', 'Indicá un año válido.', 'warning'); return; }
+    if (this.config && 'ayuda_contacto' in this.config) reg.ayuda_contacto = document.getElementById('pc-contacto').value.trim() || null;
     const { id: _id, ...cambios } = reg;
     const { error } = await supabase.from('inscripcion_config').update(cambios).eq('id', 1);
     if (error) { Swal.fire('No se pudo guardar', error.message, 'error'); return; }

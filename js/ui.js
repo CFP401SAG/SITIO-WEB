@@ -146,6 +146,10 @@ const UI = {
     if (btnCoop) btnCoop.style.setProperty('display', Auth.esAdmin(rolNorm) ? 'flex' : 'none', 'important');
     // CFP 401 Giles: Secretaría tiene permisos plenos, así que ve Trayectos igual que Dirección.
 
+    // Ayuda por rol: estudiantes, docentes y secretaría (la Dirección/administrador no la ve)
+    const btnAyuda = document.getElementById('btn-ayuda');
+    if (btnAyuda) btnAyuda.style.setProperty('display', ['estudiante', 'docente', 'secretaria', 'secretario'].includes(rolNorm) ? 'flex' : 'none', 'important');
+
     const btnProg = document.getElementById('btn-progreso');
     if (btnProg) btnProg.style.setProperty('display', rolNorm === 'estudiante' ? 'flex' : 'none', 'important');
     const btnSeg = document.getElementById('btn-seguimiento');
@@ -187,6 +191,7 @@ const UI = {
     // se la restringe al panel de cifras como en Luján; navega libre como el resto de dirección.
     if (tabId === 'secretaria' && !(Auth.esSecretaria(rolPerfil) || isAdmin || rolPerfil === 'preceptor')) tabId = 'trayectos';
     if (tabId === 'preinscripciones' && !(isAdmin || Auth.esSecretaria(rolPerfil) || rolPerfil === 'docente')) tabId = 'trayectos';
+    if (tabId === 'ayuda' && !['estudiante', 'docente', 'secretaria', 'secretario'].includes(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'estadisticas' && !isAdmin) tabId = 'trayectos';
     if (tabId === 'observaciones' && rolPerfil === 'estudiante') tabId = 'trayectos';
     if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor' || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
@@ -235,6 +240,7 @@ const UI = {
         'observaciones': 'Observaciones',
         'cooperadora': 'Cooperadora Escolar',
         'novedades': 'Novedades y calendario',
+        'ayuda': 'Ayuda',
         'trayectos': (isAdmin || rolActual === 'preceptor') ? 'Trayectos Formativos' : 'Mis Trayectos Formativos',
         'actas': 'Fichas de Curso / Actas de Examen',
         'nuevo-trayecto': 'Cargar Trayecto',
@@ -292,6 +298,10 @@ const UI = {
 
     if (tabId === 'secretaria' && window.SecretariaModulo) {
       window.SecretariaModulo.cargar();
+    }
+
+    if (tabId === 'ayuda' && window.AyudaModulo) {
+      window.AyudaModulo.cargar();
     }
 
     if (tabId === 'cooperadora' && window.CooperadoraModulo) {
