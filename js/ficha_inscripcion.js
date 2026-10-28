@@ -40,15 +40,18 @@ const FichaInscripcion = {
         { k: 'identidad_genero', l: 'Identidad de género', t: 'text', w: 0.25, max: 40 },
         { k: 'nacionalidad', l: 'Nacionalidad', t: 'select', op: this.PAISES, w: 0.25, req: true, def: 'Argentina' },
         { k: 'fecha_nac', l: 'Fecha de nacimiento', t: 'date', w: 0.25, req: true },
-        { k: 'lugar_nac', l: 'Lugar de nacimiento', t: 'text', w: 0.5, max: 120 },
-        { k: 'cuil', l: 'CUIL', t: 'text', w: 0.5, max: 15 },
+        { k: 'lugar_nac_tipo', l: 'Lugar de nacimiento', t: 'radio', op: [['ba', 'Provincia de Buenos Aires'], ['otra_provincia', 'Otra provincia'], ['otro_pais', 'Otro país']], w: 0.6 },
+        { k: 'lugar_nac', l: 'Ciudad / localidad de nacimiento', t: 'text', w: 0.4, max: 120 },
+        { k: 'cuil', l: 'CUIL (sin guiones; si no lo sabe, lo completa el CFP)', t: 'text', w: 0.5, max: 15 },
         { k: 'calle', l: 'Domicilio: calle', t: 'text', w: 0.4, req: true, max: 100 },
         { k: 'altura', l: 'Altura', t: 'text', w: 0.15, max: 10 },
+        { k: 'entre_calles', l: 'Entre calles', t: 'text', w: 0.4, max: 100 },
         { k: 'piso', l: 'Piso', t: 'text', w: 0.15, max: 6 },
         { k: 'torre', l: 'Torre', t: 'text', w: 0.15, max: 6 },
         { k: 'dpto', l: 'Dpto.', t: 'text', w: 0.15, max: 6 },
         { k: 'localidad', l: 'Localidad', t: 'lista', lista: 'localidades', w: 0.4, req: true, max: 80 },
         { k: 'distrito', l: 'Distrito', t: 'lista', lista: 'distritos', w: 0.35, max: 80 },
+        { k: 'provincia', l: 'Provincia', t: 'text', w: 0.3, max: 60, def: 'Buenos Aires' },
         { k: 'cp', l: 'Código postal', t: 'text', w: 0.25, max: 12 },
         { k: 'telefono', l: 'Celular / teléfono', t: 'tel', w: 0.4, req: true, max: 40 },
         { k: 'whatsapp', l: '¿Tiene WhatsApp?', t: 'radio', op: SN, w: 0.2 },
@@ -60,12 +63,14 @@ const FichaInscripcion = {
         { k: 'adultos', l: '¿Cuántos adultos?', t: 'number', w: 0.33 },
         { k: 'ninos', l: '¿Cuántas niñas/os?', t: 'number', w: 0.33 },
         { k: 'hijos_a_cargo', l: '¿Tiene hijos/as a cargo?', t: 'radio', op: SN, w: 0.34 },
+        { k: 'cant_hijos', l: '¿Cuántos hijos/as?', t: 'number', w: 0.33, si: { k: 'hijos_a_cargo', v: 'si' } },
         { k: 'otra_lengua', l: '¿Se habla otra lengua en el hogar?', t: 'radio', op: SN, w: 0.33 },
         { k: 'lengua_tipo', l: 'Tipo de lengua', t: 'radio', op: [['extranjera', 'Lengua extranjera'], ['indigena', 'Lengua indígena']], w: 0.33, si: { k: 'otra_lengua', v: 'si' } },
         { k: 'pueblos_originarios', l: '¿Se reconoce perteneciente o descendiente de Pueblos Originarios?', t: 'radio', op: SN, w: 1 }
       ] },
       { id: 'transporte', titulo: 'Transporte y redes', campos: [
-        { k: 'transporte', l: 'Transporte que usa', t: 'radio', op: [['a_pie', 'A pie / bicicleta'], ['colectivo', 'Colectivo'], ['tren', 'Tren'], ['particular', 'Vehículo particular'], ['taxi', 'Taxi / remis'], ['otro', 'Otro']], w: 1 },
+        { k: 'transporte', l: 'Transporte que usa (puede marcar más de uno)', t: 'checks', op: [['a_pie', 'A pie / bicicleta'], ['colectivo', 'Colectivo'], ['tren', 'Tren'], ['particular', 'Vehículo particular'], ['taxi', 'Taxi / remis'], ['otro', 'Otro']], w: 1 },
+        { k: 'transporte_otro', l: 'Si marcó "Otro", ¿cuál?', t: 'text', w: 0.5, max: 60 },
         { k: 'redes', l: 'Redes que usa', t: 'checks', op: [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'Tik-tok'], ['twitter', 'Twitter'], ['whatsapp', 'WhatsApp'], ['youtube', 'YouTube'], ['snapchat', 'Snapchat']], w: 1 }
       ] },
       { id: 'programas', titulo: 'Programas y prestaciones', campos: [
@@ -76,16 +81,19 @@ const FichaInscripcion = {
         { k: 'prestaciones', l: 'Tipo de prestación', t: 'checks', op: [['jubilacion', 'Jubilación'], ['pension_nc', 'Pensión no contributiva'], ['otra_estado', 'Otra prestación del Estado'], ['pension', 'Pensión'], ['programa_social', 'Programa social']], w: 1, si: { k: 'prestacion', v: 'si' } }
       ] },
       { id: 'educativa', titulo: 'Trayectoria educativa', campos: [
-        { k: 'nivel_max', l: 'Máximo nivel de estudios alcanzado', t: 'radio', op: [['egb', 'EGB'], ['polimodal', 'Polimodal'], ['secundario', 'Secundario'], ['terciario', 'Terciario'], ['universitario', 'Universitario']], w: 1, req: true },
+        { k: 'nivel_max', l: 'Máximo nivel de estudios alcanzado', t: 'radio', op: [['primario', 'Primario'], ['egb', 'EGB'], ['polimodal', 'Polimodal'], ['secundario', 'Secundario'], ['terciario', 'Terciario'], ['universitario', 'Universitario']], w: 1, req: true },
         { k: 'cursa_actualmente', l: '¿Cursa actualmente?', t: 'radio', op: SN, w: 0.34 },
         { k: 'estado_estudios', l: 'Estado de sus estudios', t: 'radio', op: [['completo', 'Completo'], ['incompleto', 'Incompleto']], w: 0.33, req: true },
+        { k: 'gestion', l: 'Gestión del último establecimiento', t: 'radio', op: [['publica', 'Pública'], ['privada', 'Privada']], w: 0.5 },
         { k: 'completar_secundario', l: 'Si tiene el secundario incompleto, ¿quisiera completarlo?', t: 'radio', op: SN, w: 0.33 }
       ] },
       { id: 'laboral', titulo: 'Trayectoria laboral y expectativas', campos: [
-        { k: 'trabaja', l: 'Actualmente, ¿está trabajando?', t: 'radio', op: SN, w: 1 },
+        { k: 'busca_trabajo', l: '¿Busca trabajo?', t: 'radio', op: SN, w: 0.34 },
+        { k: 'trabajo_alguna_vez', l: '¿Trabajó alguna vez?', t: 'radio', op: SN, w: 0.33 },
+        { k: 'trabaja', l: 'Actualmente, ¿está trabajando?', t: 'radio', op: SN, w: 0.33 },
         { k: 'ocupacion', l: 'Ocupación', t: 'text', w: 0.5, max: 100, si: { k: 'trabaja', v: 'si' } },
         { k: 'lugar_trabajo', l: 'Lugar de trabajo', t: 'text', w: 0.5, max: 100, si: { k: 'trabaja', v: 'si' } },
-        { k: 'contratacion', l: 'Tipo de contratación laboral', t: 'radio', op: [['dependencia', 'Relación de dependencia'], ['cuenta_propia', 'Trabajador por cuenta propia / independiente'], ['pasantia', 'Pasantía laboral'], ['autonomo', 'Profesional autónomo'], ['comerciante', 'Propietario de comercio / pyme']], w: 1, si: { k: 'trabaja', v: 'si' } },
+        { k: 'contratacion', l: 'Tipo de contratación laboral', t: 'radio', op: [['dependencia', 'Relación de dependencia'], ['cuenta_propia', 'Trabajador por cuenta propia / independiente'], ['pasantia', 'Pasantía laboral'], ['autonomo', 'Profesional autónomo'], ['comerciante', 'Propietario de comercio / pyme'], ['no_registrado', 'Trabajo no registrado'], ['monotributista', 'Monotributista']], w: 1, si: { k: 'trabaja', v: 'si' } },
         { k: 'trabajo_desde', l: 'Desde', t: 'date', w: 0.34, si: { k: 'trabaja', v: 'si' } },
         { k: 'trabajo_actual', l: '¿Es su trabajo actual?', t: 'radio', op: SN, w: 0.33, si: { k: 'trabaja', v: 'si' } },
         { k: 'trabajo_hasta', l: 'Hasta', t: 'date', w: 0.33, si: { k: 'trabaja', v: 'si' } },
@@ -157,7 +165,7 @@ const FichaInscripcion = {
       if (c.t === 'radio') {
         ctl = `<div class="fi-opciones" role="radiogroup">${c.op.map(o => `<label class="fi-op"><input type="radio" name="fi_${c.k}" value="${this.esc(this.opVal(o))}" ${String(v) === String(this.opVal(o)) ? 'checked' : ''} ${ro}> <span>${this.esc(this.opLab(o))}</span></label>`).join('')}</div>`;
       } else if (c.t === 'checks') {
-        const sel = Array.isArray(v) ? v : [];
+        const sel = Array.isArray(v) ? v : (v ? [v] : []);
         ctl = `<div class="fi-opciones">${c.op.map(o => `<label class="fi-op"><input type="checkbox" name="fi_${c.k}" value="${this.esc(this.opVal(o))}" ${sel.includes(this.opVal(o)) ? 'checked' : ''} ${ro}> <span>${this.esc(this.opLab(o))}</span></label>`).join('')}</div>`;
       } else if (c.t === 'select') {
         ctl = `<select name="fi_${c.k}" class="fi-input" ${ro} ${c.req ? 'aria-required="true"' : ''}><option value="">Elegí…</option>${c.op.map(o => `<option value="${this.esc(this.opVal(o))}" ${String(v) === String(this.opVal(o)) ? 'selected' : ''}>${this.esc(this.opLab(o))}</option>`).join('')}</select>`;
@@ -379,7 +387,7 @@ const FichaInscripcion = {
           const w = ANCHO * (c.w || 1);
           pag.drawText(L(c.l), { x, y: y - 8, size: 6.8, font: fB, color: GRIS, maxWidth: w - 8 });
           if (c.t === 'radio' || c.t === 'checks') {
-            const marc = c.t === 'radio' ? [datos[c.k]] : (Array.isArray(datos[c.k]) ? datos[c.k] : []);
+            const marc = c.t === 'radio' ? [datos[c.k]] : (Array.isArray(datos[c.k]) ? datos[c.k] : (datos[c.k] ? [datos[c.k]] : []));
             const yy0 = y;
             y -= 20;
             dibujarOpciones(x, w - 8, c.op, marc);

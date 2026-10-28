@@ -133,6 +133,7 @@ const SecretariaModulo = {
           <button type="button" class="btn btn-outline" onclick="PlanillaMatricula.descargar(SecretariaModulo.ciclo)">📑 Planilla de matrícula (POF/POFA)</button>
           ${window.Auth && Auth.esAdmin(Auth.usuarioActual && Auth.usuarioActual.rol) ? '<button type="button" class="btn btn-outline" onclick="UI.showTab(\'dashboard\')">📊 Rendimiento académico (Dashboard)</button>' : ''}
           <button type="button" class="btn btn-outline" onclick="MatriculaEscolar.abrir()">🏫 Matrícula escolar</button>
+          ${window.Auth && Auth.esAdmin(Auth.usuarioActual && Auth.usuarioActual.rol) ? '<button type="button" class="btn btn-outline" onclick="SisgeModulo.abrir()">📤 Exportar para SISGE</button>' : ''}
           <button type="button" class="btn btn-outline" onclick="SecretariaModulo.copiar()">📋 Copiar tabla</button>
           <button type="button" class="btn btn-gold" onclick="SecretariaModulo.excel()" ${this.filas.length ? '' : 'disabled'}>📊 Descargar Excel</button>
         </div>
