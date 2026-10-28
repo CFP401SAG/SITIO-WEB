@@ -141,9 +141,9 @@ const UI = {
     if (btnPre) btnPre.style.setProperty('display', (isAdmin || esSecretaria || rolNorm === 'docente') ? 'flex' : 'none', 'important');
     const btnSec = document.getElementById('btn-secretaria');
     if (btnSec) btnSec.style.setProperty('display', (esSecretaria || isAdmin || rolNorm === 'preceptor') ? 'flex' : 'none', 'important');
-    // Cooperadora: carga (director, regente, preceptoría) y visualización (+ secretaría). Nunca docentes ni estudiantes.
+    // Cooperadora (Giles): solo Dirección y Secretaría. Nunca docentes ni estudiantes.
     const btnCoop = document.getElementById('btn-cooperadora');
-    if (btnCoop) btnCoop.style.setProperty('display', (Auth.esPersonal(rolNorm) || esSecretaria) ? 'flex' : 'none', 'important');
+    if (btnCoop) btnCoop.style.setProperty('display', Auth.esAdmin(rolNorm) ? 'flex' : 'none', 'important');
     // CFP 401 Giles: Secretaría tiene permisos plenos, así que ve Trayectos igual que Dirección.
 
     const btnProg = document.getElementById('btn-progreso');
@@ -190,7 +190,7 @@ const UI = {
     if (tabId === 'estadisticas' && !isAdmin) tabId = 'trayectos';
     if (tabId === 'observaciones' && rolPerfil === 'estudiante') tabId = 'trayectos';
     if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor' || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
-    if (tabId === 'cooperadora' && !(Auth.esPersonal(rolPerfil) || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
+    if (tabId === 'cooperadora' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
     // Regencia: no entra a usuarios/roles ni a respaldos
     if ((tabId === 'usuarios' || tabId === 'backups') && !Auth.esAdmin(perfil.rol)) tabId = isAdmin ? 'dashboard' : 'trayectos';
 

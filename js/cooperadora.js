@@ -125,6 +125,16 @@ const PIA_PDF = {
   }
 };
 
+const NOMINA_PDF = {
+  archivo: 'assets/NOMINA_COMISION_DIRECTIVA.pdf',
+  // Encabezado: año, distrito, escuela y N.º, asociación cooperadora
+  cab: {"anio": "text_1zzii", "distrito": "text_2waid", "escuela": "text_3gqed", "cooperadora": "text_4ulwg"},
+  // Comisión directiva (13 filas): cargo, nombre, documento, domicilio, localidad, vencimiento
+  directiva: [["text_5gnqf", "text_6odby", "text_7llzz", "text_8nbmm", "text_9efsq", "text_10hvyf"], ["text_11gukb", "text_12nliv", "text_13akhj", "text_14djll", "text_15axie", "text_16lgxa"], ["text_17cebc", "text_18nejc", "text_19btlx", "text_20pwmq", "text_21pwnm", "text_22zumy"], ["text_23zykq", "text_24ogyd", "text_25oucb", "text_26rqws", "text_27yzhc", "text_28nufr"], ["text_29psbu", "text_30nxed", "text_31paum", "text_32suuq", "text_33tlbi", "text_34vrea"], ["text_35myfl", "text_36mjrw", "text_37ipdu", "text_38rhty", "text_39qchc", "text_40poyn"], ["text_41yphz", "text_42teqi", "text_43qwzs", "text_44wems", "text_45muob", "text_46spmw"], ["text_47sfez", "text_48ctlt", "text_49opwc", "text_50gzcx", "text_51kecs", "text_52hywj"], ["text_53cnj", "text_54bjjz", "text_55lwyr", "text_56omwm", "text_57ljqz", "text_58uuyd"], ["text_59naey", "text_60zmdh", "text_61pyap", "text_62pskf", "text_63yrjo", "text_64pqpe"], ["text_65bagf", "text_66hngt", "text_67hevm", "text_68fydv", "text_69jiuq", "text_70vxsw"], ["text_71snzl", "text_72kceb", "text_73e", "text_74zwjd", "text_75limj", "text_76cgtx"], ["text_77tmhn", "text_78jzat", "text_79aiay", "text_80pprz", "text_81awss", "text_82vftz"]],
+  // Revisora (4 filas: Doc., Tit., Sup., Asesor): nombre, documento, domicilio, localidad, vencimiento
+  revisora: [["text_83cab", "text_84cezg", "text_85kayc", "text_86twpd", "text_87rqvo"], ["text_88uesl", "text_89ujab", "text_90cfno", "text_91zpdu", "text_92irca"], ["text_93bevv", "text_94dvbv", "text_95nbih", "text_96svzl", "text_97dsdz"], ["text_98cxwg", "text_99sdun", "text_100oibp", "text_101uaxu", "text_102vpos"]]
+};
+
 const CooperadoraModulo = {
   tab: 'socios',
   puedeEditar: false,
@@ -155,8 +165,9 @@ const CooperadoraModulo = {
     if (!cont) return;
     const perfil = (window.Auth && Auth.usuarioActual) || await Auth.obtenerPerfilSesion();
     const rol = String(perfil?.rol || '').toLowerCase().trim();
-    this.puedeEditar = Auth.esPersonal(rol);
-    this.puedeVer = this.puedeEditar || Auth.esSecretaria(rol);
+    // Giles: solo Dirección y Secretaría (admin). Nunca docentes ni estudiantes.
+    this.puedeEditar = Auth.esAdmin(rol);
+    this.puedeVer = this.puedeEditar;
     if (!this.puedeVer) { cont.innerHTML = '<div class="prog-vacio">No tenés acceso a este panel.</div>'; return; }
 
     cont.innerHTML = '<p class="seg-cargando">Cargando cooperadora…</p>';
@@ -506,7 +517,7 @@ const CooperadoraModulo = {
         ${this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formEjercicio()">➕ Nuevo ejercicio</button>` : ''}
         ${this.ejercicioActual && this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formEjercicio(${this.ejercicioActual})">✏️ Editar datos (Cuadros 1, 3, 7)</button>` : ''}
         ${this.ejercicioActual && this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formComision(${this.ejercicioActual})">✏️ Comisión (Cuadros 4, 5, 6)</button>` : ''}
-        ${this.ejercicioActual ? `<button class="act-btn" onclick="CooperadoraModulo.imprimirComision()">🖨️ Imprimir comisión</button>` : ''}
+        ${this.ejercicioActual ? `<button class="act-btn" onclick="CooperadoraModulo.imprimirComision()">🖨️ Nómina de la comisión (PDF)</button>` : ''}
         ${this.ejercicioActual ? `<button class="act-btn" style="background:#0f766e;" onclick="CooperadoraModulo.generarPIA()">📄 Generar PIA en PDF</button>` : ''}
       </div>
       ${!this.ejercicioActual ? '<div class="prog-vacio">Elegí o creá un ejercicio para ver y completar sus datos.</div>' : `
@@ -522,8 +533,8 @@ const CooperadoraModulo = {
           <tr><td>Kiosco/librería</td><td>${ej.kiosco_posee ? 'Sí (' + this.esc(ej.kiosco_tipo || '') + ')' : 'No'}</td></tr>
         </tbody></table></div>
         <h4 style="margin:1rem 0 0.4rem;">Nómina de la Comisión Directiva</h4>
-        <div class="sec-tabla-wrap"><table class="sec-tabla"><thead><tr><th>Cargo</th><th>Apellido y nombre</th><th>CUIL</th><th>Vencimiento mandato</th></tr></thead>
-          <tbody>${dir.map(c => `<tr><td>${this.esc(c.cargo)}</td><td>${this.esc(c.apellido_nombre || '')}</td><td>${this.esc(c.documento || '')}</td><td>${this.esc(c.vencimiento || '')}</td></tr>`).join('') || '<tr><td colspan="4">Sin cargar.</td></tr>'}</tbody>
+        <div class="sec-tabla-wrap"><table class="sec-tabla"><thead><tr><th>Cargo</th><th>Apellido y nombre</th><th>Documento</th><th>Domicilio</th><th>Localidad</th><th>Vencimiento</th></tr></thead>
+          <tbody>${dir.map(c => `<tr><td>${this.esc(c.cargo)}</td><td>${this.esc(c.apellido_nombre || '')}</td><td>${this.esc(c.documento || '')}</td><td>${this.esc(c.domicilio || '')}</td><td>${this.esc(c.localidad || '')}</td><td>${this.esc(c.vencimiento || '')}</td></tr>`).join('') || '<tr><td colspan="6">Sin cargar.</td></tr>'}</tbody>
         </table></div>
         <h4 style="margin:1rem 0 0.4rem;">Comisión Revisora de Cuentas</h4>
         <div class="sec-tabla-wrap"><table class="sec-tabla"><thead><tr><th>Cargo</th><th>Apellido y nombre</th><th>DNI</th></tr></thead>
@@ -537,32 +548,48 @@ const CooperadoraModulo = {
     `;
   },
 
-  imprimirComision() {
+  /* Completa el formulario oficial "Nómina y firma de la actual Comisión Directiva" */
+  async imprimirComision() {
     const ej = this.ejercicios.find(e => e.id === this.ejercicioActual);
     if (!ej) return;
-    const de = t => this.comision.filter(c => c.tipo === t && c.ejercicio_id === ej.id).sort((a, b) => (a.orden || 0) - (b.orden || 0));
-    const tabla = (titulo, filas, venc) => `
-      <h3>${titulo}</h3>
-      <table><thead><tr><th>Cargo</th><th>Apellido y nombre</th><th>${venc ? 'CUIL' : 'DNI'}</th>${venc ? '<th>Vencimiento del mandato</th>' : ''}<th class="firma">Firma</th></tr></thead>
-      <tbody>${filas.map(c => `<tr><td>${this.esc(c.cargo)}</td><td>${this.esc(c.apellido_nombre || '')}</td><td>${this.esc(c.documento || '')}</td>${venc ? `<td>${this.esc(c.vencimiento || '')}</td>` : ''}<td></td></tr>`).join('') || `<tr><td colspan="${venc ? 5 : 4}">Sin cargar.</td></tr>`}</tbody></table>`;
-    const win = window.open('', '_blank');
-    if (!win) { Swal.fire('Ventana bloqueada', 'Permití las ventanas emergentes para imprimir.', 'info'); return; }
-    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Comisión — Cooperadora CFP ${this.esc(ej.escuela_nro || '401')}</title>
-      <style>
-        body{font-family:Arial,Helvetica,sans-serif;margin:18mm 14mm;color:#111;font-size:11pt}
-        h1{font-size:15pt;margin:0 0 2px;text-align:center} h2{font-size:11pt;margin:0 0 14px;text-align:center;font-weight:normal}
-        h3{font-size:11pt;margin:16px 0 4px} table{width:100%;border-collapse:collapse}
-        th,td{border:1px solid #444;padding:6px 7px;text-align:left;font-size:10pt} th{background:#eee}
-        td{height:22px} .firma{width:28%}
-        @media print{body{margin:10mm}}
-      </style></head><body>
-      <h1>Asociación Cooperadora — ${this.esc(ej.escuela_nombre || 'CFP')} N.º ${this.esc(ej.escuela_nro || '401')}</h1>
-      <h2>${this.esc(ej.distrito || '')} · Ejercicio ${ej.ciclo_desde}/${ej.ciclo_hasta}${ej.cuit ? ' · CUIT ' + this.esc(ej.cuit) : ''}</h2>
-      ${tabla('Comisión Directiva', de('directiva'), true)}
-      ${tabla('Comisión Revisora de Cuentas', de('revisora'), false)}
-      ${tabla('Representante ante la Federación', de('federacion'), false)}
-      <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
-    win.document.close();
+    try {
+      Swal.fire({ title: 'Generando nómina…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const bytes = await fetch(NOMINA_PDF.archivo).then(r => { if (!r.ok) throw new Error('No se encontró la plantilla de la nómina.'); return r.arrayBuffer(); });
+      const doc = await PDFLib.PDFDocument.load(bytes);
+      const form = doc.getForm();
+      const setTx = (name, val) => { try { form.getTextField(name).setText(val == null ? '' : String(val)); } catch (e) { /* campo inexistente */ } };
+      const de = t => this.comision.filter(c => c.tipo === t && c.ejercicio_id === ej.id).sort((a, b) => (a.orden || 0) - (b.orden || 0));
+      const escuela = `${ej.escuela_nombre || ''} N.º ${ej.escuela_nro || ''}`.trim();
+
+      setTx(NOMINA_PDF.cab.anio, ej.ciclo_desde === ej.ciclo_hasta ? ej.ciclo_desde : `${ej.ciclo_desde}/${ej.ciclo_hasta}`);
+      setTx(NOMINA_PDF.cab.distrito, ej.distrito);
+      setTx(NOMINA_PDF.cab.escuela, escuela);
+      setTx(NOMINA_PDF.cab.cooperadora, `Cooperadora ${escuela}`);
+
+      de('directiva').slice(0, NOMINA_PDF.directiva.length).forEach((c, i) => {
+        const f = NOMINA_PDF.directiva[i];
+        [c.cargo, c.apellido_nombre, c.documento, c.domicilio, c.localidad, c.vencimiento].forEach((v, k) => setTx(f[k], v));
+      });
+      const rev = de('revisora');
+      ['Titular Docente', 'Titular', 'Suplente', 'Asesor/a'].forEach((cargo, i) => {
+        const c = rev.find(x => x.cargo === cargo);
+        if (!c) return;
+        const f = NOMINA_PDF.revisora[i];
+        [c.apellido_nombre, c.documento, c.domicilio, c.localidad, c.vencimiento].forEach((v, k) => setTx(f[k], v));
+      });
+
+      try { form.flatten(); } catch (e) { /* se descarga igual */ }
+      const out = await doc.save();
+      const url = URL.createObjectURL(new Blob([out], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = `Nomina_Comision_Directiva_${ej.ciclo_desde}-${ej.ciclo_hasta}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      Swal.close();
+    } catch (err) {
+      console.error(err);
+      Swal.fire('No se pudo generar la nómina', err.message || '', 'error');
+    }
   },
 
   async formEjercicio(id) {
@@ -674,59 +701,61 @@ const CooperadoraModulo = {
   async formComision(ejercicioId) {
     const tabla = tipo => this.comision.filter(c => c.tipo === tipo && c.ejercicio_id === ejercicioId);
     const dir = tabla('directiva');
+    const val = v => this.esc(v || '');
     const fila = (i, c) => `
-      <div class="cf-fila">
-        <input id="d-cargo${i}" class="swal2-input" style="margin:0;" placeholder="Cargo" value="${this.esc(c?.cargo || '')}">
-        <input id="d-nombre${i}" class="swal2-input" style="margin:0;" placeholder="Apellido y nombre" value="${this.esc(c?.apellido_nombre || '')}">
-        <input id="d-cuil${i}" class="swal2-input" style="margin:0;" placeholder="CUIL XX-XXXXXXXX-X" value="${this.esc(c?.documento || '')}">
-        <input id="d-venc${i}" class="swal2-input" style="margin:0;" placeholder="Vencimiento" value="${this.esc(c?.vencimiento || '')}">
+      <div class="cf-fila6">
+        <input id="d-cargo${i}" class="swal2-input" placeholder="Cargo" value="${val(c?.cargo)}">
+        <input id="d-nombre${i}" class="swal2-input" placeholder="Apellido y nombre" value="${val(c?.apellido_nombre)}">
+        <input id="d-cuil${i}" class="swal2-input" placeholder="Documento (DNI/CUIL)" value="${val(c?.documento)}">
+        <input id="d-dom${i}" class="swal2-input" placeholder="Domicilio" value="${val(c?.domicilio)}">
+        <input id="d-loc${i}" class="swal2-input" placeholder="Localidad" value="${val(c?.localidad)}">
+        <input id="d-venc${i}" class="swal2-input" placeholder="Vencimiento" value="${val(c?.vencimiento)}">
       </div>`;
+    const filaRev = (i, cargo) => {
+      const c = tabla('revisora').find(x => x.cargo === cargo);
+      return `<div class="cf-fila5"><b>${cargo}</b>
+        <input id="r-nombre${i}" class="swal2-input" placeholder="Apellido y nombre" value="${val(c?.apellido_nombre)}">
+        <input id="r-dni${i}" class="swal2-input" placeholder="Documento" value="${val(c?.documento)}">
+        <input id="r-dom${i}" class="swal2-input" placeholder="Domicilio" value="${val(c?.domicilio)}">
+        <input id="r-loc${i}" class="swal2-input" placeholder="Localidad" value="${val(c?.localidad)}">
+        <input id="r-venc${i}" class="swal2-input" placeholder="Vencimiento" value="${val(c?.vencimiento)}">
+      </div>`;
+    };
+    const filaFed = (i, cargo) => {
+      const c = tabla('federacion').find(x => x.cargo === cargo);
+      return `<div class="cf-fila3"><b>${cargo}</b>
+        <input id="f-nombre${i}" class="swal2-input" placeholder="Apellido y nombre" value="${val(c?.apellido_nombre)}">
+        <input id="f-dni${i}" class="swal2-input" placeholder="DNI" value="${val(c?.documento)}">
+      </div>`;
+    };
     const { value } = await Swal.fire({
-      title: 'Comisión Directiva, Revisora y Representante (Cuadros 4, 5 y 6)', width: 820, customClass: { popup: 'coop-form' },
+      title: 'Nómina de la Comisión Directiva', width: 980, customClass: { popup: 'coop-form' },
       html: `
-        <strong>Comisión Directiva (hasta 14 cargos)</strong>
-        <div class="cf-fila cf-cab"><span>Cargo</span><span>Apellido y nombre</span><span>CUIL</span><span>Vencimiento</span></div>
-        ${Array.from({ length: 14 }).map((_, i) => fila(i, dir[i])).join('')}
+        <p class="plan-meta" style="margin-top:0">Se imprime en el formulario oficial "Nómina y firma de la actual Comisión Directiva" (hasta 13 cargos, más la Revisora de Cuentas).</p>
+        <strong>Comisión Directiva (hasta 13 cargos)</strong>
+        <div class="cf-fila6 cf-cab"><span>Cargo</span><span>Apellido y nombre</span><span>Documento</span><span>Domicilio</span><span>Localidad</span><span>Vencimiento</span></div>
+        ${Array.from({ length: 13 }).map((_, i) => fila(i, dir[i])).join('')}
         <hr><strong>Comisión Revisora de Cuentas</strong>
-        <div class="cf-fila3"><b>Titular Docente</b>
-          <input id="r-nombre0" class="swal2-input" style="margin:0;" placeholder="Apellido y nombre" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Titular Docente')?.apellido_nombre || '')}">
-          <input id="r-dni0" class="swal2-input" style="margin:0;" placeholder="DNI" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Titular Docente')?.documento || '')}">
-        </div>
-        <div class="cf-fila3"><b>Titular</b>
-          <input id="r-nombre1" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Titular')?.apellido_nombre || '')}">
-          <input id="r-dni1" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Titular')?.documento || '')}">
-        </div>
-        <div class="cf-fila3"><b>Suplente</b>
-          <input id="r-nombre2" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Suplente')?.apellido_nombre || '')}">
-          <input id="r-dni2" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Suplente')?.documento || '')}">
-        </div>
-        <div class="cf-fila3"><b>Asesor/a</b>
-          <input id="r-nombre3" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Asesor/a')?.apellido_nombre || '')}">
-          <input id="r-dni3" class="swal2-input" style="margin:0;" value="${this.esc(tabla('revisora').find(c => c.cargo === 'Asesor/a')?.documento || '')}">
-        </div>
+        <div class="cf-fila5 cf-cab"><span></span><span>Apellido y nombre</span><span>Documento</span><span>Domicilio</span><span>Localidad</span><span>Vencimiento</span></div>
+        ${['Titular Docente', 'Titular', 'Suplente', 'Asesor/a'].map((c, i) => filaRev(i, c)).join('')}
         <hr><strong>Representante ante la Federación</strong>
-        <div class="cf-fila3"><b>Titular</b>
-          <input id="f-nombre0" class="swal2-input" style="margin:0;" value="${this.esc(tabla('federacion').find(c => c.cargo === 'Titular')?.apellido_nombre || '')}">
-          <input id="f-dni0" class="swal2-input" style="margin:0;" value="${this.esc(tabla('federacion').find(c => c.cargo === 'Titular')?.documento || '')}">
-        </div>
-        <div class="cf-fila3"><b>Suplente</b>
-          <input id="f-nombre1" class="swal2-input" style="margin:0;" value="${this.esc(tabla('federacion').find(c => c.cargo === 'Suplente')?.apellido_nombre || '')}">
-          <input id="f-dni1" class="swal2-input" style="margin:0;" value="${this.esc(tabla('federacion').find(c => c.cargo === 'Suplente')?.documento || '')}">
-        </div>
+        ${filaFed(0, 'Titular')}
+        ${filaFed(1, 'Suplente')}
       `,
       focusConfirm: false, showCancelButton: true, confirmButtonText: 'Guardar',
       preConfirm: () => {
         const filas = [];
-        for (let i = 0; i < 14; i++) {
-          const cargo = document.getElementById(`d-cargo${i}`).value.trim();
-          const nombre = document.getElementById(`d-nombre${i}`).value.trim();
+        const g = id => (document.getElementById(id)?.value.trim() || null);
+        for (let i = 0; i < 13; i++) {
+          const cargo = g(`d-cargo${i}`);
+          const nombre = g(`d-nombre${i}`);
           if (!cargo && !nombre) continue;
-          filas.push({ tipo: 'directiva', cargo: cargo || `Vocal ${i + 1}`, apellido_nombre: nombre || null, documento: document.getElementById(`d-cuil${i}`).value.trim() || null, vencimiento: document.getElementById(`d-venc${i}`).value.trim() || null, orden: i });
+          filas.push({ tipo: 'directiva', cargo: cargo || `Vocal ${i + 1}`, apellido_nombre: nombre, documento: g(`d-cuil${i}`), domicilio: g(`d-dom${i}`), localidad: g(`d-loc${i}`), vencimiento: g(`d-venc${i}`), orden: i });
         }
         ['Titular Docente', 'Titular', 'Suplente', 'Asesor/a'].forEach((cargo, i) => {
           const nombre = document.getElementById(`r-nombre${i}`).value.trim();
           const dni = document.getElementById(`r-dni${i}`).value.trim();
-          if (nombre || dni) filas.push({ tipo: 'revisora', cargo, apellido_nombre: nombre || null, documento: dni || null, orden: i });
+          if (nombre || dni) filas.push({ tipo: 'revisora', cargo, apellido_nombre: nombre || null, documento: dni || null, domicilio: g(`r-dom${i}`), localidad: g(`r-loc${i}`), vencimiento: g(`r-venc${i}`), orden: i });
         });
         ['Titular', 'Suplente'].forEach((cargo, i) => {
           const nombre = document.getElementById(`f-nombre${i}`).value.trim();
