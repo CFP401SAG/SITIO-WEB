@@ -224,7 +224,7 @@ const UI = {
       targetSection.classList.add('active');
     }
 
-    const activeBtn = document.getElementById(`btn-${tabId}`);
+    const activeBtn = document.getElementById(`btn-${tabId === 'certificados' ? 'actas' : tabId}`);
     if (activeBtn) activeBtn.classList.add('active');
 
     const titleEl = document.getElementById('current-section-title');
@@ -242,9 +242,9 @@ const UI = {
         'novedades': 'Novedades y calendario',
         'ayuda': 'Ayuda',
         'trayectos': (isAdmin || rolActual === 'preceptor') ? 'Trayectos Formativos' : 'Mis Trayectos Formativos',
-        'actas': 'Fichas de Curso / Actas de Examen',
+        'actas': 'Actas y Certificados',
         'nuevo-trayecto': 'Cargar Trayecto',
-        'certificados': 'Emitir Certificados',
+        'certificados': 'Actas y Certificados',
         'usuarios': 'Usuarios y Roles',
         'backups': 'Base de Datos',
         'auditoria': 'Auditoría de cambios'
