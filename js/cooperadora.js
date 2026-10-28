@@ -199,7 +199,7 @@ const CooperadoraModulo = {
     if (!cont) return;
     const tabs = [
       ['socios', '👥 Socios'], ['movimientos', '💵 Ingresos y Egresos'],
-      ['balance', '📊 Balance'], ['ejercicio', '📋 Ejercicio / PIA'], ['constancias', '🧾 Constancias']
+      ['balance', '📊 Balance'], ['ejercicio', '📋 Ejercicio / PIA'], ['nomina', '🖨️ Nómina de autoridades'], ['constancias', '🧾 Constancias']
     ];
     cont.innerHTML = `
       <div class="plan-tabs">
@@ -212,6 +212,7 @@ const CooperadoraModulo = {
     else if (this.tab === 'movimientos') panel.innerHTML = this.vistaMovimientos();
     else if (this.tab === 'balance') panel.innerHTML = this.vistaBalance();
     else if (this.tab === 'ejercicio') panel.innerHTML = this.vistaEjercicio();
+    else if (this.tab === 'nomina') panel.innerHTML = this.vistaNomina();
     else if (this.tab === 'constancias') panel.innerHTML = this.vistaConstancias();
   },
 
@@ -516,8 +517,6 @@ const CooperadoraModulo = {
         </select>
         ${this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formEjercicio()">➕ Nuevo ejercicio</button>` : ''}
         ${this.ejercicioActual && this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formEjercicio(${this.ejercicioActual})">✏️ Editar datos (Cuadros 1, 3, 7)</button>` : ''}
-        ${this.ejercicioActual && this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formComision(${this.ejercicioActual})">✏️ Comisión (Cuadros 4, 5, 6)</button>` : ''}
-        ${this.ejercicioActual ? `<button class="act-btn" onclick="CooperadoraModulo.imprimirComision()">🖨️ Nómina de la comisión (PDF)</button>` : ''}
         ${this.ejercicioActual ? `<button class="act-btn" style="background:#0f766e;" onclick="CooperadoraModulo.generarPIA()">📄 Generar PIA en PDF</button>` : ''}
       </div>
       ${!this.ejercicioActual ? '<div class="prog-vacio">Elegí o creá un ejercicio para ver y completar sus datos.</div>' : `
@@ -532,6 +531,25 @@ const CooperadoraModulo = {
           <tr><td>Banco</td><td>${this.esc(ej.banco_nombre || '')} ${this.esc(ej.banco_sucursal || '')} — Cta. ${this.esc(ej.banco_cuenta || '')} — CBU ${this.esc(ej.banco_cbu || '')}</td></tr>
           <tr><td>Kiosco/librería</td><td>${ej.kiosco_posee ? 'Sí (' + this.esc(ej.kiosco_tipo || '') + ')' : 'No'}</td></tr>
         </tbody></table></div>
+      `}
+    `;
+  },
+
+  /* ====================== NÓMINA DE AUTORIDADES ====================== */
+  vistaNomina() {
+    const dir = this.comision.filter(c => c.tipo === 'directiva' && c.ejercicio_id === this.ejercicioActual).sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    const rev = this.comision.filter(c => c.tipo === 'revisora' && c.ejercicio_id === this.ejercicioActual);
+    const fed = this.comision.filter(c => c.tipo === 'federacion' && c.ejercicio_id === this.ejercicioActual);
+    return `
+      <div style="display:flex; gap:0.6rem; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap;">
+        <select class="form-control" style="max-width:16rem;" onchange="CooperadoraModulo.ejercicioActual=Number(this.value)||null; CooperadoraModulo.render();">
+          <option value="">(elegir ejercicio)</option>
+          ${this.ejercicios.map(e => `<option value="${e.id}" ${e.id === this.ejercicioActual ? 'selected' : ''}>Ejercicio ${e.ciclo_desde}/${e.ciclo_hasta}</option>`).join('')}
+        </select>
+        ${this.ejercicioActual && this.puedeEditar ? `<button class="act-btn" onclick="CooperadoraModulo.formComision(${this.ejercicioActual})">✏️ Cargar / editar nómina</button>` : ''}
+        ${this.ejercicioActual ? `<button class="act-btn" style="background:#0f766e;" onclick="CooperadoraModulo.imprimirComision()">🖨️ Imprimir nómina (PDF)</button>` : ''}
+      </div>
+      ${!this.ejercicioActual ? '<div class="prog-vacio">Elegí o creá un ejercicio (pestaña "Ejercicio / PIA") para cargar la nómina de autoridades.</div>' : `
         <h4 style="margin:1rem 0 0.4rem;">Nómina de la Comisión Directiva</h4>
         <div class="sec-tabla-wrap"><table class="sec-tabla"><thead><tr><th>Cargo</th><th>Apellido y nombre</th><th>Documento</th><th>Domicilio</th><th>Localidad</th><th>Vencimiento</th></tr></thead>
           <tbody>${dir.map(c => `<tr><td>${this.esc(c.cargo)}</td><td>${this.esc(c.apellido_nombre || '')}</td><td>${this.esc(c.documento || '')}</td><td>${this.esc(c.domicilio || '')}</td><td>${this.esc(c.localidad || '')}</td><td>${this.esc(c.vencimiento || '')}</td></tr>`).join('') || '<tr><td colspan="6">Sin cargar.</td></tr>'}</tbody>
