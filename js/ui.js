@@ -157,6 +157,8 @@ const UI = {
     if (btnSeg) btnSeg.style.setProperty('display', puedeSeguir ? 'flex' : 'none', 'important');
     if (puedeSeguir && window.SeguimientoModulo) setTimeout(() => SeguimientoModulo.contarPendientes(), 800);
 
+    if (window.AyudaModulo) setTimeout(() => AyudaModulo.iniciarSiPrimeraVez(), 1500);
+
     if (isAdmin) {
       this.showTab('dashboard');
     } else if (esSecretaria) {
@@ -224,6 +226,7 @@ const UI = {
       targetSection.classList.add('active');
     }
 
+    if (window.AyudaModulo) AyudaModulo.tabActual = tabId;
     const activeBtn = document.getElementById(`btn-${tabId === 'certificados' ? 'actas' : tabId}`);
     if (activeBtn) activeBtn.classList.add('active');
 

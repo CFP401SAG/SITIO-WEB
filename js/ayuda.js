@@ -10,13 +10,277 @@
    (Regla anotada también en CLAUDE.md.)
    ========================================================================== */
 
-const AYUDA_ACTUALIZADA = '28/10/2026';
+const AYUDA_ACTUALIZADA = '29/10/2026';
 
 const AyudaModulo = {
   contacto: null,    // texto editable desde Preinscripciones → "Contacto del CFP"
   rol: '',
 
   esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); },
+
+  /* ------------------------ BOTÓN «?» Y RECORRIDO GUIADO ------------------------
+     Se alimentan de PANTALLAS (texto corto por pantalla) y BOTON_TEMA (id del botón del
+     menú → pantalla). El recorrido solo señala los botones que ve esa persona.
+     La Dirección (admin) no usa ayuda: no ve el «?» ni el recorrido.               */
+  NOMBRE_CORTO: 'CFP N.º 401',
+  NOMBRE_PDF: 'CFP N.º 401 - San Andrés de Giles',
+  tabActual: 'trayectos',
+  ROLES: { estudiante: 'Estudiante', docente: 'Docente', secretaria: 'Secretaría' },
+
+  PANTALLAS: {
+    progreso: {
+      t: 'Mi progreso', corto: 'Tus notas, asistencia y módulos aprobados.',
+      que: 'Muestra cómo venís en cada trayecto: módulos, notas y asistencia.',
+      pasos: ['Cada módulo muestra su estado: cursando, aprobado o bloqueado.', 'Se aprueba con 70 puntos o más.', 'La nota combina el promedio de tus actividades y tu asistencia.', 'Un módulo se habilita al aprobar el anterior.'],
+      ojo: ['Si una actividad no se entrega a tiempo, cuenta con la nota mínima.']
+    },
+    trayectos: {
+      t: 'Trayectos formativos', corto: 'Tus cursos: clases, actividades y asistencia.',
+      que: 'Lista de cursos. Cada uno se abre para ver sus clases y actividades.',
+      pasos: ['Entrá al trayecto con el botón «Ver Clases y Actividades».', 'Ahí están las clases, el material y las actividades por módulo.', 'Entregá cada actividad dentro del plazo de la consigna.'],
+      ojo: ['Si un módulo aparece bloqueado, hay que aprobar primero el anterior.'],
+      porRol: {
+        docente: {
+          corto: 'Tus cursos: clases, asistencia, notas y planificación.',
+          que: 'Tus trayectos asignados (o suplencias).',
+          pasos: ['Abrí un trayecto con «Ver Clases y Actividades».', 'Cargás clases, material y actividades, tomás asistencia, calificás y completás el libro de temas y la planificación.', 'Podés dar de baja a estudiantes de tus cursos; reincorporar lo hacen Dirección o Secretaría.'],
+          ojo: []
+        },
+        secretaria: {
+          corto: 'Todos los cursos del CFP, con edición.',
+          que: 'Todos los trayectos del CFP, con edición de sus datos.',
+          pasos: ['«✏️ Editar» cambia horarios, docente, sede y fechas; ahí también se agregan suplentes.', '«Ver Clases y Actividades» muestra clases, asistencia, notas, libro de temas y planificación.', 'Desde el trayecto se registran bajas y reincorporaciones y se baja la ficha de curso.'],
+          ojo: []
+        }
+      }
+    },
+    seguimiento: {
+      t: 'Seguimiento', corto: 'Entregas por corregir y estudiantes en riesgo.',
+      que: 'Panel para corregir entregas y detectar a tiempo a quien se está alejando.',
+      pasos: ['«Entregas por corregir» lista lo pendiente: abrís la entrega, ponés nota (0 a 100) y una devolución.', '«Alumnos en riesgo» muestra a quienes tienen asistencia o promedio menor a 70, o ninguna entrega.', 'Desde acá se registran las bajas automáticas.'],
+      ojo: ['Las reincorporaciones las hace Dirección o Secretaría.']
+    },
+    secretaria: {
+      t: 'Cifras por trayecto', corto: 'Totales por trayecto, matrícula, POF/POFA y SISGE.',
+      que: 'Resumen de inscriptos, bajas y egresados por trayecto, para planillas y relevamientos.',
+      pasos: ['Elegí el ciclo lectivo y revisá los totales.', '«📑 Planilla de matrícula (POF/POFA)» y «🏫 Matrícula escolar» arman los documentos oficiales.', '«📤 Exportar para SISGE» descarga el Excel de estudiantes del ciclo.', '«📊 Descargar Excel» y «📋 Copiar tabla» sacan los totales.']
+    },
+    preinscripciones: {
+      t: 'Preinscripciones', corto: 'Solicitudes de inscripción online.',
+      que: 'Bandeja de las preinscripciones que llegan por el formulario público.',
+      pasos: ['Cada preinscripción trae la ficha completa; «Ver / editar» permite corregirla.', '«Confirmar» crea la cuenta (si no tenía) y la inscribe en el trayecto; también se puede rechazar.', 'Arriba se abre o cierra la inscripción del ciclo y se copia el link o descarga el QR.'],
+      ojo: ['Cada ficha se guarda sola como PDF en el Drive del CFP.'],
+      porRol: { docente: { que: 'Podés consultar las preinscripciones de tus trayectos (solo lectura).', pasos: ['Revisá quiénes se anotaron en tus cursos.', 'Confirmar o rechazar lo hacen Secretaría o Dirección.'], ojo: [] } }
+    },
+    cuentas: {
+      t: 'Cuentas y claves', corto: 'Restablecer claves y aprobar registros.',
+      que: 'Ayuda a estudiantes y docentes que no pueden ingresar.',
+      pasos: ['Buscá a la persona por nombre o DNI.', '«Restablecer clave» vuelve a la clave inicial y cierra sus sesiones; avisale que la cambie.', '«Aprobar» habilita a quienes se registraron solos y quedaron pendientes.']
+    },
+    observaciones: {
+      t: 'Observaciones', corto: 'Registro institucional de observaciones.',
+      que: 'Registro compartido del personal sobre situaciones de estudiantes y del equipo.',
+      pasos: ['«Nueva observación» registra una situación; podés sumar seguimientos a una abierta.', 'Se puede adjuntar un acta o correo.', 'La persona observada la lee y queda registrada la lectura.'],
+      ojo: ['Es información interna: no la ven los estudiantes.']
+    },
+    cooperadora: {
+      t: 'Cooperadora', corto: 'Socios, caja, balance, PIA y nómina de autoridades.',
+      que: 'Gestión de la Cooperadora Escolar (solo Dirección y Secretaría).',
+      pasos: ['Socios, Ingresos y Egresos (con medio de pago y mes de la cuota), Balance, Ejercicio / PIA.', '«Nómina de autoridades» arma la nómina oficial con la comisión del ejercicio y la imprime en PDF.', 'Constancias: pago de cuota social de cada socio.'],
+      ojo: ['No se cargan movimientos con fecha fuera de un ejercicio creado.']
+    },
+    planilla: {
+      t: 'Planilla de matrícula', corto: 'Planilla mensual POF/POFA.',
+      que: 'Planilla de información básica de matrícula.',
+      pasos: ['Elegí el ciclo lectivo: se arma con los datos de los trayectos.', 'Revisá y descargá el Excel.']
+    },
+    constancias: {
+      t: 'Constancias', corto: 'Constancias de alumno regular y de examen.',
+      que: 'Emisión de constancias en PDF.',
+      pasos: ['Buscá al estudiante y elegí el tipo de constancia.', 'Se genera el PDF listo para imprimir y firmar.']
+    },
+    actas: {
+      t: 'Actas y Certificados', corto: 'Fichas de curso, actas de examen y certificados.',
+      que: 'Documentos de cierre de cada trayecto, en dos pestañas de la misma pantalla.',
+      pasos: ['«Fichas / Actas de Examen»: notas por módulo, ajustes, equivalencias y Excel con el formato del CFP.', '«Emitir certificados»: arma los PDF en la plantilla oficial según el catálogo de FP.']
+    },
+    'nuevo-trayecto': {
+      t: 'Cargar trayecto', corto: 'Dar de alta un trayecto formativo.',
+      que: 'Alta de un trayecto nuevo.',
+      pasos: ['Completá nombre, ciclo lectivo, resolución, docente, módulos, horario, sede y fechas.', 'Aparece en la preinscripción cuando su ciclo coincide con el ciclo abierto.']
+    },
+    novedades: {
+      t: 'Novedades y calendario', corto: 'Avisos y fechas importantes.',
+      que: 'Avisos que ven los usuarios y calendario.',
+      pasos: ['«Publicar» crea un aviso; se puede editar, ocultar o borrar.'],
+      porRol: {
+        docente: { que: 'Avisos internos para tus trayectos.', pasos: ['Elegí el trayecto, escribí título y texto y, si querés, fecha de evento o vencimiento.', 'Quienes cursan lo ven arriba de su panel.'] },
+        secretaria: { que: 'Avisos generales o de un trayecto.', pasos: ['Podés elegir si también se muestran en la web pública y ocultarlos después de una fecha.'] }
+      }
+    },
+    usuarios: {
+      t: 'Usuarios y roles', corto: 'Altas, roles e inhabilitaciones.',
+      que: 'Gestión de las cuentas de la plataforma.',
+      pasos: ['«+ Crear Nuevo Usuario» da de alta personal o estudiantes.', 'El desplegable cambia el rol; inhabilitar conserva el historial.'],
+      ojo: ['El rol Administrador solo lo asigna y modifica la Dirección.']
+    },
+    backups: { t: 'Base de datos', corto: 'Espacio usado y respaldos.', que: 'Indicador de espacio de la base y copias de respaldo.', pasos: ['Revisá el espacio usado respecto del límite del plan.'] },
+    estadisticas: { t: 'Estadísticas', corto: 'Certificados, bajas y estudiantes en varios trayectos.', que: 'Datos para decisiones de planificación.', pasos: ['Agrupá por especialidad o por sector.'] },
+    auditoria: { t: 'Auditoría', corto: 'Quién cambió qué y cuándo.', que: 'Registro de cambios hechos en la plataforma.', pasos: ['Filtrá por persona, rol o fechas.'] },
+    dashboard: { t: 'Dashboard', corto: 'Panorama general del CFP.', que: 'Resumen de trayectos, matrícula y aprobados.', pasos: ['Mirá los indicadores principales.'] }
+  },
+
+  // Botón del menú → pantalla
+  BOTON_TEMA: {
+    'btn-dashboard': 'dashboard', 'btn-progreso': 'progreso', 'btn-seguimiento': 'seguimiento',
+    'btn-secretaria': 'secretaria', 'btn-preinscripciones': 'preinscripciones', 'btn-cuentas': 'cuentas',
+    'btn-observaciones': 'observaciones', 'btn-cooperadora': 'cooperadora', 'btn-planilla': 'planilla',
+    'btn-constancias': 'constancias', 'btn-trayectos': 'trayectos', 'btn-actas': 'actas',
+    'btn-nuevo-trayecto': 'nuevo-trayecto', 'btn-novedades': 'novedades',
+    'btn-usuarios': 'usuarios', 'btn-backups': 'backups', 'btn-estadisticas': 'estadisticas', 'btn-auditoria': 'auditoria'
+  },
+
+  rolActual() {
+    const p = (window.Auth && Auth.usuarioActual) || {};
+    let r = String(p.rol || '').toLowerCase().trim();
+    if (r === 'secretario') r = 'secretaria';
+    return r;
+  },
+  // Estudiantes, docentes y Secretaría tienen ayuda; la Dirección no.
+  tieneAyuda() { return !!this.ROLES[this.rolActual()]; },
+
+  pantalla(id, rol) {
+    const t = this.PANTALLAS[id];
+    if (!t) return null;
+    const o = (t.porRol && t.porRol[rol]) || {};
+    return { id, t: t.t, corto: o.corto || t.corto, que: o.que || t.que, pasos: o.pasos || t.pasos || [], ojo: o.ojo !== undefined ? o.ojo : (t.ojo || []) };
+  },
+
+  htmlPantalla(t) {
+    return `<p class="ayuda-que">${this.esc(t.que)}</p>
+      ${t.pasos.length ? `<ol>${t.pasos.map(p => `<li>${this.esc(p)}</li>`).join('')}</ol>` : ''}
+      ${t.ojo && t.ojo.length ? `<div class="ayuda-ojo"><strong>Tené en cuenta</strong><ul>${t.ojo.map(o => `<li>${this.esc(o)}</li>`).join('')}</ul></div>` : ''}`;
+  },
+
+  /* «?» del encabezado: explica la pantalla actual */
+  deEstaPantalla() {
+    const rol = this.rolActual();
+    let t = this.pantalla(this.tabActual, rol);
+    if (!t && this.tabActual === 'ayuda') t = { t: 'Ayuda', que: 'Acá está la guía completa de tu rol, con el recorrido guiado y la opción de imprimirla.', pasos: [], ojo: [] };
+    if (!t) t = { t: 'Ayuda', que: 'Para esta pantalla no hay una explicación particular. En «Ayuda» (menú) tenés la guía completa de tu rol.', pasos: [], ojo: [] };
+    Swal.fire({
+      title: t.t, html: `<div class="ayuda-popup">${this.htmlPantalla(t)}</div>`, width: 620, showCancelButton: true,
+      confirmButtonText: 'Entendido', cancelButtonText: 'Ver guía completa', reverseButtons: true, focusConfirm: true
+    }).then(r => { if (r.dismiss === Swal.DismissReason.cancel && window.UI) UI.showTab('ayuda'); });
+  },
+
+  actualizarBotonPantalla() {
+    const b = document.getElementById('btn-ayuda-pantalla');
+    if (b) b.style.display = this.tieneAyuda() ? '' : 'none';
+  },
+
+  /* Recorrido guiado */
+  claveRecorrido() {
+    const p = (window.Auth && Auth.usuarioActual) || {};
+    return 'cfp401_recorrido_v1_' + String(p.id || p.dni || 'u');
+  },
+  yaVioRecorrido() { try { return localStorage.getItem(this.claveRecorrido()) === '1'; } catch (e) { return !!this._visto; } },
+  marcarVisto() { this._visto = true; try { localStorage.setItem(this.claveRecorrido(), '1'); } catch (e) { /* sin almacenamiento */ } },
+
+  iniciarSiPrimeraVez() {
+    this.actualizarBotonPantalla();
+    if (this._corriendo || !this.tieneAyuda() || this.yaVioRecorrido()) return;
+    const app = document.getElementById('app-screen');
+    if (!app || app.style.display === 'none') return;
+    this.iniciarRecorrido();
+  },
+
+  esCelular() { const b = document.getElementById('btn-menu-movil'); return !!(b && getComputedStyle(b).display !== 'none'); },
+  visible(el) { return !!(el && getComputedStyle(el).display !== 'none' && el.getClientRects().length); },
+
+  armarPasos() {
+    const rol = this.rolActual();
+    const pasos = [{
+      titulo: '¡Bienvenido/a a la plataforma del ' + this.NOMBRE_CORTO + '!',
+      texto: `Te mostramos rápido lo que podés hacer como <strong>${this.esc(this.ROLES[rol] || '')}</strong>. Podés salir cuando quieras y volver a verlo desde «Ayuda».`
+    }];
+    document.querySelectorAll('.sidebar-nav .nav-item-btn').forEach(b => {
+      if (!this.visible(b)) return;
+      if (b.id === 'btn-ayuda') { pasos.push({ el: b, lateral: true, titulo: 'Ayuda', texto: 'Acá está la guía completa de tu rol, este recorrido y la opción de imprimirla.' }); return; }
+      const t = this.pantalla(this.BOTON_TEMA[b.id], rol);
+      if (t) pasos.push({ el: b, lateral: true, titulo: t.t, texto: t.corto || t.que });
+    });
+    const clave = [...document.querySelectorAll('.sidebar button')].find(b => /Cambiar mi contraseña/.test(b.textContent));
+    if (this.visible(clave)) pasos.push({ el: clave, lateral: true, titulo: 'Tu contraseña', texto: 'Cambiala por una propia la primera vez que entres.' });
+    const inst = document.querySelector('.sidebar .app-boton-instalar');
+    if (this.visible(inst)) pasos.push({ el: inst, lateral: true, titulo: 'Instalar la app', texto: 'Dejá la plataforma como un ícono en tu celular o computadora.' });
+    const q = document.getElementById('btn-ayuda-pantalla');
+    if (this.visible(q)) pasos.push({ el: q, lateral: false, titulo: 'El botón «?»', texto: 'En cualquier pantalla, tocá este botón y te explica para qué sirve y cómo se usa.' });
+    pasos.push({ titulo: '¡Listo!', texto: 'Cualquier duda, entrá en «Ayuda». ¡Que te sea de mucha utilidad!' });
+    return pasos;
+  },
+
+  iniciarRecorrido() {
+    this.cerrarRecorrido(false);
+    this._pasos = this.armarPasos(); this._i = 0; this._corriendo = true; this._celular = this.esCelular();
+    const v = document.createElement('div');
+    v.id = 'ayuda-tour';
+    v.innerHTML = '<div class="ayuda-tour-foco"></div><div class="ayuda-tour-card" role="dialog" aria-live="polite"></div>';
+    document.body.appendChild(v);
+    this._teclas = e => { if (e.key === 'Escape') this.cerrarRecorrido(true); else if (e.key === 'ArrowRight') this.siguiente(); else if (e.key === 'ArrowLeft') this.anterior(); };
+    this._resize = () => this.mostrarPaso();
+    document.addEventListener('keydown', this._teclas);
+    window.addEventListener('resize', this._resize);
+    this.mostrarPaso();
+  },
+  siguiente() { if (this._i >= this._pasos.length - 1) return this.cerrarRecorrido(true); this._i++; this.mostrarPaso(); },
+  anterior() { if (this._i > 0) { this._i--; this.mostrarPaso(); } },
+  cerrarRecorrido(marcar) {
+    const v = document.getElementById('ayuda-tour');
+    if (v) v.remove();
+    if (this._teclas) document.removeEventListener('keydown', this._teclas);
+    if (this._resize) window.removeEventListener('resize', this._resize);
+    if (this._celular && window.UI && UI.toggleMenu) UI.toggleMenu(false);
+    this._corriendo = false;
+    if (marcar) this.marcarVisto();
+  },
+  mostrarPaso() {
+    const v = document.getElementById('ayuda-tour');
+    if (!v) return;
+    const p = this._pasos[this._i], total = this._pasos.length;
+    const foco = v.querySelector('.ayuda-tour-foco'), card = v.querySelector('.ayuda-tour-card');
+    if (this._celular && window.UI && UI.toggleMenu) UI.toggleMenu(!!(p.el && p.lateral));
+    card.innerHTML = `
+      <button type="button" class="ayuda-tour-x" aria-label="Cerrar recorrido">×</button>
+      <h4>${p.titulo}</h4><p>${p.texto}</p>
+      <div class="ayuda-tour-pie"><span>${this._i + 1} / ${total}</span><span>
+        ${this._i > 0 ? '<button type="button" class="ayuda-tour-ant">Anterior</button>' : ''}
+        <button type="button" class="ayuda-tour-sig">${this._i === total - 1 ? 'Finalizar' : 'Siguiente'}</button></span></div>`;
+    card.querySelector('.ayuda-tour-x').onclick = () => this.cerrarRecorrido(true);
+    card.querySelector('.ayuda-tour-sig').onclick = () => this.siguiente();
+    const ant = card.querySelector('.ayuda-tour-ant');
+    if (ant) ant.onclick = () => this.anterior();
+    const colocar = () => {
+      const m = 12, cw = Math.min(340, window.innerWidth - 2 * m);
+      card.style.width = cw + 'px';
+      if (!p.el) {
+        foco.style.cssText = 'left:50%;top:50%;width:0;height:0;';
+        card.style.left = Math.max(m, (window.innerWidth - cw) / 2) + 'px';
+        card.style.top = Math.max(m, window.innerHeight / 2 - card.offsetHeight / 2) + 'px';
+        return;
+      }
+      const r = p.el.getBoundingClientRect(), pad = 5;
+      foco.style.left = (r.left - pad) + 'px'; foco.style.top = (r.top - pad) + 'px';
+      foco.style.width = (r.width + 2 * pad) + 'px'; foco.style.height = (r.height + 2 * pad) + 'px';
+      const ch = card.offsetHeight;
+      let left = r.right + 16, top = r.top + r.height / 2 - ch / 2;
+      if (left + cw > window.innerWidth - m) { left = Math.min(Math.max(m, r.left), window.innerWidth - cw - m); top = r.bottom + 14; }
+      if (top + ch > window.innerHeight - m) top = window.innerHeight - ch - m;
+      card.style.left = left + 'px'; card.style.top = Math.max(m, top) + 'px';
+    };
+    if (p.el && p.el.scrollIntoView) p.el.scrollIntoView({ block: 'center', inline: 'nearest' });
+    colocar(); setTimeout(colocar, 260); setTimeout(colocar, 650);
+  },
 
   /* ------------------------------ CONTENIDO ------------------------------ */
   claveCambiar: `<ol><li>Tocá <b>Cambiar mi contraseña</b>, abajo a la izquierda del menú (en el celular, abrí el menú con ☰).</li><li>Escribí la contraseña nueva (mínimo 8 caracteres) y guardá.</li><li>La próxima vez ingresás con la nueva.</li></ol><div class="ay-tip">No compartas tu contraseña con nadie. Si la olvidás, pedí en el CFP que te la restablezcan.</div>`,
@@ -86,7 +350,8 @@ const AyudaModulo = {
       <p class="ay-sub">Guías cortas para ${this.esc(rotulo)}. Tocá un tema para verlo.</p>
       <div class="ay-barra">
         <input type="search" id="ay-buscar" class="form-control" placeholder="Buscar en la ayuda…" oninput="AyudaModulo.filtrar(this.value)">
-        <button type="button" class="btn btn-gold" onclick="AyudaModulo.imprimir()">📄 Imprimir / guardar PDF</button>
+        <button type="button" class="btn btn-gold" onclick="AyudaModulo.iniciarRecorrido()">▶ Ver recorrido guiado</button>
+        <button type="button" class="btn btn-outline" onclick="AyudaModulo.imprimir()">📄 Imprimir / guardar PDF</button>
       </div>
       <div class="ay-grid">${temas.slice(0, 3).map((t, i) => `<button type="button" class="ay-card" onclick="AyudaModulo.abrir(${i})"><span class="ay-ic">${t.ico}</span><b>${this.esc(t.t.split(':')[0])}</b><small>${this.esc(t.r)}</small></button>`).join('')}</div>
       <div id="ay-lista">${temas.map((t, i) => `<details class="ay-acc" id="ay-t${i}" ${i === 0 ? 'open' : ''}><summary><span>${t.ico} ${this.esc(t.t)}</span></summary><div class="ay-cuerpo">${t.h}</div></details>`).join('')}
@@ -130,7 +395,7 @@ const AyudaModulo = {
     const win = window.open('', '_blank');
     if (!win) { Swal.fire('Ventana bloqueada', 'Permití las ventanas emergentes para imprimir.', 'info'); return; }
     const rotulo = { estudiante: 'Estudiantes', docente: 'Docentes', secretaria: 'Secretaría' }[this.rol] || '';
-    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Ayuda ${this.esc(rotulo)} · CFP N.º 401</title>
+    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Ayuda ${this.esc(rotulo)} · ${this.esc(this.NOMBRE_CORTO)}</title>
       <style>
         body{font-family:Arial,Helvetica,sans-serif;margin:16mm 14mm;color:#111;font-size:11pt;line-height:1.45}
         h1{font-size:17pt;margin:0 0 2px}.sub{color:#555;margin:0 0 12px;font-size:10pt}
@@ -141,7 +406,7 @@ const AyudaModulo = {
         section{break-inside:avoid-page}
         .pie{margin-top:18px;font-size:9pt;color:#666}
       </style></head><body>
-      <h1>Ayuda para ${this.esc(rotulo)} · CFP N.º 401</h1><p class="sub">San Andrés de Giles · Guía actualizada el ${AYUDA_ACTUALIZADA}</p>
+      <h1>Ayuda para ${this.esc(rotulo)} · ${this.esc(this.NOMBRE_CORTO)}</h1><p class="sub">${this.esc(this.NOMBRE_PDF)} · Guía actualizada el ${AYUDA_ACTUALIZADA}</p>
       ${temas.map(t => `<section><h2>${t.ico} ${this.esc(t.t)}</h2>${t.h}</section>`).join('')}
       <section><h2>📞 Contacto del CFP</h2>${this.contacto ? this.contacto.split(/\n/).map(l => `<div>${this.esc(l)}</div>`).join('') : 'Consultá en el CFP, en el horario de atención.'}</section>
       <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
