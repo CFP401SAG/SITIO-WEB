@@ -227,7 +227,7 @@ const UI = {
     }
 
     if (window.AyudaModulo) AyudaModulo.tabActual = tabId;
-    const activeBtn = document.getElementById(`btn-${tabId === 'certificados' ? 'actas' : tabId}`);
+    const activeBtn = document.getElementById(`btn-${tabId === 'certificados' ? 'actas' : (tabId === 'auditoria' || tabId === 'estadisticas') ? 'backups' : tabId}`);
     if (activeBtn) activeBtn.classList.add('active');
 
     const titleEl = document.getElementById('current-section-title');
@@ -239,7 +239,7 @@ const UI = {
         'secretaria': 'Panel de cifras por trayecto',
         'preinscripciones': 'Preinscripciones',
         'cuentas': 'Cuentas y claves',
-        'estadisticas': 'Estadísticas de trayectos',
+        'estadisticas': 'Control y respaldo',
         'observaciones': 'Observaciones',
         'cooperadora': 'Cooperadora Escolar',
         'novedades': 'Novedades y calendario',
@@ -249,8 +249,8 @@ const UI = {
         'nuevo-trayecto': 'Cargar Trayecto',
         'certificados': 'Actas y Certificados',
         'usuarios': 'Usuarios y Roles',
-        'backups': 'Base de Datos',
-        'auditoria': 'Auditoría de cambios'
+        'backups': 'Control y respaldo',
+        'auditoria': 'Control y respaldo'
       };
       titleEl.innerText = titles[tabId] || 'Panel de Control';
     }
