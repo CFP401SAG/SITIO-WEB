@@ -1,57 +1,46 @@
-/* ==========================================================================
-   SERVICE WORKER · CFP 401
-   Permite instalar la plataforma como app y abrirla sin señal.
-   - Los datos (Supabase) NUNCA se guardan acá: siempre van a internet.
-   - La página, los estilos, los scripts y las imágenes se guardan para abrir
-     rápido y para que funcione sin conexión (con la última versión descargada).
-   Al cambiar este archivo, subir VERSION para que todos reciban la nueva.
-   ========================================================================== */
-const VERSION = 'cfp401-app-v59';
-const BASICOS = ['./', './index.html', './manifest.json', './img/app/icono-192.png', './img/app/icono-512.png', './logo.png'];
-const EXTERNOS_OK = ['cdn.jsdelivr.net', 'unpkg.com', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+// Service worker: permite abrir la app sin conexión.
+// Subí el número de versión cada vez que cambies index.html, así los celulares descargan la nueva copia.
+const CACHE = "gymapp-v4";
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(BASICOS)).catch(() => null));
+const ESTATICOS = ["./", "./index.html", "./manifest.json", "./icon.svg"];
+const CDN = [
+  "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+];
+
+self.addEventListener("install", e => {
+  e.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(ESTATICOS);
+    // Los CDN se piden en modo "no-cors": la respuesta es opaca, pero sirve para usar el script sin conexión.
+    await Promise.all(CDN.map(url =>
+      fetch(url, { mode: "no-cors" }).then(r => cache.put(url, r)).catch(() => {})
+    ));
+    self.skipWaiting();
+  })());
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((ks) => Promise.all(ks.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+self.addEventListener("activate", e => {
+  e.waitUntil((async () => {
+    const claves = await caches.keys();
+    await Promise.all(claves.filter(k => k !== CACHE).map(k => caches.delete(k)));
+    await self.clients.claim();
+  })());
 });
 
-// La página avisa "actualizar ahora" cuando el usuario toca el botón
-self.addEventListener('message', (e) => {
-  if (e.data === 'actualizar') self.skipWaiting();
-});
+self.addEventListener("fetch", e => {
+  const url = new URL(e.request.url);
+  if (e.request.method !== "GET") return;
+  // Las llamadas a Supabase no se cachean: siempre van a la red.
+  if (url.hostname.endsWith("supabase.co")) return;
 
-self.addEventListener('fetch', (e) => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  const mismoSitio = url.origin === self.location.origin;
-  if (!mismoSitio && !EXTERNOS_OK.includes(url.hostname)) return;   // Supabase y otros: directo a internet
-
-  // Páginas: primero internet (para tener siempre la última versión); sin señal, la guardada
-  if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then((r) => { const copia = r.clone(); caches.open(VERSION).then((c) => c.put('./index.html', copia)); return r; })
-        .catch(() => caches.match('./index.html').then((r) => r || caches.match('./')))
-    );
-    return;
-  }
-
-  // Estilos, scripts, imágenes y librerías: lo guardado al instante y se actualiza por detrás
-  e.respondWith(
-    caches.open(VERSION).then((c) => c.match(req).then((guardado) => {
-      const red = fetch(req).then((r) => {
-        if (r && (r.ok || r.type === 'opaque')) c.put(req, r.clone());
-        return r;
-      }).catch(() => guardado);
-      return guardado || red;
-    }))
-  );
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    const guardada = await cache.match(e.request, { ignoreSearch: true });
+    // Muestra la copia guardada y, en segundo plano, actualiza la cache si hay red.
+    const red = fetch(e.request)
+      .then(r => { if (r && (r.ok || r.type === "opaque")) cache.put(e.request, r.clone()); return r; })
+      .catch(() => null);
+    return guardada || (await red) || new Response("Sin conexión", { status: 503 });
+  })());
 });

@@ -1,983 +1,1088 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CFP N° 401 - Plataforma</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05060d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>GYM · Neon</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #05060d; --panel: #0b0e1e; --panel2: #10142b; --line: #1d2446;
+    --txt: #e9f2ff; --mut: #7f8bb0; --in: #060916;
+    --cyan: #00f0ff; --mag: #ff2bd6; --lime: #b6ff3b; --sun: #ffe600; --vio: #8b5cf6; --red: #ff3b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding-bottom: 96px;
+    font-family: "Trebuchet MS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--txt); background: var(--bg); overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Fondo: cuadrícula neón y halos de color que se mueven despacio */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background:
+      radial-gradient(700px 420px at 12% -8%, rgba(255,43,214,.28), transparent 60%),
+      radial-gradient(640px 460px at 100% 6%, rgba(0,240,255,.22), transparent 60%),
+      radial-gradient(520px 380px at 50% 110%, rgba(139,92,246,.22), transparent 60%);
+    animation: halo 14s ease-in-out infinite alternate;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
+    background-image:
+      linear-gradient(rgba(0,240,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,.05) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(to bottom, #000 30%, transparent 90%);
+  }
+  @keyframes halo { to { filter: hue-rotate(40deg) saturate(1.3); } }
+  .hidden { display: none !important; }
 
-  <!-- Soporte App Móvil PWA -->
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" sizes="32x32" href="img/app/favicon-32.png">
-  <link rel="apple-touch-icon" href="img/app/apple-touch-icon.png">
-  <meta name="theme-color" content="#071B38">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="CFP 401">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  /* Marca y barra superior */
+  .top {
+    position: sticky; top: 0; z-index: 12;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 18px; background: rgba(5,6,13,.72); backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(0,240,255,.25);
+    box-shadow: 0 6px 30px rgba(0,240,255,.08);
+  }
+  .marca { font-family: "Arial Black", Impact, sans-serif; font-size: 22px; letter-spacing: 3px; }
+  .marca .g {
+    background: linear-gradient(90deg, var(--cyan), var(--mag), var(--lime), var(--cyan));
+    background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: arcoiris 6s linear infinite; filter: drop-shadow(0 0 10px rgba(0,240,255,.55));
+  }
+  @keyframes arcoiris { to { background-position: 300% 0; } }
+  .marca .p { color: var(--sun); text-shadow: 0 0 10px rgba(255,230,0,.8); margin-left: 6px; }
 
-  <!-- Fuente Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  /* Estado de conexión */
+  .estado {
+    position: sticky; top: 56px; z-index: 11; padding: 8px 12px; text-align: center;
+    font-size: 13px; font-weight: 700; letter-spacing: .4px;
+    background: linear-gradient(90deg, rgba(255,230,0,.95), rgba(255,43,214,.9));
+    color: #130a1f; box-shadow: 0 0 18px rgba(255,230,0,.4);
+  }
 
-  <!-- 1. Variables globales -->
-  <link rel="stylesheet" href="css/variables.css">
+  main { padding: 18px; max-width: 1000px; margin: 0 auto; }
 
-  <!-- 2. Hojas de estilo modulares -->
-  <link rel="stylesheet" href="css/header.css">
-  <link rel="stylesheet" href="css/hero.css">
-  <link rel="stylesheet" href="css/courses.css">
-  <link rel="stylesheet" href="css/footer.css">
-  <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/sections.css">
-  <link rel="stylesheet" href="css/pdf-lab.css">
-  <link rel="stylesheet" href="css/auth.css">
-  
-  <!-- 3. CSS principal base -->
-  <link rel="stylesheet" href="css/styles.css">
+  /* Tarjetas */
+  .card {
+    position: relative; border-radius: 22px; padding: 20px; margin-bottom: 18px;
+    background: linear-gradient(165deg, rgba(16,20,43,.96), rgba(8,10,22,.96));
+    border: 1px solid rgba(0,240,255,.22);
+    box-shadow: 0 0 22px rgba(0,240,255,.10), inset 0 0 26px rgba(139,92,246,.07);
+    animation: subir .55s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .card::before {
+    content: ""; position: absolute; left: 18px; right: 18px; top: -1px; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--mag), var(--cyan), transparent);
+    box-shadow: 0 0 12px var(--cyan);
+  }
+  .card:nth-child(2) { animation-delay: .08s; }
+  .card:nth-child(3) { animation-delay: .16s; }
+  @keyframes subir { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
 
-  <!-- 4. CSS Panel de Administración -->
-  <link rel="stylesheet" href="css/admin-dashboard.css?v=60005">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/ficha-inscripcion.css?v=70064">
-  <link rel="stylesheet" href="css/ayuda.css?v=70076">
-  <link rel="stylesheet" href="css/tema-cfp.css?v=70074">
-  <style>
-    /* Los avisos de SweetAlert (progreso, resúmenes, errores) tienen que verse por encima de los paneles de la plataforma */
-    .swal2-container { z-index: 20000 !important; }
-  </style>
+  h2 {
+    font-size: 14px; margin: 0 0 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    text-transform: uppercase; letter-spacing: 2px; color: var(--cyan);
+    text-shadow: 0 0 10px rgba(0,240,255,.7);
+  }
+  h2 small { color: var(--mut); font-weight: 600; font-size: 11px; letter-spacing: 1px; text-shadow: none; }
+  .mut { color: var(--mut); font-size: 13px; }
+
+  /* Formularios */
+  input, select {
+    background: var(--in); color: var(--txt); border: 1px solid rgba(0,240,255,.22);
+    border-radius: 14px; padding: 13px 14px; font-size: 16px; outline: none; min-width: 0; width: 100%;
+    font-family: inherit; transition: border-color .2s, box-shadow .2s;
+  }
+  input::placeholder { color: #55608a; }
+  input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,240,255,.15), 0 0 18px rgba(0,240,255,.25); }
+  select option { background: #0b0e1e; }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .row > * { flex: 1 1 auto; }
+  .row > .fijo { flex: 0 0 auto; }
+  .filas { border-top: 1px solid var(--line); padding-top: 12px; }
+
+  /* Botones neón */
+  .btn {
+    position: relative; overflow: hidden;
+    background: linear-gradient(90deg, var(--mag), var(--vio), var(--cyan));
+    background-size: 200% 100%; color: #fff; border: 0; border-radius: 14px;
+    padding: 14px 20px; font-weight: 800; font-size: 14px; letter-spacing: 1.2px; text-transform: uppercase;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+    box-shadow: 0 0 16px rgba(255,43,214,.55), 0 0 36px rgba(0,240,255,.25);
+    text-shadow: 0 0 6px rgba(0,0,0,.4);
+    transition: transform .15s, box-shadow .25s, background-position .6s;
+  }
+  .btn:hover { background-position: 100% 0; box-shadow: 0 0 22px rgba(255,43,214,.8), 0 0 46px rgba(0,240,255,.4); }
+  .btn:active { transform: scale(.96); }
+  .btn.cy { background: linear-gradient(90deg, var(--cyan), var(--lime)); color: #02131a; text-shadow: none;
+    box-shadow: 0 0 16px rgba(0,240,255,.55), 0 0 34px rgba(182,255,59,.25); }
+  .btn.sec { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); box-shadow: 0 0 12px rgba(0,240,255,.25), inset 0 0 10px rgba(0,240,255,.08); text-shadow: 0 0 8px rgba(0,240,255,.7); }
+  .btn.sec:hover { background: rgba(0,240,255,.08); }
+  .btn.peligro { background: transparent; color: var(--red); border: 1px solid var(--red); box-shadow: 0 0 12px rgba(255,59,107,.3); text-shadow: 0 0 8px rgba(255,59,107,.7); }
+  .btn.peligro:hover { background: rgba(255,59,107,.1); }
+  .btn.mini { padding: 8px 12px; font-size: 12px; border-radius: 11px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip {
+    background: rgba(0,240,255,.06); border: 1px solid rgba(0,240,255,.4); color: var(--cyan);
+    border-radius: 999px; padding: 9px 15px; font-size: 13px; font-weight: 700; cursor: pointer;
+    font-family: inherit; text-shadow: 0 0 6px rgba(0,240,255,.5); transition: all .2s;
+  }
+  .chip:hover, .chip:active { background: rgba(0,240,255,.2); box-shadow: 0 0 14px rgba(0,240,255,.5); transform: translateY(-1px); }
+  .chip.salir { border-color: var(--mag); color: var(--mag); text-shadow: 0 0 6px rgba(255,43,214,.6); background: rgba(255,43,214,.06); }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .kpi {
+    position: relative; border-radius: 18px; padding: 18px; overflow: hidden;
+    background: linear-gradient(150deg, rgba(0,240,255,.12), rgba(255,43,214,.06) 60%, rgba(8,10,22,.6));
+    border: 1px solid rgba(0,240,255,.35);
+    box-shadow: 0 0 18px rgba(0,240,255,.15);
+    animation: subir .5s ease both;
+  }
+  .kpi::after {
+    content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.12), transparent);
+    animation: destello 4.5s ease-in-out infinite;
+  }
+  @keyframes destello { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+  .kpi.c2 { border-color: rgba(255,43,214,.45); box-shadow: 0 0 18px rgba(255,43,214,.18);
+    background: linear-gradient(150deg, rgba(255,43,214,.16), rgba(139,92,246,.08) 60%, rgba(8,10,22,.6)); }
+  .kpi.c3 { border-color: rgba(182,255,59,.45); box-shadow: 0 0 18px rgba(182,255,59,.16);
+    background: linear-gradient(150deg, rgba(182,255,59,.14), rgba(0,240,255,.05) 60%, rgba(8,10,22,.6)); }
+  .kpi.c4 { border-color: rgba(255,230,0,.45); box-shadow: 0 0 18px rgba(255,230,0,.16);
+    background: linear-gradient(150deg, rgba(255,230,0,.14), rgba(255,43,214,.06) 60%, rgba(8,10,22,.6)); }
+  .kpi small { color: var(--mut); font-size: 11px; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 800; }
+  .kpi b {
+    display: block; font-size: 32px; margin-top: 8px; letter-spacing: -.5px; color: var(--cyan);
+    font-family: "Arial Black", Impact, sans-serif; text-shadow: 0 0 14px currentColor;
+  }
+  .kpi.c2 b { color: var(--mag); }
+  .kpi.c3 b { color: var(--lime); }
+  .kpi.c4 b { color: var(--sun); }
+  .kpi b span { font-size: 13px; color: var(--mut); font-family: inherit; font-weight: 700; margin-left: 6px; text-shadow: none; }
+  .kpi .mut { margin-top: 6px; }
+  .pos { color: var(--lime) !important; } .neg { color: var(--red) !important; }
+
+  /* Barras de progreso */
+  .barra { height: 14px; background: rgba(0,0,0,.45); border-radius: 99px; overflow: hidden; margin: 8px 0 6px; border: 1px solid rgba(0,240,255,.18); }
+  .barra > div {
+    height: 100%; border-radius: 99px; position: relative; transition: width 1s cubic-bezier(.2,.8,.2,1);
+    background: linear-gradient(90deg, var(--mag), var(--vio), var(--cyan), var(--lime));
+    background-size: 200% 100%; animation: fluir 3s linear infinite;
+    box-shadow: 0 0 14px rgba(0,240,255,.6);
+  }
+  @keyframes fluir { to { background-position: -200% 0; } }
+
+  .chartbox { position: relative; height: 270px; margin: 8px 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { color: var(--mut); font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; text-align: left; padding: 8px 4px; }
+  td { padding: 11px 4px; border-top: 1px solid var(--line); }
+  td b { color: var(--sun); text-shadow: 0 0 8px rgba(255,230,0,.35); }
+
+  details.hist { border-top: 1px solid var(--line); padding: 14px 0; }
+  details.hist summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; list-style: none; }
+  details.hist summary::-webkit-details-marker { display: none; }
+  details.hist summary::before { content: "▸"; color: var(--mag); text-shadow: 0 0 8px var(--mag); transition: transform .2s; }
+  details.hist[open] summary::before { content: "▾"; }
+  details.hist summary b { font-size: 16px; color: var(--cyan); text-shadow: 0 0 8px rgba(0,240,255,.5); }
+  details.hist .cuerpo { padding-top: 14px; }
+
+  /* Barra de navegación inferior */
+  .tabs {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+    display: flex; justify-content: space-around; gap: 4px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    background: rgba(5,6,13,.88); backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255,43,214,.35); box-shadow: 0 -6px 30px rgba(255,43,214,.12);
+  }
+  .tabs button {
+    flex: 1; background: none; border: 0; color: var(--mut); font-size: 11px; font-weight: 800;
+    letter-spacing: .6px; text-transform: uppercase; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 7px; border-radius: 16px; cursor: pointer;
+    transition: all .25s;
+  }
+  .tabs button .ico { font-size: 21px; transition: transform .25s, filter .25s; }
+  .tabs button.on { color: var(--cyan); background: rgba(0,240,255,.08); text-shadow: 0 0 10px rgba(0,240,255,.8); box-shadow: inset 0 2px 0 var(--cyan); }
+  .tabs button.on .ico { transform: translateY(-2px) scale(1.12); filter: drop-shadow(0 0 8px var(--cyan)); }
+
+  /* Autenticación */
+  .auth { max-width: 440px; margin: 48px auto; }
+  .auth h1 {
+    font-family: "Arial Black", Impact, sans-serif; font-size: 34px; margin: 0 0 8px; letter-spacing: 3px;
+    background: linear-gradient(90deg, var(--cyan), var(--mag), var(--sun)); background-size: 200% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent; animation: arcoiris 5s linear infinite;
+  }
+
+  /* Aviso emergente */
+  .toast {
+    position: fixed; top: 72px; left: 50%; transform: translateX(-50%) translateY(-20px); opacity: 0;
+    z-index: 30; padding: 14px 20px; border-radius: 16px; font-weight: 800; font-size: 14px; letter-spacing: .4px;
+    background: rgba(8,10,22,.95); color: var(--sun); border: 1px solid var(--sun);
+    box-shadow: 0 0 22px rgba(255,230,0,.45); text-shadow: 0 0 8px rgba(255,230,0,.6);
+    transition: all .4s cubic-bezier(.2,.8,.2,1); pointer-events: none; max-width: 92vw; text-align: center;
+  }
+  .toast.ver { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 600px) {
+    main { padding: 12px; }
+    .card { padding: 16px; border-radius: 18px; }
+    .kpi b { font-size: 26px; }
+    .chartbox { height: 230px; }
+    .marca { font-size: 19px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
 </head>
 <body>
 
-  <!-- 1. VISTA PÚBLICA / LANDING -->
-  <div id="landing-screen" class="public-landing fade-in">
-    
-    <header class="main-header">
-      <div class="header-brand-center">
-        <div class="header-top-brand">
-          <img src="logo.png" alt="CFP N° 401 Logo" class="header-logo-xl">
-          <div>
-            <h1 class="header-title-lg">CFP N° 401</h1>
-            <span style="font-size: 0.85rem; color: var(--text-muted);">SAN ANDRÉS DE GILES, BUENOS AIRES</span>
-          </div>
-        </div>
-        
-        <!-- Barra de Navegación -->
-        <nav class="main-nav">
-          <a href="#inicio" class="nav-link">Inicio</a>
-          <a href="#cursos" class="nav-link">Cursos</a>
-          <a href="#por-que" class="nav-link">¿Por qué el 401?</a>
-          <a href="#inscripcion" class="nav-link">¿Cómo inscribirse?</a>
-          <a href="#noticias" class="nav-link">Noticias</a>
-          <a href="#contacto" class="nav-link">Contacto</a>
-        </nav>
-      </div>
+<div id="estado" class="estado hidden"></div>
 
-      <div class="header-action-right">
-        <a href="#" onclick="UI.showLoginScreen(); return false;" class="btn-header-login">
-          🔓 Ingresar / Registrarse
-        </a>
-      </div>
-    </header>
+<header class="top">
+  <div class="marca"><span class="g">GYM</span><span class="p">◆</span></div>
+  <button id="salir" class="chip salir hidden">Salir</button>
+</header>
 
-    <!-- CONTENIDO PRINCIPAL DE LA LANDING -->
-    <main class="public-container">
-
-      <!-- 1. HERO BANNER -->
-      <section id="inicio" class="hero-banner">
-        <span class="hero-badge">Formación Profesional Gratuita</span>
-        <h1 class="hero-title">Encontrá tu próxima formación profesional</h1>
-        <p class="hero-subtitle">
-          Capacitate con certificados oficiales avalados por la DGCyE de la Provincia de Buenos Aires.
-        </p>
-        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-          <a href="#cursos" class="btn btn-gold">Ver Cursos</a>
-          <a href="#inscripcion" class="btn btn-outline">¿Cómo inscribirme?</a>
-        </div>
-      </section>
-
-      <!-- 2. CATÁLOGO Y BÚSQUEDA DE CURSOS PÚBLICO -->
-      <section id="cursos" style="margin-bottom: 3.5rem;">
-        <div class="section-heading">
-          <h2 class="section-title">Oferta Académica</h2>
-        </div>
-        <div id="lista-trayectos-cards" class="features-grid">
-          <!-- Trayectos insertados por trayectos.js -->
-        </div>
-      </section>
-
-      <!-- 3. ¿POR QUÉ ELEGIR EL CFP 401? -->
-      <section id="por-que" class="value-props-grid">
-        <div class="prop-card">
-          <div class="prop-icon">📜</div>
-          <div>
-            <h3 class="prop-title">Títulos Oficiales</h3>
-            <p class="prop-desc">Certificación avalada por DGCyE de Buenos Aires.</p>
-          </div>
-        </div>
-        <div class="prop-card">
-          <div class="prop-icon">🎓</div>
-          <div>
-            <h3 class="prop-title">100% Gratuito</h3>
-            <p class="prop-desc">Educación técnica pública y accesible para todos.</p>
-          </div>
-        </div>
-        <div class="prop-card">
-          <div class="prop-icon">🛠️</div>
-          <div>
-            <h3 class="prop-title">Salida Laboral</h3>
-            <p class="prop-desc">Capacitación práctica adaptada al mercado actual.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- 4. ¿CÓMO INSCRIBIRSE? -->
-      <section id="inscripcion" class="steps-section">
-        <h2 class="section-title-center">¿Cómo inscribirse?</h2>
-        <div class="steps-grid">
-          <div class="step-card">
-            <span class="step-number">01</span>
-            <h3 class="step-title">Elegí tu curso</h3>
-            <p class="step-desc">Explorá nuestra oferta académica y elegí tu especialidad.</p>
-          </div>
-          <div class="step-card">
-            <span class="step-number">02</span>
-            <h3 class="step-title">Requisitos</h3>
-            <p class="step-desc">Conocé los horarios, vacantes y documentación necesaria.</p>
-          </div>
-          <div class="step-card">
-            <span class="step-number">03</span>
-            <h3 class="step-title">Inscripción</h3>
-            <p class="step-desc">Completá el formulario de preinscripción digital o presencial.</p>
-          </div>
-          <div class="step-card">
-            <span class="step-number">04</span>
-            <h3 class="step-title">¡Comenzá!</h3>
-            <p class="step-desc">Presentá tu documentación y empezá a capacitarte.</p>
-          </div>
-        </div>
-        <a href="preinscripcion.html" class="btn-inscripcion-gold">
-          📝 Inscripción online
-        </a>
-      </section>
-
-      <!-- 5. NOVEDADES Y NOTICIAS -->
-      <section id="noticias" class="news-section">
-        <div class="section-heading">
-          <h2 class="section-title">Noticias y Novedades</h2>
-        </div>
-        <div class="news-grid">
-          <div class="news-card">
-            <div class="news-icon">📰</div>
-            <div>
-              <h3 class="news-title">Inscripciones abiertas</h3>
-              <p class="news-desc">Nueva etapa de inscripción para el próximo ciclo lectivo.</p>
-            </div>
-          </div>
-          <div class="news-card">
-            <div class="news-icon">📢</div>
-            <div>
-              <h3 class="news-title">Inicio de clases</h3>
-              <p class="news-desc">Consultá las comisiones y los horarios de cursada.</p>
-            </div>
-          </div>
-          <div class="news-card">
-            <div class="news-icon">🎓</div>
-            <div>
-              <h3 class="news-title">Entrega de certificados</h3>
-              <p class="news-desc">Fechas de acto de egresados para trayectos finalizados.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- FOOTER INSTITUCIONAL -->
-    <footer id="contacto" class="main-footer">
-      <div class="footer-container">
-        <div>
-          <h3 class="footer-title-gold">CFP N.º 401</h3>
-          <p class="footer-description">
-            Centro de Formación Profesional de San Andrés de Giles, Buenos Aires. Brindando educación técnica pública, gratuita y de calidad para toda la comunidad.
-          </p>
-        </div>
-
-        <div class="footer-contact-group">
-          <h4 class="footer-title">Contacto y Ubicación</h4>
-          <a href="https://maps.google.com/?q=Alsina+975+San+Andres+de+Giles+Buenos+Aires" target="_blank" rel="noopener" class="contact-link-location">
-            📍 Alsina 975, San Andrés de Giles, Buenos Aires
-          </a>
-          <a href="mailto:cfp401sadegiles@abc.gob.ar" class="btn-contact btn-email">
-            ✉️ cfp401sadegiles@abc.gob.ar
-          </a>
-          <a href="https://wa.me/5492325566990" target="_blank" rel="noopener" class="btn-contact btn-whatsapp">
-            🟢 Enviar WhatsApp
-          </a>
-        </div>
-
-        <div class="footer-community-group">
-          <h4 class="footer-title">Comunidad</h4>
-          <a href="https://instagram.com/cfp401sadegiles" target="_blank" rel="noopener" class="btn-instagram">
-            📷 @CFP401SADEGILES en Instagram
-          </a>
-        </div>
-      </div>
-
-      <div class="footer-copyright">
-        © 2026 CFP N° 401. Todos los derechos reservados.
-      </div>
-    </footer>
-
-  </div>
-
-  <!-- PANTALLA DE ACCESO / LOGIN -->
-  <div id="login-screen" class="auth-screen" style="display: none;">
-    <div class="auth-card">
-      
-      <div class="auth-header">
-        <img src="logo.png" alt="CFP N° 401 Logo" class="auth-logo">
-        <h2>Acceso al Sistema</h2>
-        <p>CFP N.º 401</p>
-      </div>
-
-      <!-- Pestañas -->
-      <div class="auth-tabs">
-        <button id="tab-btn-login" class="auth-tab active" onclick="UI.toggleAuthTab('login')">Ingresar</button>
-        <button id="tab-btn-register" class="auth-tab" onclick="UI.toggleAuthTab('register')">Solicitar Cuenta</button>
-      </div>
-
-      <!-- Formulario de Login -->
-      <form id="form-login" onsubmit="event.preventDefault(); Auth.iniciarSesion();">
-        <div class="form-group">
-          <label for="role-select">Rol de Ingreso</label>
-          <div class="select-wrapper">
-            <select id="role-select" class="form-control custom-select">
-              <option value="estudiante">Estudiante</option>
-              <option value="docente">Docente</option>
-              <option value="admin" id="usr-alta-opt-admin">Administrador</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="login-user">Usuario / DNI / Email</label>
-          <input type="text" id="login-user" class="form-control" placeholder="Ej: 38123456" required>
-        </div>
-
-        <div class="form-group">
-          <label for="login-pass">Contraseña</label>
-          <input type="password" id="login-pass" class="form-control" placeholder="••••••••" autocomplete="current-password" required>
-        </div>
-
-        <button type="submit" class="btn-block btn-gold">Iniciar Sesión</button>
-        <button type="button" class="btn-block btn-outline" style="margin-top: 0.5rem;" onclick="UI.showLanding()">← Volver al Inicio</button>
-      </form>
-
-      <!-- Formulario de Registro -->
-      <form id="form-register" style="display: none;" onsubmit="event.preventDefault(); Auth.solicitarRegistro();">
-        <div class="form-group">
-          <label for="reg-nombre">Nombre y Apellido</label>
-          <input type="text" id="reg-nombre" class="form-control" placeholder="Nombre completo" required>
-        </div>
-        <div class="form-group">
-          <label for="reg-dni">DNI</label>
-          <input type="text" id="reg-dni" class="form-control" placeholder="Sin puntos" required>
-        </div>
-        <div class="form-group">
-          <label for="reg-pass">Contraseña</label>
-          <input type="password" id="reg-pass" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
-        </div>
-        <div class="form-group">
-          <label for="reg-rol">Rol Solicitado</label>
-          <select id="reg-rol" class="form-control custom-select">
-            <option value="estudiante">Estudiante</option>
-            <option value="docente">Docente</option>
-          </select>
-        </div>
-        <button type="submit" class="btn-block btn-gold">Enviar Solicitud</button>
-        <button type="button" class="btn-block btn-outline" style="margin-top: 0.5rem;" onclick="UI.showLanding()">← Volver al Inicio</button>
-      </form>
-
+<!-- LOGIN -->
+<section id="auth" class="auth hidden">
+  <div class="card">
+    <h1>ENTRAR</h1>
+    <p class="mut">Tus datos se sincronizan con tu cuenta. Podés usar la app sin conexión.</p>
+    <div class="grid" style="grid-template-columns:1fr">
+      <input type="email" id="auth-email" placeholder="Correo">
+      <input type="password" id="auth-pass" placeholder="Contraseña">
     </div>
+    <div class="row">
+      <button class="btn" id="auth-entrar">Entrar</button>
+      <button class="btn sec" id="auth-crear">Crear cuenta</button>
+    </div>
+    <div class="row">
+      <button class="btn sec" id="auth-olvide">Olvidé mi contraseña</button>
+    </div>
+    <p class="mut" id="auth-msg"></p>
   </div>
-  
-  <!-- 3. DASHBOARD / PLATAFORMA ADMIN -->
-  <div id="app-screen" class="dashboard-layout" style="display: none;">
-    <div id="menu-overlay" onclick="UI.toggleMenu(false)"></div>
-    
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <img src="logo.png" alt="CFP N° 401">
-        <div class="sidebar-brand-text">
-          <h3>CFP N° 401</h3>
-          <span>Panel de Control</span>
-        </div>
+</section>
+
+<!-- NUEVA CONTRASEÑA (se abre desde el enlace del correo) -->
+<section id="nueva" class="auth hidden">
+  <div class="card">
+    <h1>NUEVA CLAVE</h1>
+    <p class="mut">Elegí la contraseña que vas a usar desde ahora.</p>
+    <div class="grid" style="grid-template-columns:1fr">
+      <input type="password" id="nueva-pass" placeholder="Nueva contraseña (mín. 6 caracteres)">
+    </div>
+    <div class="row">
+      <button class="btn" id="nueva-guardar">Guardar contraseña</button>
+    </div>
+    <p class="mut" id="nueva-msg"></p>
+  </div>
+</section>
+
+<main id="app" class="hidden">
+
+  <!-- SESIÓN -->
+  <section id="vista-sesion">
+    <div class="card">
+      <h2>Registrar entrenamiento</h2>
+      <div class="grid">
+        <input type="date" id="s-fecha">
+        <select id="s-rutina"></select>
       </div>
+      <div class="chips" id="s-chips"></div>
+      <div class="grid">
+        <input type="text" id="s-ej" placeholder="Ejercicio" list="ej-list" style="grid-column: 1 / -1">
+        <datalist id="ej-list"></datalist>
+      </div>
+      <div class="grid">
+        <input type="number" id="s-series" placeholder="Series" min="1" value="3" inputmode="numeric">
+        <input type="number" id="s-reps" placeholder="Reps" min="1" value="10" inputmode="numeric">
+        <input type="text" id="s-peso" placeholder="Kg" inputmode="decimal">
+        <input type="text" id="s-rpe" placeholder="RPE 1-10" inputmode="decimal">
+      </div>
+      <div class="row">
+        <button class="btn" id="s-agregar">Agregar serie(s)</button>
+        <button class="btn sec" id="s-cerrar">Cerrar sesión</button>
+      </div>
+      <p class="mut">Cada serie se guarda en cuanto la agregás, aunque no tengas conexión.</p>
+    </div>
 
-<!-- index.html (Navegación Sidebar) -->
-<nav class="sidebar-nav">
-  <button id="btn-dashboard" class="nav-item-btn active" onclick="UI.showTab('dashboard')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span> Dashboard
-  </button>
-  <button id="btn-progreso" class="nav-item-btn" style="display:none" onclick="UI.showTab('progreso')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span> Mi progreso
-  </button>
-  <button id="btn-seguimiento" class="nav-item-btn" style="display:none" onclick="UI.showTab('seguimiento')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></span> Seguimiento
-  </button>
-  <button id="btn-secretaria" class="nav-item-btn" style="display:none" onclick="UI.showTab('secretaria')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span> Cifras por trayecto
-  </button>
-  <button id="btn-preinscripciones" class="nav-item-btn" style="display:none" onclick="UI.showTab('preinscripciones')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 14h6M9 17h4"/></svg></span> Preinscripciones
-  </button>
-  <button id="btn-cuentas" class="nav-item-btn" style="display:none" onclick="UI.showTab('cuentas')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.800 12.200 20 3M16 7l3 3M14 9l2 2"/></svg></span> Cuentas y claves
-  </button>
-  <button id="btn-observaciones" class="nav-item-btn" style="display:none" onclick="UI.showTab('observaciones')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span> Observaciones
-  </button>
-  <button id="btn-cooperadora" class="nav-item-btn" style="display:none" onclick="UI.showTab('cooperadora')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.400-7-10a4.800 4.800 0 0 1 7-4.200A4.800 4.800 0 0 1 19 11c0 5.600-7 10-7 10z"/><path d="M8 11h3M11 9v4"/></svg></span> Cooperadora
-  </button>
-  <button id="btn-planilla" class="nav-item-btn" style="display:none" onclick="PlanillaMatricula.abrir()">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span> Planilla de matrícula
-  </button>
-  <button id="btn-constancias" class="nav-item-btn" style="display:none" onclick="ConstanciasModulo.abrir()">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span> Constancias
-  </button>
-  <button id="btn-trayectos" class="nav-item-btn" onclick="UI.showTab('trayectos')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h6"/></svg></span> Trayectos Formativos
-  </button>
+    <div class="card">
+      <h2>Sesión actual <small id="s-info"></small></h2>
+      <table>
+        <thead><tr><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Kg</th><th>RPE</th><th></th></tr></thead>
+        <tbody id="s-tabla"></tbody>
+      </table>
+    </div>
 
-  <!-- NUEVO BOTÓN: FICHAS DE CURSO / ACTAS DE EXAMEN -->
-  <button id="btn-actas" class="nav-item-btn" style="display:none" onclick="UI.showTab('actas')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h6"/></svg></span> Actas y Certificados
-  </button>
+    <div class="card">
+      <h2>Historial <small>últimas 10 sesiones</small></h2>
+      <div id="s-historial"></div>
+    </div>
+  </section>
 
-  <button id="btn-nuevo-trayecto" class="nav-item-btn admin-only" onclick="Trayectos.nuevo()">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span> Cargar Trayecto
-  </button>
-  <button id="btn-novedades" class="nav-item-btn" style="display:none" onclick="UI.showTab('novedades')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg></span> Novedades
-  </button>
-  <button id="btn-ayuda" class="nav-item-btn" style="display:none" onclick="UI.showTab('ayuda')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.700.400-1 .900-1 1.700"/><path d="M12 17h.01"/></svg></span> Ayuda
-  </button>
-  <button id="btn-usuarios" class="nav-item-btn admin-only" onclick="UI.showTab('usuarios')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-6 6.5-6s6.500 2.400 6.500 6"/><path d="M16 4.500a3.500 3.500 0 0 1 0 7M18 14c2.200.800 3.500 2.700 3.500 6"/></svg></span> Usuarios y Roles
-  </button>
-  <button id="btn-backups" class="nav-item-btn admin-only" onclick="UI.showTab('backups')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.700 3.600 3 8 3s8-1.300 8-3V6M4 12v6c0 1.700 3.600 3 8 3s8-1.300 8-3v-6"/></svg></span> Control y respaldo
-  
-  </button>
+  <!-- RUTINAS -->
+  <section id="vista-rutinas" class="hidden">
+    <div class="card">
+      <h2>Nueva rutina</h2>
+      <div class="grid" style="grid-template-columns:1fr">
+        <input type="text" id="r-nombre" placeholder="Nombre (ej: Día 1 - Empuje)">
+        <input type="text" id="r-ejs" placeholder="Ejercicios separados por coma">
+      </div>
+      <button class="btn" id="r-guardar">Guardar rutina</button>
+    </div>
+    <div class="card">
+      <h2>Rutinas guardadas</h2>
+      <div id="r-lista"></div>
+    </div>
+  </section>
+
+  <!-- PROGRESO -->
+  <section id="vista-progreso" class="hidden">
+    <div class="card">
+      <h2>Tu peso <small id="pr-rango"></small></h2>
+      <div class="kpis" id="pr-kpis"></div>
+      <div id="pr-meta"></div>
+      <div class="chartbox"><canvas id="pr-peso-chart"></canvas></div>
+      <p class="mut" id="pr-vacio"></p>
+    </div>
+
+    <div class="card">
+      <h2>Entrenamiento</h2>
+      <div class="kpis" id="en-kpis"></div>
+      <div class="chartbox"><canvas id="en-semanas-chart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Progreso por ejercicio</h2>
+      <div class="grid">
+        <select id="p-ej"></select>
+        <select id="p-metrica">
+          <option value="max">Peso máximo</option>
+          <option value="e1rm">1RM estimado (Epley)</option>
+          <option value="vol">Volumen por sesión</option>
+        </select>
+      </div>
+      <div class="chartbox"><canvas id="p-chart"></canvas></div>
+      <div class="kpis" id="p-stats"></div>
+    </div>
+  </section>
+
+  <!-- PESO -->
+  <section id="vista-peso" class="hidden">
+    <div class="card">
+      <h2>Registrar peso</h2>
+      <div class="grid">
+        <input type="date" id="pc-fecha">
+        <input type="text" id="pc-kg" placeholder="Kg" inputmode="decimal">
+      </div>
+      <button class="btn" id="pc-guardar">Guardar peso</button>
+    </div>
+
+    <div class="card">
+      <h2>Meta <small>se guarda solo en este celular</small></h2>
+      <div class="row">
+        <input type="text" id="meta-kg" placeholder="Peso objetivo (kg)" inputmode="decimal">
+        <button class="btn sec fijo" id="meta-guardar">Guardar meta</button>
+        <button class="btn peligro fijo" id="meta-borrar">Quitar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Últimos registros</h2>
+      <div id="pc-lista"></div>
+    </div>
+  </section>
+
+  <!-- DATOS -->
+  <section id="vista-datos" class="hidden">
+    <div class="card">
+      <h2>Copia de seguridad</h2>
+      <p class="mut">Podés descargar todos tus datos en JSON cuando quieras.</p>
+      <button class="btn cy" id="d-exportar">Exportar JSON</button>
+    </div>
+    <div class="card">
+      <h2>Zona peligrosa</h2>
+      <p class="mut">Borra todas tus rutinas, sesiones y registros de peso de la nube. Requiere conexión.</p>
+      <button class="btn peligro" id="d-borrar">Borrar todos mis datos</button>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs hidden" id="tabs">
+  <button data-tab="sesion" class="on"><span class="ico">🏋️</span>Sesión</button>
+  <button data-tab="rutinas"><span class="ico">📋</span>Rutinas</button>
+  <button data-tab="progreso"><span class="ico">📈</span>Progreso</button>
+  <button data-tab="peso"><span class="ico">⚖️</span>Peso</button>
+  <button data-tab="datos"><span class="ico">⚙️</span>Datos</button>
 </nav>
 
-      <button type="button" class="btn btn-outline app-boton-instalar" style="margin-top: auto; width: 100%; margin-bottom: 0.5rem;" onclick="AppCFP.instalar()">
-        📲 Instalar la app
-      </button>
-      <button class="btn btn-outline" style="width: 100%; margin-bottom: 0.5rem;" onclick="Auth.cambiarMiClave()">
-        Cambiar mi contraseña
-      </button>
-      <button class="btn btn-danger" style="width: 100%;" onclick="Auth.cerrarSesion()">
-        Cerrar sesión
-      </button>
-    </aside>
+<div id="toast" class="toast"></div>
 
-    <!-- WRAPPER DERECHO: HEADER + CONTENIDO -->
-    <div class="main-wrapper">
-      
-      <!-- HEADER PROFESIONAL -->
-      <header class="admin-header">
-        <div class="admin-header-title">
-          <button type="button" id="btn-menu-movil" class="menu-movil-btn" aria-label="Abrir menú" onclick="UI.toggleMenu()">☰</button>
-          <h2 id="current-section-title">Dashboard</h2>
-          <button type="button" id="btn-ayuda-pantalla" class="ayuda-btn" style="display:none" title="Ayuda de esta pantalla" aria-label="Ayuda de esta pantalla" onclick="AyudaModulo.deEstaPantalla()">?</button>
+<script>
+// ---------- Configuración ----------
+const SUPABASE_URL = "https://wgyjzybkugqmggrybqia.supabase.co";
+const SUPABASE_KEY = "sb_publishable_T59BVTQY4QQ99-ZIUIJg5A_cxt1skFI";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const K_CACHE = "gymapp_cache", K_COLA = "gymapp_cola", K_META = "gymapp_meta";
+// Para peso la clave de conflicto es (usuario, fecha); para el resto, el id.
+const ONCONFLICT = { peso: "user_id,fecha" };
+
+// ---------- Estado ----------
+function DB_VACIA() { return { rutinas: [], sesiones: [], peso: [] }; }
+let user = null;
+let db = Object.assign(DB_VACIA(), leerJSON(K_CACHE, null));
+let cola = leerJSON(K_COLA, []);      // cambios pendientes de subir, en orden
+let ajustes = leerJSON(K_META, { meta: null });
+let sesionActualId = null;
+let modoRecuperacion = false;
+let sincronizando = false;
+let ultimoError = "";
+const charts = {};
+
+// ---------- Utilidades ----------
+const $ = id => document.getElementById(id);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const num = v => parseFloat(String(v).replace(",", "."));
+const fmt = (n, d = 1) => (n === null || isNaN(n)) ? "—" : Number(n).toFixed(d);
+function hoy() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function e1rm(kg, reps) { return reps === 1 ? kg : kg * (1 + reps / 30); }
+function leerJSON(k, def) { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch (e) { return def; } }
+function guardarTodo() {
+  localStorage.setItem(K_CACHE, JSON.stringify(db));
+  localStorage.setItem(K_COLA, JSON.stringify(cola));
+  localStorage.setItem(K_META, JSON.stringify(ajustes));
+}
+const sesionActual = () => db.sesiones.find(s => s.id === sesionActualId) || null;
+
+function toast(texto) {
+  const t = $("toast");
+  t.textContent = texto;
+  t.classList.add("ver");
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.classList.remove("ver"), 2800);
+}
+
+// Paleta neón para gráficos
+const NEON = { cyan: "#00f0ff", mag: "#ff2bd6", lime: "#b6ff3b", sun: "#ffe600", vio: "#8b5cf6", red: "#ff3b6b" };
+Chart.defaults.color = "#7f8bb0";
+Chart.defaults.borderColor = "rgba(0,240,255,.08)";
+Chart.defaults.font.family = "'Trebuchet MS', system-ui, sans-serif";
+Chart.defaults.plugins.tooltip.backgroundColor = "rgba(8,10,22,.95)";
+Chart.defaults.plugins.tooltip.borderColor = NEON.cyan;
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.titleColor = NEON.cyan;
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.boxWidth = 8;
+
+function dibujar(id, config) {
+  if (charts[id]) charts[id].destroy();
+  config.options = Object.assign({ responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, animation: { duration: 900 } }, config.options || {});
+  charts[id] = new Chart($(id), config);
+}
+function degradado(hex) {
+  return (c) => {
+    const { ctx, chartArea } = c.chart;
+    if (!chartArea) return hex + "33";
+    const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+    g.addColorStop(0, hex + "66");
+    g.addColorStop(1, hex + "00");
+    return g;
+  };
+}
+
+// ---------- Sincronización ----------
+function pintarEstado() {
+  const el = $("estado");
+  if (!user) return el.classList.add("hidden");
+  const sinRed = !navigator.onLine;
+  if (!sinRed && !cola.length && !ultimoError) return el.classList.add("hidden");
+  el.classList.remove("hidden");
+  if (sinRed) el.textContent = `Sin conexión · ${cola.length} cambio(s) guardados en este celular`;
+  else if (cola.length) el.textContent = `Subiendo ${cola.length} cambio(s)…`;
+  else el.textContent = ultimoError;
+}
+
+function ejecutar(op) {
+  const t = sb.from(op.tabla);
+  switch (op.t) {
+    case "ins": return t.upsert(op.fila, { onConflict: ONCONFLICT[op.tabla] || "id" });
+    case "upd": return t.update(op.cambios).eq("id", op.id);
+    case "del": return t.delete().eq("id", op.id);
+    case "delFecha": return t.delete().eq("fecha", op.fecha);
+  }
+}
+
+function encolar(op) {
+  cola.push(op);
+  guardarTodo();
+  renderTodo();
+  sincronizar();
+}
+
+async function sincronizar() {
+  pintarEstado();
+  if (!user || !navigator.onLine || sincronizando) return;
+  sincronizando = true;
+  try {
+    while (cola.length) {
+      const { error } = await ejecutar(cola[0]);
+      if (error) {
+        // Sin "code" suele ser un corte de red: se conserva el cambio y se reintenta después.
+        if (!error.code) break;
+        // Un error del servidor no debe trabar la cola.
+        ultimoError = "Un cambio fue rechazado: " + error.message;
+      } else {
+        ultimoError = "";
+      }
+      cola.shift();
+      guardarTodo();
+      pintarEstado();
+    }
+    if (!cola.length) await descargar();
+  } catch (e) {
+    // Sin red: se reintenta más tarde.
+  } finally {
+    sincronizando = false;
+    pintarEstado();
+  }
+}
+
+async function descargar() {
+  const [r, s, p] = await Promise.all([
+    sb.from("rutinas").select("id,nombre,ejercicios,created_at").order("created_at"),
+    sb.from("sesiones").select("id,fecha,series(id,ejercicio,reps,kg,rpe,created_at)").order("fecha"),
+    sb.from("peso").select("fecha,kg").order("fecha")
+  ]);
+  for (const res of [r, s, p]) if (res.error) throw res.error;
+  // Si mientras bajaba hubo cambios locales nuevos, no se pisan: se suben primero.
+  if (cola.length) return;
+  s.data.forEach(ses => ses.series.sort((a, b) => a.created_at.localeCompare(b.created_at)));
+  db = { rutinas: r.data, sesiones: s.data, peso: p.data };
+  guardarTodo();
+  renderTodo();
+}
+
+window.addEventListener("online", sincronizar);
+window.addEventListener("offline", pintarEstado);
+setInterval(sincronizar, 30000);
+
+// ---------- Login ----------
+$("auth-entrar").onclick = async () => {
+  const { error } = await sb.auth.signInWithPassword({ email: $("auth-email").value.trim(), password: $("auth-pass").value });
+  if (error) $("auth-msg").textContent = "No se pudo entrar: " + error.message;
+};
+$("auth-crear").onclick = async () => {
+  const { error } = await sb.auth.signUp({ email: $("auth-email").value.trim(), password: $("auth-pass").value });
+  $("auth-msg").textContent = error ? "No se pudo crear la cuenta: " + error.message : "Cuenta creada. Ya podés entrar.";
+};
+$("auth-olvide").onclick = async () => {
+  const email = $("auth-email").value.trim();
+  if (!email) { $("auth-msg").textContent = "Escribí tu correo primero."; return; }
+  // Vuelve a esta misma página; ahí se abre la pantalla de nueva contraseña.
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  $("auth-msg").textContent = error
+    ? "No se pudo enviar el correo: " + error.message
+    : "Te enviamos un correo para cambiar la contraseña. Revisá también spam.";
+};
+$("nueva-guardar").onclick = async () => {
+  const p = $("nueva-pass").value;
+  if (p.length < 6) { $("nueva-msg").textContent = "Mínimo 6 caracteres."; return; }
+  const { error } = await sb.auth.updateUser({ password: p });
+  if (error) { $("nueva-msg").textContent = "No se pudo guardar: " + error.message; return; }
+  modoRecuperacion = false;
+  history.replaceState(null, "", location.pathname);
+  $("nueva-pass").value = "";
+  toast("Contraseña actualizada");
+  mostrarVista();
+  setTimeout(() => { renderTodo(); sincronizar(); }, 0);
+};
+$("salir").onclick = async () => {
+  if (cola.length && !confirm(`Hay ${cola.length} cambio(s) sin subir. Si salís, se pierden. ¿Continuar?`)) return;
+  cola = []; db = DB_VACIA(); sesionActualId = null;
+  guardarTodo();
+  await sb.auth.signOut();
+};
+
+function mostrarVista() {
+  const recup = modoRecuperacion;
+  const logueado = !!user && !recup;
+  $("nueva").classList.toggle("hidden", !recup);
+  $("auth").classList.toggle("hidden", recup || !!user);
+  $("app").classList.toggle("hidden", !logueado);
+  $("tabs").classList.toggle("hidden", !logueado);
+  $("salir").classList.toggle("hidden", !logueado);
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  // El enlace del correo de recuperación dispara este evento.
+  if (event === "PASSWORD_RECOVERY") modoRecuperacion = true;
+  user = session?.user ?? null;
+  mostrarVista();
+  // Diferido para no hacer consultas dentro del callback de autenticación.
+  setTimeout(() => { renderTodo(); sincronizar(); }, 0);
+});
+
+// ---------- Navegación ----------
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  document.querySelectorAll("#app > section").forEach(s => s.classList.add("hidden"));
+  $("vista-" + b.dataset.tab).classList.remove("hidden");
+  window.scrollTo(0, 0);
+  if (b.dataset.tab === "progreso") renderProgreso();
+  if (b.dataset.tab === "peso") renderPeso();
+});
+
+// ---------- Sesión ----------
+function ejerciciosConocidos() {
+  const set = new Set();
+  db.sesiones.forEach(s => s.series.forEach(x => set.add(x.ejercicio)));
+  db.rutinas.forEach(r => r.ejercicios.forEach(e => set.add(e)));
+  return [...set].sort();
+}
+
+function refrescarSelects() {
+  const sel = $("s-rutina");
+  const previa = sel.value;
+  sel.innerHTML = '<option value="">Elegí una rutina</option>' + db.rutinas.map(r => `<option value="${r.id}">${esc(r.nombre)}</option>`).join("");
+  sel.value = previa;
+  $("ej-list").innerHTML = ejerciciosConocidos().map(e => `<option value="${esc(e)}">`).join("");
+  if (!$("s-fecha").value) $("s-fecha").value = hoy();
+  if (!$("pc-fecha").value) $("pc-fecha").value = hoy();
+}
+
+$("s-rutina").onchange = () => {
+  const r = db.rutinas.find(x => x.id === $("s-rutina").value);
+  $("s-chips").innerHTML = r
+    ? r.ejercicios.map(e => `<button class="chip" data-ej="${esc(e)}">${esc(e)}</button>`).join("")
+    : "";
+};
+$("s-chips").onclick = e => {
+  const b = e.target.closest("button[data-ej]");
+  if (b) $("s-ej").value = b.dataset.ej;
+};
+
+function asegurarSesion() {
+  let ses = sesionActual();
+  if (ses) return ses;
+  ses = { id: uid(), fecha: $("s-fecha").value || hoy(), series: [] };
+  db.sesiones.push(ses);
+  sesionActualId = ses.id;
+  encolar({ t: "ins", tabla: "sesiones", fila: { id: ses.id, user_id: user.id, fecha: ses.fecha } });
+  return ses;
+}
+
+// Récord anterior de un ejercicio, sin contar la sesión abierta
+function mejorKgPrevio(ej, excluirSesionId) {
+  let mejor = 0;
+  db.sesiones.forEach(s => {
+    if (s.id === excluirSesionId) return;
+    s.series.forEach(x => { if (x.ejercicio === ej && x.kg > mejor) mejor = x.kg; });
+  });
+  return mejor;
+}
+
+$("s-agregar").onclick = () => {
+  const ej = $("s-ej").value.trim();
+  const n = parseInt($("s-series").value) || 1;
+  const reps = parseInt($("s-reps").value);
+  const kg = num($("s-peso").value) || 0;
+  const rpe = num($("s-rpe").value) || null;
+  if (!ej || !reps) return alert("Completá ejercicio y repeticiones.");
+  const ses = asegurarSesion();
+  const previo = mejorKgPrevio(ej, ses.id);
+  const filas = [];
+  for (let i = 0; i < n; i++) {
+    filas.push({ id: uid(), user_id: user.id, sesion_id: ses.id, ejercicio: ej, reps, kg, rpe, created_at: new Date().toISOString() });
+  }
+  ses.series.push(...filas);
+  encolar({ t: "ins", tabla: "series", fila: filas.map(({ created_at, ...f }) => f) });
+  $("s-ej").value = "";
+  if (kg > 0 && kg > previo) toast(`🔥 Nuevo récord en ${ej}: ${kg} kg`);
+  else toast(`+${n} serie${n > 1 ? "s" : ""} · ${ej}`);
+};
+
+function quitarSesion(id) {
+  db.sesiones = db.sesiones.filter(s => s.id !== id);
+  if (sesionActualId === id) sesionActualId = null;
+  encolar({ t: "del", tabla: "sesiones", id });
+}
+
+$("s-cerrar").onclick = () => {
+  const ses = sesionActual();
+  if (ses && !ses.series.length) quitarSesion(ses.id);
+  sesionActualId = null;
+  guardarTodo();
+  renderTodo();
+  toast("Sesión cerrada");
+};
+
+function borrarSerie(sesId, serieId) {
+  const ses = db.sesiones.find(s => s.id === sesId);
+  if (!ses) return;
+  ses.series = ses.series.filter(x => x.id !== serieId);
+  encolar({ t: "del", tabla: "series", id: serieId });
+  if (!ses.series.length) quitarSesion(sesId);
+}
+
+function editarSerie(sesId, serieId) {
+  const ses = db.sesiones.find(s => s.id === sesId);
+  const s = ses?.series.find(x => x.id === serieId);
+  if (!s) return;
+  const kgNuevo = prompt("Kilos", s.kg);
+  if (kgNuevo === null) return;
+  const repsNuevas = prompt("Repeticiones", s.reps);
+  if (repsNuevas === null) return;
+  s.kg = num(kgNuevo) || 0;
+  s.reps = parseInt(repsNuevas) || s.reps;
+  encolar({ t: "upd", tabla: "series", id: serieId, cambios: { kg: s.kg, reps: s.reps } });
+}
+
+function cambiarFecha(sesId, fecha) {
+  const ses = db.sesiones.find(s => s.id === sesId);
+  if (!ses || !fecha) return;
+  ses.fecha = fecha;
+  db.sesiones.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  encolar({ t: "upd", tabla: "sesiones", id: sesId, cambios: { fecha } });
+}
+
+function borrarSesionConfirm(id) {
+  if (confirm("¿Borrar esta sesión y todas sus series?")) quitarSesion(id);
+}
+
+function renderSesion() {
+  const ses = sesionActual();
+  $("s-info").textContent = ses ? ses.fecha : "sin sesión abierta";
+  if (!ses) {
+    $("s-tabla").innerHTML = `<tr><td colspan="6" class="mut">Agregá una serie para empezar.</td></tr>`;
+  } else {
+    const grupos = {};
+    ses.series.forEach(x => (grupos[x.ejercicio] = grupos[x.ejercicio] || []).push(x));
+    $("s-tabla").innerHTML = Object.entries(grupos).map(([ej, arr]) => `
+      <tr>
+        <td><b>${esc(ej)}</b></td><td>${arr.length}</td>
+        <td>${arr.map(x => x.reps).join(", ")}</td>
+        <td>${[...new Set(arr.map(x => x.kg))].join(", ")}</td>
+        <td>${arr.map(x => x.rpe ?? "-").join(", ")}</td>
+        <td><button class="btn sec mini" onclick="borrarSerie('${ses.id}','${arr[arr.length - 1].id}')">−1</button></td>
+      </tr>`).join("") || `<tr><td colspan="6" class="mut">Sin series todavía.</td></tr>`;
+  }
+
+  const hist = db.sesiones.filter(s => s.id !== sesionActualId && s.series.length).slice(-10).reverse();
+  $("s-historial").innerHTML = hist.length ? hist.map(s => {
+    const ejs = [...new Set(s.series.map(x => x.ejercicio))].join(", ");
+    const vol = s.series.reduce((a, x) => a + x.reps * x.kg, 0);
+    return `
+      <details class="hist">
+        <summary><b>${s.fecha}</b><span class="mut">${esc(ejs)} · ${s.series.length} series · ${Math.round(vol)} kg</span></summary>
+        <div class="cuerpo">
+          <div class="row">
+            <input type="date" value="${s.fecha}" style="max-width:190px" onchange="cambiarFecha('${s.id}', this.value)">
+            <button class="btn peligro mini fijo" onclick="borrarSesionConfirm('${s.id}')">Borrar sesión</button>
+          </div>
+          <table>
+            <thead><tr><th>Ejercicio</th><th>Reps</th><th>Kg</th><th>RPE</th><th></th></tr></thead>
+            <tbody>${s.series.map(x => `
+              <tr>
+                <td>${esc(x.ejercicio)}</td><td>${x.reps}</td><td>${x.kg}</td><td>${x.rpe ?? "-"}</td>
+                <td style="white-space:nowrap">
+                  <button class="btn sec mini" onclick="editarSerie('${s.id}','${x.id}')">Editar</button>
+                  <button class="btn peligro mini" onclick="borrarSerie('${s.id}','${x.id}')">×</button>
+                </td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
         </div>
-        <div class="admin-user-profile">
-          <div class="user-badge">
-            <span class="username" id="display-username">Administrador</span>
-            <span class="role" id="display-role">ADMIN</span>
-          </div>
-        </div>
-      </header>
+      </details>`;
+  }).join("") : '<p class="mut">Todavía no hay sesiones cerradas.</p>';
+}
 
-      <!-- CONTENIDO PRINCIPAL -->
-      <main class="main-content-body">
+// ---------- Rutinas ----------
+$("r-guardar").onclick = () => {
+  const nombre = $("r-nombre").value.trim();
+  const ejercicios = $("r-ejs").value.split(",").map(s => s.trim()).filter(Boolean);
+  if (!nombre || !ejercicios.length) return alert("Poné nombre y al menos un ejercicio.");
+  const r = { id: uid(), nombre, ejercicios };
+  db.rutinas.push(r);
+  encolar({ t: "ins", tabla: "rutinas", fila: { id: r.id, user_id: user.id, nombre, ejercicios } });
+  $("r-nombre").value = ""; $("r-ejs").value = "";
+  toast("Rutina guardada");
+};
 
-      <!-- VISTA 1: DASHBOARD DE RESUMEN ANALÍTICO -->
-        <section id="sec-dashboard" class="section-tab active">
-          <!-- Encabezado del Dashboard con Filtro por Ciclo Lectivo -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-            <div>
-              <h3 style="margin: 0; color: var(--text-main);">📊 Panel General de Control</h3>
-              <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Estadísticas académicas y rendimiento del CFP</p>
-              <button type="button" class="btn-secondary" style="margin-top:0.5rem;padding:0.35rem 0.8rem;font-size:0.8rem" onclick="UI.showTab('secretaria')" title="Sexo, edades, bajas, asistencia y planillas">📈 Ver cifras por trayecto →</button>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <label for="filtro-ciclo-dashboard" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Ciclo Lectivo:</label>
-              <select id="filtro-ciclo-dashboard" class="form-control custom-select" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onchange="if(window.DashboardAdmin) DashboardAdmin.cargarEstadisticas();">
-                <option value="2026" selected>Ciclo Lectivo 2026</option>
-                <option value="2027">Ciclo Lectivo 2027</option>
-                <option value="TODOS">Todos los Ciclos</option>
-              </select>
-            </div>
-          </div>
+function borrarRutina(id) {
+  if (!confirm("¿Borrar esta rutina? Las sesiones registradas no se borran.")) return;
+  db.rutinas = db.rutinas.filter(r => r.id !== id);
+  encolar({ t: "del", tabla: "rutinas", id });
+}
 
-          <!-- Grilla de Tarjetas KPI -->
-          <div class="stats-grid">
-            <div class="stat-card" style="cursor:pointer" title="Ver cifras por trayecto (sexo, edades, bajas, asistencia y planillas)" onclick="UI.showTab('secretaria')">
-              <div class="stat-icon" style="background:#E6F3FC;color:#1D5FA8;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.500 2.700 3 6 3s6-1.500 6-3v-5"/></svg></div>
-              <div class="stat-info">
-                <h4>Trayectos Activos</h4>
-                <p class="stat-value" id="stat-count-trayectos">--</p>
-              </div>
-            </div>
+function renderRutinas() {
+  $("r-lista").innerHTML = db.rutinas.length ? db.rutinas.map(r => `
+    <div class="row filas">
+      <div style="flex:1 1 60%"><b style="color:var(--sun)">${esc(r.nombre)}</b><div class="mut">${esc(r.ejercicios.join(" · "))}</div></div>
+      <button class="btn peligro mini fijo" onclick="borrarRutina('${r.id}')">Borrar</button>
+    </div>`).join("") : '<p class="mut">Creá tu primera rutina.</p>';
+}
 
-            <div class="stat-card" style="cursor:pointer" title="Ver cifras por trayecto (sexo, edades, bajas, asistencia y planillas)" onclick="UI.showTab('secretaria')">
-              <div class="stat-icon" style="background:#EAE8FB;color:#5B4BC4;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-6 6.5-6s6.500 2.400 6.500 6"/><path d="M16 4.500a3.500 3.500 0 0 1 0 7M18 14c2.200.800 3.500 2.700 3.500 6"/></svg></div>
-              <div class="stat-info">
-                <h4>Matrícula / Inscriptos</h4>
-                <p class="stat-value" id="stat-count-inscriptos">--</p>
-                <small id="stat-inscriptos-bajas" style="color:var(--text-muted);font-size:.72rem"></small>
-              </div>
-            </div>
+// ---------- Peso ----------
+$("pc-guardar").onclick = () => {
+  const fecha = $("pc-fecha").value || hoy();
+  const kg = num($("pc-kg").value);
+  if (!kg) return alert("Ingresá el peso.");
+  db.peso = db.peso.filter(p => p.fecha !== fecha);
+  db.peso.push({ fecha, kg });
+  db.peso.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  encolar({ t: "ins", tabla: "peso", fila: { user_id: user.id, fecha, kg } });
+  $("pc-kg").value = "";
+  toast(`Peso guardado · ${kg} kg`);
+};
 
-            <div class="stat-card">
-              <div class="stat-icon" style="background:#DDF5EA;color:#146B47;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
-              <div class="stat-info">
-                <h4>Aprobados / Aptos</h4>
-                <p class="stat-value" id="stat-count-aprobados">--</p>
-              </div>
-            </div>
+function borrarPeso(fecha) {
+  if (!confirm("¿Borrar este registro de peso?")) return;
+  db.peso = db.peso.filter(p => p.fecha !== fecha);
+  encolar({ t: "delFecha", tabla: "peso", fecha });
+}
 
-            <div class="stat-card">
-              <div class="stat-icon" style="background:#FFF4D1;color:#7A5600;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"/><path d="M8 3v5H5M9 13h6M9 17h4"/></svg></div>
-              <div class="stat-info">
-                <h4>Certificados Emitidos</h4>
-                <p class="stat-value" id="stat-count-certificados">--</p>
-              </div>
-            </div>
+$("meta-guardar").onclick = () => {
+  const m = num($("meta-kg").value);
+  if (!m) return alert("Ingresá un peso objetivo válido.");
+  ajustes.meta = m;
+  guardarTodo();
+  renderTodo();
+  toast(`Meta fijada en ${m} kg`);
+};
+$("meta-borrar").onclick = () => {
+  ajustes.meta = null;
+  $("meta-kg").value = "";
+  guardarTodo();
+  renderTodo();
+};
 
-            <div class="stat-card">
-              <div class="stat-icon" style="background:#FDE7E5;color:#B42318;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v5M12 18h.01"/></svg></div>
-              <div class="stat-info">
-                <h4>Sin certificar</h4>
-                <p class="stat-value" id="stat-count-desaprobados">--</p>
-              </div>
-            </div>
-          </div>
+function renderPeso() {
+  if (ajustes.meta && !$("meta-kg").value) $("meta-kg").value = ajustes.meta;
+  $("pc-lista").innerHTML = db.peso.length ? db.peso.slice().reverse().slice(0, 14).map(p => `
+    <div class="row filas">
+      <b style="color:var(--cyan)">${p.fecha}</b><span style="font-size:20px;font-weight:800">${p.kg} kg</span>
+      <button class="btn peligro mini fijo" onclick="borrarPeso('${p.fecha}')">Borrar</button>
+    </div>`).join("") : '<p class="mut">Todavía no cargaste ningún peso.</p>';
+}
 
-          <!-- Desglose por Trayecto y Acciones Rápidas -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-            <!-- Tabla de Rendimiento por Trayecto -->
-            <div class="card-panel" style="margin: 0;">
-              <div class="card-panel-header">
-                <h4 style="margin: 0; color: #f8fafc;">Rendimiento por trayecto</h4>
-              </div>
-              <div id="desglose-trayectos-dashboard" style="overflow-x: auto;">
-                <p style="color: #94a3b8; font-size: 0.85rem;">Cargando resumen de trayectos...</p>
-              </div>
-            </div>
+// ---------- Progreso ----------
+function ritmoSemanal(datos) {
+  // Pendiente de regresión lineal de los últimos 42 días, en kg por semana.
+  const corte = Date.now() / 864e5 - 42;
+  const pts = datos
+    .map(p => [new Date(p.fecha).getTime() / 864e5, p.kg])
+    .filter(([x]) => x >= corte);
+  if (pts.length < 3) return null;
+  const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+  const my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  let numer = 0, den = 0;
+  pts.forEach(([x, y]) => { numer += (x - mx) * (y - my); den += (x - mx) ** 2; });
+  return den ? (numer / den) * 7 : null;
+}
 
-            <!-- Acciones Rápidas -->
-            <div class="card-panel" style="margin: 0;">
-              <div class="card-panel-header">
-                <h4 style="margin: 0; color: #f8fafc;">Acciones rápidas</h4>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <button type="button" class="btn btn-primary solo-admin-total" style="text-align: left; justify-content: flex-start;" onclick="if(window.UsuariosAdmin && UsuariosAdmin.abrirModal) { UsuariosAdmin.abrirModal(); } else if(window.UI && UI.abrirModalNuevoUsuario) { UI.abrirModalNuevoUsuario(); }">
-                  + Crear Nuevo Usuario
-                </button>
-                <button type="button" class="btn btn-secondary" style="text-align: left; justify-content: flex-start;" onclick="UI.showTab('trayectos')">
-                  📚 Gestionar Trayectos Formativos
-                </button>
-                <button type="button" class="btn btn-gold" style="text-align: left; justify-content: flex-start;" onclick="UI.showTab('certificados')">
-                  📜 Emitir Certificados PDF
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+function volumenSemanas(n) {
+  const hoyMs = new Date(hoy()).getTime();
+  const out = [];
+  for (let w = n - 1; w >= 0; w--) {
+    const hasta = hoyMs - w * 7 * 864e5;
+    const desde = hasta - 7 * 864e5;
+    let vol = 0;
+    db.sesiones.forEach(s => {
+      const t = new Date(s.fecha).getTime();
+      if (t > desde && t <= hasta) s.series.forEach(x => vol += x.kg * x.reps);
+    });
+    out.push({ label: new Date(hasta).toISOString().slice(5, 10), vol: Math.round(vol) });
+  }
+  return out;
+}
 
-        <!-- VISTA 2: LISTA DE TRAYECTOS DENTRO DEL DASHBOARD -->
-        <section id="novedades" class="section-tab" style="display: none;"><div id="novedades-admin"></div></section>
-        <section id="ayuda" class="section-tab" style="display: none;"><div id="ayuda-contenido"></div></section>
+function renderProgresoPeso() {
+  const datos = db.peso;
+  const m = ajustes.meta;
 
-        <section id="secretaria" class="section-tab" style="display: none;"><div id="secretaria-contenido"></div></section>
-        <section id="preinscripciones" class="section-tab" style="display: none;"><div id="preinscripciones-contenido"></div></section>
-        <section id="cuentas" class="section-tab" style="display: none;"><div id="cuentas-contenido"></div></section>
-        <section id="estadisticas" class="section-tab admin-only" style="display: none;"><div class="plan-tabs" style="margin-bottom:1rem"><button type="button" class="plan-tab" onclick="UI.showTab('backups')">🗄️ Base de datos</button><button type="button" class="plan-tab" onclick="UI.showTab('auditoria')">🛡️ Auditoría</button><button type="button" class="plan-tab activo" onclick="UI.showTab('estadisticas')">📈 Estadísticas</button></div>
-        <div id="estadisticas-contenido"></div></section>
-        <section id="observaciones" class="section-tab" style="display: none;"><div id="observaciones-contenido"></div></section>
-        <section id="cooperadora" class="section-tab" style="display: none;"><div id="cooperadora-contenido"></div></section>
-        <section id="seguimiento" class="section-tab" style="display: none;"><div id="seguimiento-contenido"></div></section>
+  if (!datos.length) {
+    $("pr-kpis").innerHTML = "";
+    $("pr-meta").innerHTML = "";
+    $("pr-rango").textContent = "";
+    $("pr-vacio").textContent = "Cargá tu peso en la pestaña Peso para ver tu progreso acá.";
+    if (charts["pr-peso-chart"]) { charts["pr-peso-chart"].destroy(); delete charts["pr-peso-chart"]; }
+    return;
+  }
 
-        <section id="progreso" class="section-tab" style="display: none;"><div data-novedades-usuario></div><div id="progreso-contenido"></div></section>
+  const ini = datos[0], ult = datos[datos.length - 1];
+  const cambio = ult.kg - ini.kg;
+  const ritmo = ritmoSemanal(datos);
+  const restante = m ? ult.kg - m : null;
+  $("pr-rango").textContent = datos.length > 1 ? `${ini.fecha} → ${ult.fecha}` : ult.fecha;
+  $("pr-vacio").textContent = datos.length < 2 ? "Con un solo registro todavía no hay tendencia. Cargá otro peso más adelante." : "";
 
-        <section id="trayectos" class="section-tab" style="display: none;">
-          <div data-novedades-usuario></div>
-          <div class="card-panel-header">
-            <div>
-              <h2>Trayectos Formativos</h2>
-              <p style="font-size: 0.85rem; color: #94a3b8;">Gestión de la oferta académica e itinerarios de formación</p>
-            </div>
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
-              <!-- FILTRO POR CICLO LECTIVO -->
-              <select id="filtro-ciclo-lectivo" class="form-control custom-select" style="width: auto; padding: 0.4rem 0.8rem;" onchange="Trayectos.cargarTrayectos()">
-                <option value="2026" selected>Ciclo Lectivo 2026</option>
-                <option value="2027">Ciclo Lectivo 2027</option>
-                <option value="TODOS">Todos los Ciclos</option>
-              </select>
-              <button class="btn btn-primary admin-only" onclick="UI.showTab('nuevo-trayecto')">+ Nuevo Trayecto</button>
-            </div>
-          </div>
-          <!-- Contenedor único para el panel admin -->
-          <div id="lista-trayectos-admin"></div>
-        </section>
-        
-        <!-- VISTA 3: CARGA / EDICIÓN DE TRAYECTO (FORMULARIO) -->
-        <section id="nuevo-trayecto" class="section-tab admin-only" style="display: none;">
-          <div class="card-panel">
-            <div class="card-panel-header">
-              <h3 id="titulo-form-trayecto">Nuevo Trayecto Formativo</h3>
-            </div>
-            <form id="form-trayecto" onsubmit="event.preventDefault(); Trayectos.guardarTrayecto();">
-              
-              <!-- CAMPO OCULTO PARA EL ID AL EDITAR -->
-              <input type="hidden" id="trayecto-id" value="">
+  $("pr-kpis").innerHTML = `
+    <div class="kpi"><small>Peso actual</small><b>${fmt(ult.kg)}<span>kg</span></b></div>
+    <div class="kpi c2"><small>Cambio total</small><b class="${cambio > 0 ? "neg" : cambio < 0 ? "pos" : ""}">${cambio > 0 ? "+" : ""}${fmt(cambio)}<span>kg</span></b></div>
+    <div class="kpi c3"><small>Ritmo</small><b>${ritmo === null ? "—" : (ritmo > 0 ? "+" : "") + fmt(ritmo)}<span>${ritmo === null ? "" : "kg/sem"}</span></b></div>
+    <div class="kpi c4"><small>Para tu meta</small><b>${m ? (restante > 0 ? fmt(restante) : "¡LISTO!") : "—"}<span>${m && restante > 0 ? "kg" : m ? "" : "sin meta"}</span></b></div>`;
 
-              <div class="form-grid-2">
-                <div class="form-group">
-                  <label for="trayecto-nombre">Nombre del Trayecto (tal cual el Catálogo) *</label>
-                  <input type="text" id="trayecto-nombre" class="form-control" placeholder="Ej: Programación Web" required>
-                </div>
-                <div class="form-group">
-                  <label for="trayecto-ciclo">Ciclo Lectivo *</label>
-                  <input type="number" id="trayecto-ciclo" class="form-control" value="2026" min="2020" max="2035" required>
-                </div>
-              </div>
+  if (m && ini.kg !== m) {
+    const avance = Math.max(0, Math.min(100, (ini.kg - ult.kg) / (ini.kg - m) * 100));
+    $("pr-meta").innerHTML = `
+      <div class="mut">Avance hacia <b style="color:var(--sun)">${m} kg</b>: <b style="color:var(--lime)">${Math.round(avance)}%</b></div>
+      <div class="barra"><div style="width:${avance}%"></div></div>`;
+  } else {
+    $("pr-meta").innerHTML = m ? `<div class="mut">¡Estás en tu meta de ${m} kg!</div>` : `<div class="mut">Podés fijar una meta en la pestaña Peso.</div>`;
+  }
 
-              <div class="form-group" style="margin-top: 1rem;">
-                <label for="trayecto-docente">Docente Asignado</label>
-                <select id="trayecto-docente" class="form-control custom-select">
-                  <option value="">Seleccionar Docente...</option>
-                </select>
-              </div>
-              <div class="form-group sup-box">
-                <label>Instructores suplentes</label>
-                <div id="suplentes-lista"><p class="sup-ayuda">Guardá el trayecto y después, al editarlo, vas a poder agregar suplentes.</p></div>
-              </div>
-             <!-- CAMPOS PARA CERTIFICACIÓN Y RESOLUCIÓN -->
-<div class="form-grid-2" style="margin-top: 1rem;">
-  <div class="form-group">
-    <label for="trayecto-certificacion">N° de Curso Oficial</label>
-    <input type="text" id="trayecto-certificacion" class="form-control" placeholder="Ej: 1025">
-  </div>
-  <div class="form-group">
-    <label for="trayecto-horas">Horas (Catálogo)</label>
-    <input type="number" id="trayecto-horas" class="form-control" min="1" max="5000" placeholder="Ej: 360">
-    <small style="color:var(--cfp-muted)">Horas reloj del Catálogo. Gasista, Montador Electricista y Electricista Instalador: horas cátedra.</small>
-  </div>
-</div>
-<div class="form-group" style="margin-top: 1rem;">
-  <label for="trayecto-resolucion">Certificación (tal cual el Catálogo, con la resolución)</label>
-  <textarea id="trayecto-resolucion" class="form-control" rows="2" placeholder="Ej: Montador Electricista Domiciliario según Resolución Nro. RESFC - 2019 - 6865-GDEBA - DGCYE / RESOL-2022-2147-APN-ME / DI-2025-5-APN-DVNTYE#ME"></textarea>
-  <small style="color:var(--cfp-muted)">Va en el certificado después de «CERTIFICADO DE». Respetá mayúsculas, minúsculas y puntos del Catálogo. El nombre del trayecto (arriba) es la columna «Nombre del Trayecto».</small>
-</div>
+  const avg7 = datos.map((_, i) => {
+    const v = datos.slice(Math.max(0, i - 6), i + 1);
+    return Math.round(v.reduce((a, p) => a + p.kg, 0) / v.length * 10) / 10;
+  });
+  const sets = [
+    { label: "Peso", data: datos.map(p => p.kg), borderColor: NEON.cyan, backgroundColor: degradado(NEON.cyan), fill: true, tension: .35, pointRadius: 4, pointBackgroundColor: "#05060d", pointBorderColor: NEON.cyan, pointBorderWidth: 2, pointHoverRadius: 7, borderWidth: 3 },
+    { label: "Promedio 7 registros", data: avg7, borderColor: NEON.mag, borderWidth: 3, tension: .45, pointRadius: 0, fill: false }
+  ];
+  if (m) sets.push({ label: "Meta", data: datos.map(() => m), borderColor: NEON.sun, borderDash: [8, 6], pointRadius: 0, borderWidth: 2 });
+  dibujar("pr-peso-chart", {
+    type: "line",
+    data: { labels: datos.map(p => p.fecha.slice(5)), datasets: sets },
+    options: { scales: { y: { ticks: { callback: v => v + " kg" } } } }
+  });
+}
 
-              <fieldset class="ficha-curso-campos">
-                <legend>Datos para la Ficha de Curso</legend>
-                <div class="form-grid-2">
-                  <div class="form-group"><label for="trayecto-sede-id">Dónde se dicta</label>
-                    <select id="trayecto-sede-id" class="form-control custom-select" onchange="SedesModulo.alElegir()">
-                      <option value="">En sede (sin elegir una de la lista)</option>
-                    </select>
-                    <button type="button" class="btn btn-outline admin-only" style="margin-top:.4rem;padding:.3rem .7rem;font-size:.8rem" onclick="SedesModulo.abrirAdmin()">⚙️ Administrar sedes y subsedes</button></div>
-                  <div class="form-group" style="display:none"><label for="trayecto-sede">Tipo (se completa solo)</label>
-                    <select id="trayecto-sede" class="form-control custom-select" onchange="document.getElementById('grupo-lugar-dictado').style.display = this.value === 'fuera' ? '' : 'none'">
-                      <option value="sede">En sede (CFP N.º 401) · asistencia: preceptoría o docente</option>
-                      <option value="fuera">Fuera de sede · asistencia: el docente</option>
-                    </select></div>
-                  <div class="form-group" id="grupo-lugar-dictado" style="display:none"><label for="trayecto-lugar">Lugar de dictado (fuera de sede)</label>
-                    <input type="text" id="trayecto-lugar" class="form-control" maxlength="160" placeholder="Ej: Sociedad de Fomento Barrio San Fermín, Calle 123"></div>
-                  <div class="form-group"><label for="trayecto-localidad">Localidad</label>
-                    <input type="text" id="trayecto-localidad" class="form-control" maxlength="80" value="San Andrés de Giles"></div>
-                  <div class="form-group"><label for="trayecto-horario">Horario</label>
-                    <input type="text" id="trayecto-horario" class="form-control" maxlength="80" placeholder="Ej: Lunes y miércoles de 18 a 21 hs"></div>
-                  <div class="form-group"><label for="trayecto-fecha-inicio">Fecha de inicio</label>
-                    <input type="date" id="trayecto-fecha-inicio" class="form-control"></div>
-                  <div class="form-group"><label for="trayecto-fecha-cierre">Fecha de cierre</label>
-                    <input type="date" id="trayecto-fecha-cierre" class="form-control"></div>
-                  <div class="form-group"><label for="trayecto-tipo">Tipo (Catálogo)</label>
-                    <input type="text" id="trayecto-tipo" class="form-control" maxlength="80" placeholder="Ej: Nivel II de FP inicial"></div>
-                  <div class="form-group"><label for="trayecto-codigo">Código (Catálogo)</label>
-                    <input type="text" id="trayecto-codigo" class="form-control" maxlength="20" placeholder="Ej: EE21"></div>
-                  <div class="form-group"><label for="trayecto-acto">Acto administrativo</label>
-                    <input type="text" id="trayecto-acto" class="form-control" maxlength="120" placeholder="Ej: Disposición N.º …"></div>
-                  <div class="form-group" style="grid-column: 1 / -1;"><label>Horario por día <small style="font-weight:400;color:var(--cfp-muted)">(para la planilla de matrícula · formato 17:45 A 21:30 · dejá vacío el día que no se cursa)</small></label>
-                    <div class="trayecto-dias">
-                      <label>Lun<input type="text" id="trayecto-dia-L" class="form-control" maxlength="14" placeholder="17:45 A 21:30"></label>
-                      <label>Mar<input type="text" id="trayecto-dia-M" class="form-control" maxlength="14" placeholder="17:45 A 21:30"></label>
-                      <label>Mié<input type="text" id="trayecto-dia-X" class="form-control" maxlength="14" placeholder="17:45 A 21:30"></label>
-                      <label>Jue<input type="text" id="trayecto-dia-J" class="form-control" maxlength="14" placeholder="17:45 A 21:30"></label>
-                      <label>Vie<input type="text" id="trayecto-dia-V" class="form-control" maxlength="14" placeholder="17:45 A 21:30"></label>
-                      <label>Sáb<input type="text" id="trayecto-dia-S" class="form-control" maxlength="14" placeholder="17:45 A 21:30"></label>
-                    </div></div>
-                  <div class="form-group"><label for="trayecto-horas-catedra">Horas cátedra (opcional)</label>
-                    <input type="number" id="trayecto-horas-catedra" class="form-control" min="1" max="7500" placeholder="Se calcula: horas reloj × 1,5"></div>
-                  <div class="form-group"><label for="trayecto-obs-planilla">Observaciones de la planilla</label>
-                    <input type="text" id="trayecto-obs-planilla" class="form-control" maxlength="120" placeholder="Ej: Proviene de 2025"></div>
-                </div>
-              </fieldset>
+function renderEntrenamiento() {
+  const semanas = volumenSemanas(8);
+  const actual = semanas[semanas.length - 1].vol;
+  const anterior = semanas[semanas.length - 2].vol;
+  const dif = anterior ? Math.round((actual - anterior) / anterior * 100) : null;
+  const corte = new Date(hoy()).getTime() - 30 * 864e5;
+  const sesiones30 = db.sesiones.filter(s => s.series.length && new Date(s.fecha).getTime() >= corte).length;
 
-              <div class="form-group" style="margin-top: 1rem;">
-                <label for="trayecto-descripcion">Descripción</label>
-                <textarea id="trayecto-descripcion" class="form-control" rows="3" placeholder="Resumen del trayecto..."></textarea>
-              </div>
+  $("en-kpis").innerHTML = `
+    <div class="kpi"><small>Sesiones (30 días)</small><b>${sesiones30}</b></div>
+    <div class="kpi c2"><small>Volumen esta semana</small><b>${actual.toLocaleString("es-AR")}<span>kg</span></b></div>
+    <div class="kpi c3"><small>Vs. semana anterior</small><b class="${dif > 0 ? "pos" : dif < 0 ? "neg" : ""}">${dif === null ? "—" : (dif > 0 ? "+" : "") + dif + "%"}</b></div>`;
 
-              <div class="form-group" style="margin-top: 1rem;">
-                <label for="trayecto-requisitos">Requisitos de Inscripción</label>
-                <textarea id="trayecto-requisitos" class="form-control" rows="2" placeholder="Ej: DNI, mayor de 16 años..."></textarea>
-              </div>
+  dibujar("en-semanas-chart", {
+    type: "bar",
+    data: {
+      labels: semanas.map(s => s.label),
+      datasets: [{
+        label: "Volumen (kg)", data: semanas.map(s => s.vol),
+        backgroundColor: semanas.map((_, i) => i === semanas.length - 1 ? NEON.lime : NEON.vio + "cc"),
+        borderColor: semanas.map((_, i) => i === semanas.length - 1 ? NEON.lime : NEON.mag),
+        borderWidth: 2, borderRadius: 10, borderSkipped: false
+      }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+}
 
-              <div class="form-group" style="margin-top: 1rem;">
-                <label class="nov-check" for="trayecto-computa-asistencia" style="margin:0;">
-                  <input type="checkbox" id="trayecto-computa-asistencia" checked>
-                  Computa asistencia en la nota <small style="color:var(--cfp-muted)">(desmarcar en trayectos virtuales: la nota sale solo de las actividades)</small>
-                </label>
-              </div>
+function renderProgresoEjercicio() {
+  const ejs = ejerciciosConocidos();
+  const sel = $("p-ej");
+  const actual = sel.value;
+  sel.innerHTML = ejs.map(e => `<option>${esc(e)}</option>`).join("");
+  if (actual && ejs.includes(actual)) sel.value = actual;
+  const ej = sel.value;
+  const metrica = $("p-metrica").value;
+  const puntos = [];
+  db.sesiones.forEach(s => {
+    const xs = s.series.filter(x => x.ejercicio === ej);
+    if (!xs.length) return;
+    let v;
+    if (metrica === "max") v = Math.max(...xs.map(x => x.kg));
+    if (metrica === "e1rm") v = Math.max(...xs.map(x => e1rm(x.kg, x.reps)));
+    if (metrica === "vol") v = xs.reduce((a, x) => a + x.kg * x.reps, 0);
+    puntos.push({ x: s.fecha.slice(5), y: Math.round(v * 10) / 10, f: s.fecha });
+  });
+  dibujar("p-chart", {
+    type: "line",
+    data: { labels: puntos.map(p => p.x), datasets: [{
+      label: metrica, data: puntos.map(p => p.y),
+      borderColor: NEON.mag, backgroundColor: degradado(NEON.mag), fill: true, tension: .35,
+      pointRadius: 5, pointBackgroundColor: NEON.sun, pointBorderColor: "#05060d", pointBorderWidth: 2, borderWidth: 3
+    }] },
+    options: { plugins: { legend: { display: false } } }
+  });
+  if (puntos.length) {
+    const mejor = puntos.reduce((a, b) => b.y > a.y ? b : a);
+    const delta = Math.round((puntos[puntos.length - 1].y - puntos[0].y) * 10) / 10;
+    $("p-stats").innerHTML = `
+      <div class="kpi"><small>Último</small><b>${puntos[puntos.length - 1].y}</b></div>
+      <div class="kpi c4"><small>Récord (${mejor.f})</small><b>${mejor.y}</b></div>
+      <div class="kpi c3"><small>Desde el inicio</small><b class="${delta > 0 ? "pos" : delta < 0 ? "neg" : ""}">${delta > 0 ? "+" : ""}${delta}</b></div>
+      <div class="kpi c2"><small>Sesiones</small><b>${puntos.length}</b></div>`;
+  } else {
+    $("p-stats").innerHTML = '<p class="mut">Sin datos para este ejercicio todavía.</p>';
+  }
+}
 
-              <hr style="margin: 1.5rem 0; border-color: rgba(255,255,255,0.08);">
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h4>Módulos Asociados</h4>
-                <button type="button" class="btn btn-secondary" onclick="UI.agregarFilaModulo()">+ Agregar Módulo</button>
-              </div>
+function renderProgreso() {
+  renderProgresoPeso();
+  renderEntrenamiento();
+  renderProgresoEjercicio();
+}
+$("p-ej").onchange = renderProgreso;
+$("p-metrica").onchange = renderProgreso;
 
-              <div id="contenedor-modulos">
-                <div class="modulo-item-card">
-                  <div class="form-grid-2">
-                    <input type="text" class="mod-nombre form-control" placeholder="Nombre del Módulo">
-                    <input type="text" class="mod-codigo form-control" placeholder="Código (Ej: GH 0050)">
-                  </div>
-                  <div class="form-grid-2" style="margin-top: 0.75rem;">
-                    <div>
-                      <label style="font-size: 0.75rem;">Fecha Inicio</label>
-                      <input type="date" class="mod-inicio form-control">
-                    </div>
-                    <div>
-                      <label style="font-size: 0.75rem;">Fecha Fin</label>
-                      <input type="date" class="mod-fin form-control">
-                    </div>
-                  </div>
-                </div>
-              </div>
+// ---------- Datos ----------
+$("d-exportar").onclick = () => {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "gymapp-" + hoy() + ".json";
+  a.click();
+};
 
-              <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem; width: 100%;">Guardar Trayecto Completo</button>
-            </form>
-          </div>
-        </section>
+$("d-borrar").onclick = async () => {
+  if (!navigator.onLine) return alert("Necesitás conexión para borrar todo.");
+  if (!confirm("¿Borrar TODOS tus datos de la nube? No se puede deshacer.")) return;
+  if (prompt('Para confirmar, escribí BORRAR') !== "BORRAR") return;
+  for (const t of ["series", "sesiones", "rutinas", "peso"]) {
+    const { error } = await sb.from(t).delete().eq("user_id", user.id);
+    if (error) return alert("Error al borrar " + t + ": " + error.message);
+  }
+  cola = []; db = DB_VACIA(); sesionActualId = null;
+  guardarTodo();
+  renderTodo();
+  alert("Datos borrados.");
+};
 
-<!-- VISTA 4: CERTIFICADOS POR TRAYECTO (ADMIN) -->
-        <section id="certificados" class="section-tab admin-only" style="display: none;">
-          <div class="card-panel">
-            <div class="plan-tabs" style="margin-bottom:1rem">
-              <button type="button" class="plan-tab " onclick="UI.showTab('actas')">📋 Fichas / Actas de Examen</button>
-              <button type="button" class="plan-tab activo" onclick="UI.showTab('certificados')">🎓 Emitir certificados</button>
-            </div>
-            <div class="card-panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-              <div>
-                <h3 style="margin: 0;">Emisión de Certificados de Egresados</h3>
-                <p style="font-size: 0.85rem; color: var(--cfp-muted); margin-top: 0.25rem;">
-                  Solo aprobados en el acta de examen. Formato según Circular DFP 4/2020 · hoja A5.
-                </p>
-              </div>
-              <button class="btn btn-secondary" onclick="CertificadosAdmin.cargarNominaCertificados()">
-                🔄 Actualizar Nómina
-              </button>
-            </div>
+// ---------- Render general ----------
+function renderTodo() {
+  refrescarSelects();
+  renderSesion();
+  renderRutinas();
+  if (!$("vista-progreso").classList.contains("hidden")) renderProgreso();
+  if (!$("vista-peso").classList.contains("hidden")) renderPeso();
+  pintarEstado();
+}
 
-           <!-- Contenedor donde se renderizan las tarjetas/tablas por Trayecto -->
-            <div id="contenedor-certificados-trayectos">
-              <!-- Carga dinámica desde js/certificados.js -->
-            </div>
-          </div>
-        </section>
+// Registro del service worker (permite usar la app sin conexión)
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 
-        <!-- VISTA NUEVA: FICHAS DE CURSO / ACTAS DE EXAMEN -->
-        <section id="actas" class="section-tab" style="display: none;">
-          <div class="card-panel">
-            <div class="plan-tabs" style="margin-bottom:1rem">
-              <button type="button" class="plan-tab activo" onclick="UI.showTab('actas')">📋 Fichas / Actas de Examen</button>
-              <button type="button" class="plan-tab " onclick="UI.showTab('certificados')">🎓 Emitir certificados</button>
-            </div>
-            <div class="card-panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-              <div>
-                <h3 style="margin: 0; font-size: 1.25rem;">📋 Fichas de Curso / Actas de Examen</h3>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #94a3b8;">
-                  Consolidado de calificaciones por módulo y actas oficiales de examen.
-                </p>
-              </div>
-              <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <label for="filtro-ciclo-actas" style="font-size: 0.85rem; font-weight: 600; color: #94a3b8;">Ciclo Lectivo:</label>
-                <select id="filtro-ciclo-actas" class="form-control custom-select" style="width: auto; padding: 0.4rem 0.8rem;" onchange="ActasModulo.cargarTrayectosActas()">
-                  <!-- Se completa dinámicamente desde js/actas.js -->
-                </select>
-              </div>
-            </div>
-
-            <!-- Contenedor dinámico donde se renderizan las solapas por trayecto y la planilla del acta -->
-            <div id="contenedor-modulo-actas" style="margin-top: 1.25rem;">
-              <!-- Generado por js/actas.js -->
-            </div>
-          </div>
-        </section>
-
-        <!-- VISTA 5: GESTIÓN DE USUARIOS -->
-        <section id="usuarios" class="section-tab admin-only" style="display: none;">
-          <div class="card-panel">
-            <div class="card-panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-              <div>
-                <h3 style="margin: 0; font-size: 1.25rem;">Gestión de Usuarios y Solicitudes</h3>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #94a3b8;">
-                  Aprobación de registros pendientes, alta manual y asignación de roles.
-                </p>
-              </div>
-              <button type="button" class="btn btn-primary solo-admin-total" onclick="if(window.UsuariosAdmin && UsuariosAdmin.abrirModal) { UsuariosAdmin.abrirModal(); } else if(window.UI && UI.abrirModalNuevoUsuario) { UI.abrirModalNuevoUsuario(); }">
-                + Crear Nuevo Usuario
-              </button>
-            </div>
-
-            <div style="overflow-x: auto; margin-top: 1.25rem;">
-              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
-                <thead>
-                  <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); color: #94a3b8;">
-                    <th style="padding: 0.75rem;">Usuario / DNI</th>
-                    <th style="padding: 0.75rem;">Contacto / Ubicación</th>
-                    <th style="padding: 0.75rem;">Rol</th>
-                    <th style="padding: 0.75rem;">Estado</th>
-                    <th style="padding: 0.75rem; text-align: right;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="tabla-usuarios">
-                  <!-- Carga dinámica desde js/usuarios.js -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- VISTA 6: BASE DE DATOS Y RESPALDO (EXCLUSIVO ADMIN) -->
-        <section id="backups" class="section-tab admin-only" style="display: none;">
-          <div class="plan-tabs" style="margin-bottom:1rem"><button type="button" class="plan-tab activo" onclick="UI.showTab('backups')">🗄️ Base de datos</button><button type="button" class="plan-tab" onclick="UI.showTab('auditoria')">🛡️ Auditoría</button><button type="button" class="plan-tab" onclick="UI.showTab('estadisticas')">📈 Estadísticas</button></div>
-        <div class="card-panel" style="max-width: 750px; margin: 0 auto; padding: 2rem;">
-            <div class="card-panel-header" style="margin-bottom: 1.5rem;">
-              <div>
-                <h2 style="color: #f8fafc; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                  💾 Gestor de Base de Datos y Backups
-                </h2>
-                <p style="color: #94a3b8; font-size: 0.875rem; margin-top: 0.25rem;">
-                  Herramientas exclusivas de administración para respaldar o restaurar toda la base de datos de Supabase.
-                </p>
-              </div>
-            </div>
-
-            <div class="uso-panel">
-              <h4>Espacio usado en la base de datos</h4>
-              <div id="uso-base"></div>
-            </div>
-
-            <div class="uso-panel">
-              <h4>Cierre de ciclo: archivar respuestas antiguas</h4>
-              <div id="cierre-ciclo"></div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
-              <!-- Descargar Backup -->
-              <div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <h4 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.5rem; font-size: 1.05rem;">📥 Descargar Backup</h4>
-                  <p style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4;">
-                    Copia de todas las tablas de la plataforma en un archivo JSON. Tiene datos personales: guardalo en un lugar seguro. Además, cada domingo se hace solo un respaldo completo y cifrado (GitHub → Actions).
-                  </p>
-                </div>
-                <button class="btn" style="background: #0284c7; color: white; border: none; padding: 0.65rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1rem; width: 100%;" onclick="ReportesModulo.descargarBackupCompletoJSON()">
-                  ⬇️ Descargar Copia JSON
-                </button>
-              </div>
-
-              <!-- Restaurar Backup -->
-              <div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 8px; border: 1px solid rgba(248, 113, 113, 0.25); display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <h4 style="color: #f87171; margin-top: 0; margin-bottom: 0.5rem; font-size: 1.05rem;">📤 Restaurar Backup</h4>
-                  <p style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4;">
-                    Vuelve a cargar un respaldo JSON: agrega o actualiza filas (no borra nada). Para recuperar todo ante un problema grave, usar el respaldo semanal cifrado (ver docs/GUIA_PROTECCION.md).
-                  </p>
-                </div>
-                <button class="btn" style="background: #dc2626; color: white; border: none; padding: 0.65rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1rem; width: 100%;" onclick="ReportesModulo.restaurarBackupDesdeJSON()">
-                  ⚠️ Subir y Restaurar
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- VISTA 7: AUDITORÍA DE CAMBIOS (EXCLUSIVO ADMIN) -->
-        <section id="auditoria" class="section-tab admin-only" style="display: none;">
-          <div class="plan-tabs" style="margin-bottom:1rem"><button type="button" class="plan-tab" onclick="UI.showTab('backups')">🗄️ Base de datos</button><button type="button" class="plan-tab activo" onclick="UI.showTab('auditoria')">🛡️ Auditoría</button><button type="button" class="plan-tab" onclick="UI.showTab('estadisticas')">📈 Estadísticas</button></div>
-        <div class="card-panel" style="padding: 1.5rem;">
-            <div class="card-panel-header" style="margin-bottom: 1rem;">
-              <div>
-                <h2 style="color: #f8fafc; margin: 0;">🕵️ Auditoría de cambios</h2>
-                <p style="color: #94a3b8; font-size: 0.875rem; margin-top: 0.25rem;">
-                  Quién hizo cada cambio y cuándo. Filtrá por rol o por persona; tocá “Ver detalle” para ver el antes y el después.
-                </p>
-              </div>
-            </div>
-            <div id="auditoria-filtros" class="aud-filtros"></div>
-            <div id="auditoria-contenido"></div>
-          </div>
-        </section>
-
-      </main>
-    </div>
-  </div>
-
-  <!-- MODAL PARA ALTA MANUAL DE USUARIO -->
-  <div id="modal-alta-usuario" class="modal-overlay" style="display: none;">
-    <div class="card-panel" style="max-width: 650px; width: 100%; max-height: 90vh; overflow-y: auto; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem;">
-      <div class="card-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h3 style="margin: 0;">Crear Nuevo Usuario</h3>
-        <button type="button" class="btn btn-outline" onclick="if(window.UsuariosAdmin && UsuariosAdmin.cerrarModal) { UsuariosAdmin.cerrarModal(); } else { document.getElementById('modal-alta-usuario').classList.remove('open'); document.getElementById('modal-alta-usuario').style.display='none'; }" style="padding: 0.2rem 0.6rem;">✕</button>
-      </div>
-
-      <form id="form-alta-usuario">
-        <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label for="usr-alta-apellido">Apellido *</label>
-            <input type="text" id="usr-alta-apellido" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label for="usr-alta-nombre">Nombre *</label>
-            <input type="text" id="usr-alta-nombre" class="form-control" required>
-          </div>
-        </div>
-        <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-          <div class="form-group">
-            <label for="usr-alta-dni">DNI / Documento *</label>
-            <input type="text" id="usr-alta-dni" class="form-control" required placeholder="Sin puntos">
-          </div>
-          <div class="form-group">
-            <label for="usr-alta-email">Email</label>
-            <input type="email" id="usr-alta-email" class="form-control" placeholder="correo@ejemplo.com">
-          </div>
-        </div>
-
-        <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-          <div class="form-group">
-            <label for="usr-alta-rol">Rol asignado</label>
-            <select id="usr-alta-rol" class="form-control custom-select">
-              <option value="estudiante">Estudiante</option>
-              <option value="docente">Docente</option>
-              <option value="secretaria">Secretaría</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="usr-alta-fecha">Fecha de Nacimiento</label>
-            <input type="date" id="usr-alta-fecha" class="form-control">
-          </div>
-        </div>
-
-        <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-          <div class="form-group">
-            <label for="usr-alta-domicilio">Domicilio</label>
-            <input type="text" id="usr-alta-domicilio" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="usr-alta-ciudad">Ciudad</label>
-            <input type="text" id="usr-alta-ciudad" class="form-control" value="San Andrés de Giles">
-          </div>
-        </div>
-
-        <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-          <div class="form-group">
-            <label for="usr-alta-provincia">Provincia</label>
-            <input type="text" id="usr-alta-provincia" class="form-control" value="Buenos Aires">
-          </div>
-          <div class="form-group">
-            <label for="usr-alta-nacionalidad">Nacionalidad</label>
-            <input type="text" id="usr-alta-nacionalidad" class="form-control" value="Argentina">
-          </div>
-        </div>
-
-        <div style="margin-top: 1rem;">
-          <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;">Inscribir en Trayectos:</label>
-          <div id="usr-alta-trayectos" style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); max-height: 120px; overflow-y: auto;">
-            <!-- Carga dinámica de trayectos -->
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
-          <button type="button" class="btn btn-outline" onclick="if(window.UsuariosAdmin && UsuariosAdmin.cerrarModal) { UsuariosAdmin.cerrarModal(); } else { document.getElementById('modal-alta-usuario').classList.remove('open'); document.getElementById('modal-alta-usuario').style.display='none'; }">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar Usuario</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
- <!-- Librerías Externas -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-  
-  <!-- Lógica Interna (Sin caracteres sueltos y con versión actualizada) -->
-  <script src="js/app.js?v=70024" defer></script>
-  <script src="js/entorno-prueba.js?v=70007" defer></script>
-  <script src="js/supabase-config.js?v=70008" defer></script>
-  <script src="js/avisos.js?v=70008" defer></script>
-  <script src="js/reglas.js?v=70022" defer></script>
-  <script src="js/ui.js?v=70077" defer></script>
-  <script src="js/auth.js?v=70028" defer></script>
-  <script src="js/trayectos.js?v=70050" defer></script>
-  <script src="js/usuarios.js?v=70068" defer></script>
-  <script src="js/auditoria.js?v=70027" defer></script>
-  <script src="js/progreso.js?v=70022" defer></script>
-  <script src="js/seguimiento.js?v=70066" defer></script>
-  <script src="js/ficha.js?v=70055" defer></script>
-  <script src="js/novedades.js?v=70052" defer></script>
-  <script src="js/importador.js?v=70027" defer></script>
-  <script src="js/corrector.js?v=70020" defer></script>
-  <script src="js/actividades.js?v=70027" defer></script>
-  <script src="js/clases.js?v=70065" defer></script>
-  <script src="js/asistencias.js?v=70052" defer></script>
-  <script src="js/reportes.js?v=70025" defer></script>
-  <script src="js/notificaciones.js?v=70007" defer></script>
-  <script src="js/actas.js?v=70054" defer></script>
-  <script src="js/usobase.js?v=70020" defer></script>
-  <script src="js/secretaria.js?v=70073" defer></script>
-  <script src="js/sisge.js?v=70073" defer></script>
-  <script src="js/ayuda.js?v=70077" defer></script>
-  <script src="js/matricula_escolar.js?v=70055" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
-  <script src="js/ficha_inscripcion.js?v=70073" defer></script>
-  <script src="js/preinscripciones.js?v=70074" defer></script>
-  <script src="js/cuentas.js?v=70050" defer></script>
-  <script src="js/estadisticas.js?v=70050" defer></script>
-  <script src="js/observaciones.js?v=70050" defer></script>
-  <script src="js/cooperadora.js?v=70072" defer></script>
-  <script src="js/planilla.js?v=70051" defer></script>
-  <script src="js/sedes.js?v=70050" defer></script>
-  <script src="js/constancias.js?v=70051" defer></script>
-  <script src="js/fichacurso.js?v=70069" defer></script>
-  <script src="js/certificados.js?v=70016" defer></script>
-  <script src="js/libro-temas.js?v=70051" defer></script>
-  <script src="js/planificacion.js?v=70050" defer></script>
+$("s-fecha").value = hoy();
+$("pc-fecha").value = hoy();
+refrescarSelects();
+renderTodo();
+</script>
 </body>
 </html>
