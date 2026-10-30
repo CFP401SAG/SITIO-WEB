@@ -370,13 +370,7 @@
     <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-6 6.5-6s6.500 2.400 6.500 6"/><path d="M16 4.500a3.500 3.500 0 0 1 0 7M18 14c2.200.800 3.500 2.700 3.500 6"/></svg></span> Usuarios y Roles
   </button>
   <button id="btn-backups" class="nav-item-btn admin-only" onclick="UI.showTab('backups')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.700 3.600 3 8 3s8-1.300 8-3V6M4 12v6c0 1.700 3.600 3 8 3s8-1.300 8-3v-6"/></svg></span> Base de Datos
-  </button>
-  <button id="btn-estadisticas" class="nav-item-btn admin-only" onclick="UI.showTab('estadisticas')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span> Estadísticas
-  </button>
-  <button id="btn-auditoria" class="nav-item-btn admin-only" onclick="UI.showTab('auditoria')">
-    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.400 8.200 8 9 4.600-.800 8-4 8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span> Auditoría
+    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.700 3.600 3 8 3s8-1.300 8-3V6M4 12v6c0 1.700 3.600 3 8 3s8-1.300 8-3v-6"/></svg></span> Control y respaldo
   </button>
 </nav>
 
@@ -514,7 +508,8 @@
         <section id="secretaria" class="section-tab" style="display: none;"><div id="secretaria-contenido"></div></section>
         <section id="preinscripciones" class="section-tab" style="display: none;"><div id="preinscripciones-contenido"></div></section>
         <section id="cuentas" class="section-tab" style="display: none;"><div id="cuentas-contenido"></div></section>
-        <section id="estadisticas" class="section-tab admin-only" style="display: none;"><div id="estadisticas-contenido"></div></section>
+        <section id="estadisticas" class="section-tab admin-only" style="display: none;"><div class="plan-tabs" style="margin-bottom:1rem"><button type="button" class="plan-tab" onclick="UI.showTab('backups')">🗄️ Base de datos</button><button type="button" class="plan-tab" onclick="UI.showTab('auditoria')">🛡️ Auditoría</button><button type="button" class="plan-tab activo" onclick="UI.showTab('estadisticas')">📈 Estadísticas</button></div>
+        <div id="estadisticas-contenido"></div></section>
         <section id="observaciones" class="section-tab" style="display: none;"><div id="observaciones-contenido"></div></section>
         <section id="cooperadora" class="section-tab" style="display: none;"><div id="cooperadora-contenido"></div></section>
         <section id="seguimiento" class="section-tab" style="display: none;"><div id="seguimiento-contenido"></div></section>
@@ -776,7 +771,8 @@
 
         <!-- VISTA 6: BASE DE DATOS Y RESPALDO (EXCLUSIVO ADMIN) -->
         <section id="backups" class="section-tab admin-only" style="display: none;">
-          <div class="card-panel" style="max-width: 750px; margin: 0 auto; padding: 2rem;">
+          <div class="plan-tabs" style="margin-bottom:1rem"><button type="button" class="plan-tab activo" onclick="UI.showTab('backups')">🗄️ Base de datos</button><button type="button" class="plan-tab" onclick="UI.showTab('auditoria')">🛡️ Auditoría</button><button type="button" class="plan-tab" onclick="UI.showTab('estadisticas')">📈 Estadísticas</button></div>
+        <div class="card-panel" style="max-width: 750px; margin: 0 auto; padding: 2rem;">
             <div class="card-panel-header" style="margin-bottom: 1.5rem;">
               <div>
                 <h2 style="color: #f8fafc; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
@@ -830,7 +826,8 @@
 
         <!-- VISTA 7: AUDITORÍA DE CAMBIOS (EXCLUSIVO ADMIN) -->
         <section id="auditoria" class="section-tab admin-only" style="display: none;">
-          <div class="card-panel" style="padding: 1.5rem;">
+          <div class="plan-tabs" style="margin-bottom:1rem"><button type="button" class="plan-tab" onclick="UI.showTab('backups')">🗄️ Base de datos</button><button type="button" class="plan-tab activo" onclick="UI.showTab('auditoria')">🛡️ Auditoría</button><button type="button" class="plan-tab" onclick="UI.showTab('estadisticas')">📈 Estadísticas</button></div>
+        <div class="card-panel" style="padding: 1.5rem;">
             <div class="card-panel-header" style="margin-bottom: 1rem;">
               <div>
                 <h2 style="color: #f8fafc; margin: 0;">🕵️ Auditoría de cambios</h2>
@@ -945,7 +942,7 @@
   <script src="js/supabase-config.js?v=70008" defer></script>
   <script src="js/avisos.js?v=70008" defer></script>
   <script src="js/reglas.js?v=70022" defer></script>
-  <script src="js/ui.js?v=70076" defer></script>
+  <script src="js/ui.js?v=70078" defer></script>
   <script src="js/auth.js?v=70028" defer></script>
   <script src="js/trayectos.js?v=70050" defer></script>
   <script src="js/usuarios.js?v=70078" defer></script>
@@ -965,7 +962,7 @@
   <script src="js/usobase.js?v=70020" defer></script>
   <script src="js/secretaria.js?v=70073" defer></script>
   <script src="js/sisge.js?v=70073" defer></script>
-  <script src="js/ayuda.js?v=70076" defer></script>
+  <script src="js/ayuda.js?v=70078" defer></script>
   <script src="js/matricula_escolar.js?v=70055" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
   <script src="js/ficha_inscripcion.js?v=70073" defer></script>
