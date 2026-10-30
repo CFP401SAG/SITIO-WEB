@@ -391,9 +391,8 @@ const UsuariosAdmin = {
     }
   },
 
-  /* Corregir apellido, nombre o correo de contacto. El DNI no se edita acá: lo usan las
-     inscripciones, asistencias y notas para identificar al estudiante, y cambiarlo
-     rompería esos vínculos. Si hay que corregir un DNI mal cargado, avisame y lo vemos aparte. */
+  /* Corregir DNI, apellido, nombre o correo. El DNI se cambia con la función SQL
+     admin_corregir_dni (sql/50), que lo actualiza en todas las tablas que lo usan. */
   async editarDatos(userId) {
     if (typeof Swal === 'undefined') return;
     const u = this.listaUsuarios.find(x => (x.id || x.usuario) === userId);
@@ -402,13 +401,14 @@ const UsuariosAdmin = {
     const r = await Swal.fire({
       title: 'Corregir datos del usuario',
       html: `<div style="text-align:left; font-size:0.85rem;">
-        <p style="margin:0 0 0.6rem; color:#94a3b8;">DNI ${Trayectos.esc(u.dni || u.usuario)} (no se edita acá)</p>
+        <label class="eq-label">DNI (es también el usuario de ingreso)</label><input id="ed-dni" inputmode="numeric" class="swal2-input eq-motivo" value="${Trayectos.esc(u.dni || u.usuario || '')}" placeholder="Solo números, sin puntos">
         <label class="eq-label">Apellido</label><input id="ed-apellido" class="swal2-input eq-motivo" value="${(u.apellido || '').replace(/"/g, '&quot;')}">
         <label class="eq-label">Nombre</label><input id="ed-nombre" class="swal2-input eq-motivo" value="${(u.nombre || '').replace(/"/g, '&quot;')}">
         <label class="eq-label">${esEst ? 'Correo de contacto' : 'Correo (es también con el que ingresa)'}</label><input id="ed-email" type="email" class="swal2-input eq-motivo" value="${(u.email || '').replace(/"/g, '&quot;')}" placeholder="nombre@dominio.com">
       </div>`,
       showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar', focusConfirm: false,
       preConfirm: () => ({
+        dni: document.getElementById('ed-dni').value.replace(/\D/g, ''),
         apellido: document.getElementById('ed-apellido').value.trim().toUpperCase(),
         nombre: document.getElementById('ed-nombre').value.trim(),
         email: document.getElementById('ed-email').value.trim().toLowerCase()
@@ -416,7 +416,23 @@ const UsuariosAdmin = {
     });
     if (!r.isConfirmed) return;
     if (!r.value.apellido || !r.value.nombre) { alert('Apellido y nombre son obligatorios.'); return; }
+    const dniActual = String(u.dni || u.usuario || '').trim();
+    const cambioDni = r.value.dni !== dniActual;
+    if (cambioDni) {
+      if (!/^[0-9]{6,9}$/.test(r.value.dni)) { alert('El DNI debe tener entre 6 y 9 números, sin puntos.'); return; }
+      const ok = await Swal.fire({
+        icon: 'warning', title: '¿Cambiar el DNI?',
+        html: `De <b>${Trayectos.esc(dniActual)}</b> a <b>${Trayectos.esc(r.value.dni)}</b>.<br><small>Se actualiza en inscripciones, asistencias, notas y demás registros, y es el usuario con el que ingresa. La contraseña no cambia.</small>`,
+        showCancelButton: true, confirmButtonText: 'Sí, cambiar', cancelButtonText: 'Cancelar'
+      });
+      if (!ok.isConfirmed) return;
+    }
     try {
+      if (cambioDni) {
+        const { error: errDni } = await supabase.rpc('admin_corregir_dni', { p_user_id: userId, p_dni_nuevo: r.value.dni });
+        if (errDni) throw errDni;
+        Object.assign(u, { dni: r.value.dni, usuario: r.value.dni });
+      }
       // Personal: si cambió el correo, también cambia el de acceso (los estudiantes siguen ingresando con el DNI)
       // Siempre se sincroniza (aunque el dato de contacto ya coincida): así se corrigen cuentas donde difería del de acceso
       const cambioCorreo = !esEst && !!r.value.email;
