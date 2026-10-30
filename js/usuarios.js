@@ -418,7 +418,8 @@ const UsuariosAdmin = {
     if (!r.value.apellido || !r.value.nombre) { alert('Apellido y nombre son obligatorios.'); return; }
     try {
       // Personal: si cambió el correo, también cambia el de acceso (los estudiantes siguen ingresando con el DNI)
-      const cambioCorreo = !esEst && r.value.email && r.value.email !== String(u.email || '').toLowerCase();
+      // Siempre se sincroniza (aunque el dato de contacto ya coincida): así se corrigen cuentas donde difería del de acceso
+      const cambioCorreo = !esEst && !!r.value.email;
       if (cambioCorreo) {
         const { error: errMail } = await supabase.rpc('admin_cambiar_correo_acceso', { p_user_id: userId, p_email: r.value.email });
         if (errMail) throw errMail;
