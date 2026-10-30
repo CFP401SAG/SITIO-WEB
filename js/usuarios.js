@@ -398,13 +398,14 @@ const UsuariosAdmin = {
     if (typeof Swal === 'undefined') return;
     const u = this.listaUsuarios.find(x => (x.id || x.usuario) === userId);
     if (!u) return;
+    const esEst = String(u.rol || '').toLowerCase() === 'estudiante';
     const r = await Swal.fire({
       title: 'Corregir datos del usuario',
       html: `<div style="text-align:left; font-size:0.85rem;">
         <p style="margin:0 0 0.6rem; color:#94a3b8;">DNI ${Trayectos.esc(u.dni || u.usuario)} (no se edita acá)</p>
         <label class="eq-label">Apellido</label><input id="ed-apellido" class="swal2-input eq-motivo" value="${(u.apellido || '').replace(/"/g, '&quot;')}">
         <label class="eq-label">Nombre</label><input id="ed-nombre" class="swal2-input eq-motivo" value="${(u.nombre || '').replace(/"/g, '&quot;')}">
-        <label class="eq-label">Correo de contacto</label><input id="ed-email" type="email" class="swal2-input eq-motivo" value="${(u.email || '').replace(/"/g, '&quot;')}" placeholder="nombre@dominio.com">
+        <label class="eq-label">${esEst ? 'Correo de contacto' : 'Correo (es también con el que ingresa)'}</label><input id="ed-email" type="email" class="swal2-input eq-motivo" value="${(u.email || '').replace(/"/g, '&quot;')}" placeholder="nombre@dominio.com">
       </div>`,
       showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar', focusConfirm: false,
       preConfirm: () => ({
@@ -416,6 +417,12 @@ const UsuariosAdmin = {
     if (!r.isConfirmed) return;
     if (!r.value.apellido || !r.value.nombre) { alert('Apellido y nombre son obligatorios.'); return; }
     try {
+      // Personal: si cambió el correo, también cambia el de acceso (los estudiantes siguen ingresando con el DNI)
+      const cambioCorreo = !esEst && r.value.email && r.value.email !== String(u.email || '').toLowerCase();
+      if (cambioCorreo) {
+        const { error: errMail } = await supabase.rpc('admin_cambiar_correo_acceso', { p_user_id: userId, p_email: r.value.email });
+        if (errMail) throw errMail;
+      }
       const { error } = await supabase.from('profiles')
         .update({ apellido: r.value.apellido, nombre: r.value.nombre, email: r.value.email || null })
         .eq('id', userId);
