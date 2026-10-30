@@ -424,10 +424,12 @@ const UsuariosAdmin = {
         const { error: errMail } = await supabase.rpc('admin_cambiar_correo_acceso', { p_user_id: userId, p_email: r.value.email });
         if (errMail) throw errMail;
       }
-      const { error } = await supabase.from('profiles')
+      const { data, error } = await supabase.from('profiles')
         .update({ apellido: r.value.apellido, nombre: r.value.nombre, email: r.value.email || null })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select('id');
       if (error) throw error;
+      if (!data || !data.length) throw new Error('No se guardó ningún cambio (sin permiso sobre esta cuenta).');
       Object.assign(u, { apellido: r.value.apellido, nombre: r.value.nombre, email: r.value.email || null });
       this.renderizarTabla();
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Datos actualizados', showConfirmButton: false, timer: 2000 });
