@@ -1380,3 +1380,12 @@ details.seg-grupo > .seg-item { margin: .5rem .7rem; }
 .ay-tabla{border-collapse:collapse;width:100%;font-size:.86rem}
 .ay-tabla td{border:1px solid #dfe7e9;padding:.4rem .6rem;vertical-align:top}.ay-tabla td:first-child{width:34%;font-weight:600;background:#f3f8f9}
 .ay-pie{margin:1rem 0 0;font-size:.76rem;color:#7a8f93}
+
+/* Cursada de un trayecto (solo lectura): días, sede y fechas de cada módulo */
+.trayecto-cursada { margin-top: .75rem; padding: .65rem .8rem; border-radius: 8px; background: var(--cfp-celeste-soft); border-left: 3px solid var(--cfp-celeste); display: grid; gap: .55rem; font-size: .82rem; text-align: left; word-break: break-word; }
+.trayecto-cursada .cursada-et { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--cfp-blue); margin-bottom: .15rem; }
+.trayecto-cursada .cursada-txt { color: var(--cfp-ink-2); line-height: 1.4; }
+.trayecto-cursada .cursada-txt b { font-weight: 600; color: var(--cfp-navy); }
+.trayecto-cursada .cursada-mods { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
+.trayecto-cursada .cursada-mods li { display: flex; justify-content: space-between; gap: .6rem; flex-wrap: wrap; color: var(--cfp-ink-2); }
+.trayecto-cursada .cursada-mods li b { color: var(--cfp-navy); font-weight: 600; white-space: nowrap; }

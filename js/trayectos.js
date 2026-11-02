@@ -167,6 +167,55 @@ const Trayectos = {
     }
   },
 
+  /* ---------- Cursada (solo lectura): días y horarios, fechas y sede ----------
+     Se arma con datos que ya tiene el trayecto; no modifica nada ni va a las planillas. */
+  NOMBRES_DIAS: { L: 'Lunes', M: 'Martes', X: 'Miércoles', J: 'Jueves', V: 'Viernes', S: 'Sábado' },
+
+  fmtFecha(v) {
+    const m = String(v || '').slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+  },
+
+  rangoFechas(ini, fin) {
+    const a = this.fmtFecha(ini), b = this.fmtFecha(fin);
+    if (a && b) return `${a} al ${b}`;
+    if (a) return `desde el ${a}`;
+    if (b) return `hasta el ${b}`;
+    return 'a confirmar';
+  },
+
+  cursadaHTML(t) {
+    const e = (x) => Trayectos.esc(x);
+    // Días y horarios
+    const dias = t.horario_dias && typeof t.horario_dias === 'object' ? t.horario_dias : {};
+    const lista = this.DIAS_PLANILLA.filter(k => dias[k]).map(k => `${this.NOMBRES_DIAS[k]} ${String(dias[k]).toLowerCase()}${/hs|h$/i.test(String(dias[k])) ? '' : ' hs'}`);
+    const diasTxt = lista.length ? lista.join(' · ') : (t.horario ? String(t.horario) : 'A confirmar');
+
+    // Sede (la dirección sale de lugar_dictado, que ya se mantiene sincronizado con la lista de sedes)
+    let sedeTxt;
+    if (t.sede === 'fuera') {
+      sedeTxt = t.lugar_dictado || 'Fuera de la sede';
+    } else {
+      sedeTxt = 'CFP N.º 401' + (t.lugar_dictado ? ' · ' + t.lugar_dictado : '');
+    }
+    if (t.localidad) sedeTxt += ' (' + t.localidad + ')';
+
+    // Fechas: de cada módulo; si el trayecto no tiene módulos, las del trayecto
+    let fechasHTML;
+    const mods = Array.isArray(t.modulos) ? t.modulos : [];
+    if (mods.length) {
+      fechasHTML = `<ul class="cursada-mods">${mods.map(m => `<li><span>${e(m.nombre)}</span><b>${e(this.rangoFechas(m.fecha_inicio, m.fecha_fin))}</b></li>`).join('')}</ul>`;
+    } else {
+      fechasHTML = `<div class="cursada-txt"><b>${e(this.rangoFechas(t.fecha_inicio, t.fecha_cierre))}</b></div>`;
+    }
+
+    return `<div class="trayecto-cursada">
+      <div class="cursada-fila"><span class="cursada-et">🗓️ Días y horarios</span><div class="cursada-txt">${e(diasTxt)}</div></div>
+      <div class="cursada-fila"><span class="cursada-et">📍 Sede</span><div class="cursada-txt">${e(sedeTxt)}</div></div>
+      <div class="cursada-fila"><span class="cursada-et">${mods.length ? '📆 Inicio y fin de cada módulo' : '📆 Inicio y finalización'}</span>${fechasHTML}</div>
+    </div>`;
+  },
+
   LIMITE_PUBLICO: 6,
 
   async renderizarTrayectos() {
@@ -281,6 +330,7 @@ const Trayectos = {
               <p class="pub-desc" style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.75rem; line-height: 1.4;">
                 ${Trayectos.esc(trayecto.descripcion || 'Sin descripción disponible.')}
               </p>
+              ${this.cursadaHTML(trayecto)}
             </div>
             ${accionesAdmin}
           `;
@@ -318,6 +368,7 @@ const Trayectos = {
               </p>
 
               <div style="margin-top: 0.5rem;">${modulosHTML}</div>
+              ${this.cursadaHTML(trayecto)}
             </div>
             ${accionEstudiante}
             ${accionesAdmin}
