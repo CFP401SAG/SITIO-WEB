@@ -528,11 +528,23 @@ const CooperadoraModulo = {
     return res;
   },
 
+  // Ejercicio de la cooperadora: del 1 de mayo de un año al 30 de abril del siguiente.
+  // Se identifica por el año en que empieza (ej. 2026 = 01/05/2026 al 30/04/2027).
+  ejercicioDeFecha(f) {
+    const [a, m] = String(f || '').slice(0, 10).split('-').map(Number);
+    if (!a || !m) return null;
+    return m >= 5 ? a : a - 1;
+  },
+  enEjercicio(fecha, desde) { return this.ejercicioDeFecha(fecha) === Number(desde); },
+  etiquetaEjercicio(y) { return `Ejercicio ${y}/${Number(y) + 1} (01/05/${y} al 30/04/${Number(y) + 1})`; },
+
   vistaBalance() {
     if (!this.balMes) this.balMes = new Date().toISOString().slice(0, 7);
-    if (!this.balAnio) this.balAnio = new Date().getFullYear();
+    if (!this.balAnio) this.balAnio = this.ejercicioDeFecha(new Date().toISOString().slice(0, 10));
+    const anios = new Set([Number(this.balAnio), ...this.movimientos.map(m => this.ejercicioDeFecha(m.fecha)).filter(Boolean)]);
+    const optsEj = [...anios].sort((a, b) => b - a).map(y => `<option value="${y}" ${y === Number(this.balAnio) ? 'selected' : ''}>${this.etiquetaEjercicio(y)}</option>`).join('');
     const movsMes = this.movimientos.filter(m => String(m.fecha || '').slice(0, 7) === this.balMes);
-    const movsAnio = this.movimientos.filter(m => String(m.fecha || '').slice(0, 4) === String(this.balAnio));
+    const movsAnio = this.movimientos.filter(m => this.enEjercicio(m.fecha, this.balAnio));
     const bMes = this.balanceDe(movsMes);
     const bAnio = this.balanceDe(movsAnio);
     const bloque = (titulo, b) => `
@@ -552,10 +564,10 @@ const CooperadoraModulo = {
     return `
       <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:0.5rem;">
         <label>Balance mensual: <input type="month" class="form-control" value="${this.balMes}" onchange="CooperadoraModulo.balMes=this.value; CooperadoraModulo.render();"></label>
-        <label>Balance anual: <input type="number" class="form-control" style="width:7rem;" value="${this.balAnio}" onchange="CooperadoraModulo.balAnio=this.value; CooperadoraModulo.render();"></label>
+        <label>Balance del ejercicio: <select class="form-control" onchange="CooperadoraModulo.balAnio=Number(this.value); CooperadoraModulo.render();">${optsEj}</select></label>
       </div>
       ${bloque('Balance mensual — ' + this.balMes, bMes)}
-      ${bloque('Balance anual — ' + this.balAnio, bAnio)}
+      ${bloque('Balance del ' + this.etiquetaEjercicio(this.balAnio), bAnio)}
     `;
   },
 
@@ -673,8 +685,8 @@ const CooperadoraModulo = {
       width: 640,
       html: `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; text-align:left;">
-          <input id="e-desde" type="number" class="swal2-input" placeholder="Año desde" value="${e?.ciclo_desde || ''}">
-          <input id="e-hasta" type="number" class="swal2-input" placeholder="Año hasta" value="${e?.ciclo_hasta || ''}">
+          <input id="e-desde" type="number" class="swal2-input" title="Año en que empieza (1 de mayo)" placeholder="Año desde (1 de mayo)" value="${e?.ciclo_desde || ''}">
+          <input id="e-hasta" type="number" class="swal2-input" title="Año en que termina (30 de abril)" placeholder="Año hasta (30 de abril)" value="${e?.ciclo_hasta || ''}">
         </div>
         <input id="e-distrito" class="swal2-input" placeholder="Distrito" value="${this.esc(e?.distrito || 'San Andrés de Giles')}">
         <input id="e-escuela" class="swal2-input" placeholder="Nombre de la escuela" value="${this.esc(e?.escuela_nombre || '')}">
@@ -733,6 +745,7 @@ const CooperadoraModulo = {
         const g = id => document.getElementById(id).value.trim();
         const desde = Number(g('e-desde')), hasta = Number(g('e-hasta'));
         if (!desde || !hasta) { Swal.showValidationMessage('Completá los años del ejercicio.'); return false; }
+        if (hasta !== desde + 1) { Swal.showValidationMessage(`El ejercicio va del 01/05/${desde} al 30/04/${desde + 1}: «hasta» debe ser ${desde + 1}.`); return false; }
         return {
           ciclo_desde: desde, ciclo_hasta: hasta,
           distrito: g('e-distrito') || null, escuela_nombre: g('e-escuela') || null, escuela_nro: g('e-nro') || null,
@@ -913,10 +926,8 @@ const CooperadoraModulo = {
       setTx(PIA_PDF.cuadro7.nro_foja_tesoreria, ej.nro_foja_tesoreria);
 
       // Cuadro 8: recursos y gastos del ejercicio completo (todos los movimientos del rango de años del ejercicio)
-      const movsEjercicio = this.movimientos.filter(m => {
-        const anio = Number(String(m.fecha || '').slice(0, 4));
-        return anio >= ej.ciclo_desde && anio <= ej.ciclo_hasta;
-      });
+      // Ejercicio = 01/05/ciclo_desde al 30/04/ciclo_desde+1
+      const movsEjercicio = this.movimientos.filter(m => this.enEjercicio(m.fecha, ej.ciclo_desde));
       const bal = this.balanceDe(movsEjercicio);
       Object.entries(PIA_PDF.entradaMonto).forEach(([clave, campo]) => { const r = bal.entradas[clave]; setTx(campo, r && r.monto ? montoStr(r.monto) : ''); });
       Object.entries(PIA_PDF.entradaLibre).forEach(([clave, campo]) => { const r = bal.entradas[clave]; if (r && r.nombre) setTx(campo, r.nombre.replace(/^Otro ingreso.*$/, r.nombre)); });
