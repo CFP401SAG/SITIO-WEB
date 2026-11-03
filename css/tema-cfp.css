@@ -1389,3 +1389,16 @@ details.seg-grupo > .seg-item { margin: .5rem .7rem; }
 .trayecto-cursada .cursada-mods { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
 .trayecto-cursada .cursada-mods li { display: flex; justify-content: space-between; gap: .6rem; flex-wrap: wrap; color: var(--cfp-ink-2); }
 .trayecto-cursada .cursada-mods li b { color: var(--cfp-navy); font-weight: 600; white-space: nowrap; }
+
+/* Destinatarios de una publicación: elegir varios estudiantes */
+.act-para { margin: .4rem 0 .6rem; }
+.act-para-barra { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .5rem 0 .4rem; }
+.act-para-barra input { flex: 1 1 200px; max-width: 320px; }
+.act-para-lista { max-height: 210px; overflow-y: auto; border: 1px solid #dfe7e9; border-radius: 10px; padding: .4rem .6rem; background: #fff; display: grid; gap: .15rem; }
+.act-para-item { display: flex; align-items: center; gap: .5rem; font-size: .88rem; padding: .2rem .1rem; cursor: pointer; color: #1f3a40; }
+.act-para-item small { color: #7a8f93; }
+.act-para-cuenta { display: block; margin-top: .3rem; color: #0e6a7a; font-weight: 600; }
+.act-chip.categoria { background: #fff4e0; color: #9a4a00; border: 1px solid #f1c98f; }
+.act-form .act-para-item { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; text-align: left !important; gap: .5rem; font-weight: 500; }
+.act-form .act-para-item input { width: auto !important; margin: 0 !important; flex: 0 0 auto; }
+.act-form .act-para-item small { display: inline !important; margin: 0; }

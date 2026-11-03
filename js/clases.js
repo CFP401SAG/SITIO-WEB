@@ -174,7 +174,19 @@ const ClasesModulo = {
             <div class="act-grid3">
               <label>Título *<input type="text" id="clase-titulo" class="act-in" maxlength="150" placeholder="Ej.: Clase 3 · Protecciones eléctricas"></label>
               <label>Módulo<select id="clase-modulo-id" class="act-in"><option value="">Cargando módulos…</option></select></label>
-              <label>Para<select id="clase-estudiante-user" class="act-in"><option value="">Todo el grupo</option></select></label>
+              <label>Clasificación<select id="clase-categoria" class="act-in" onchange="ClasesModulo.alCambiarCategoria()"><option value="">Publicación común</option><option value="recuperatorio">🔁 Recuperatorio</option><option value="refuerzo">💪 Trabajo de refuerzo</option></select></label>
+            </div>
+            <div class="act-para">
+              <label>Para<select id="clase-para-modo" class="act-in" onchange="ClasesModulo.cambiarParaModo()"><option value="grupo">Todo el grupo</option><option value="algunos">Solo algunos estudiantes (elegir)</option></select></label>
+              <div id="clase-para-bloque" style="display:none;">
+                <div class="act-para-barra">
+                  <input type="search" id="clase-para-buscar" class="act-in" placeholder="Buscar estudiante…" oninput="ClasesModulo.filtrarPara(this.value)">
+                  <button type="button" class="act-btn-sec" onclick="ClasesModulo.marcarPara(true)">Marcar todos</button>
+                  <button type="button" class="act-btn-sec" onclick="ClasesModulo.marcarPara(false)">Ninguno</button>
+                </div>
+                <div id="clase-para-lista" class="act-para-lista"><small>Cargando estudiantes…</small></div>
+                <small id="clase-para-cuenta" class="act-para-cuenta">Ningún estudiante elegido</small>
+              </div>
             </div>
             <label>Consigna / descripción<textarea id="clase-descripcion" rows="3" class="act-in" maxlength="4000" placeholder="Qué tienen que hacer, materiales, pautas…"></textarea></label>
             <div class="act-grid2">
@@ -290,35 +302,80 @@ const ClasesModulo = {
   },
 
   async poblarComboEstudiantes() {
-    const select = document.getElementById('clase-estudiante-user');
-    if (!select) return;
+    const lista = document.getElementById('clase-para-lista');
+    this.nombresAlumnos = this.nombresAlumnos || {};
+    if (!lista) return;
 
     try {
       const { data: inscripciones } = await supabase
         .from('inscripciones')
-        .select('estudiante_user')
+        .select('estudiante_user, estado')
         .eq('trayecto_id', Number(this.trayectoActualId));
 
-      if (!inscripciones || inscripciones.length === 0) return;
+      const activos = (inscripciones || []).filter(i => String(i.estado || '').toUpperCase() !== 'BAJA');
+      if (!activos.length) { lista.innerHTML = '<small>No hay estudiantes inscriptos en este trayecto.</small>'; return; }
 
-      const listaUsers = inscripciones.map(i => i.estudiante_user);
+      const listaUsers = activos.map(i => i.estudiante_user);
       const { data: alumnos } = await supabase
         .from('usuarios')
         .select('*')
         .in('usuario', listaUsers);
 
-      select.innerHTML = '<option value="">Todo el grupo</option>' +
-        (alumnos || []).map(u => {
-          const userKey = String(u.usuario || u.dni || u.id);
-          const apStr = (u.apellido || '').toUpperCase().trim();
-          const nomStr = u.nombre ? (u.nombre.charAt(0).toUpperCase() + u.nombre.slice(1).toLowerCase()) : '';
-          const nombreCompleto = apStr && nomStr ? `${apStr}, ${nomStr}` : (apStr || nomStr || userKey);
-          return `<option value="${this.esc(userKey)}">Solo ${this.esc(nombreCompleto)} (recuperatorio / tarea personal)</option>`;
-        }).join('');
+      const filas = (alumnos || []).map(u => {
+        const userKey = String(u.usuario || u.dni || u.id);
+        const apStr = (u.apellido || '').toUpperCase().trim();
+        const nomStr = u.nombre ? (u.nombre.charAt(0).toUpperCase() + u.nombre.slice(1).toLowerCase()) : '';
+        const nombre = apStr && nomStr ? `${apStr}, ${nomStr}` : (apStr || nomStr || userKey);
+        this.nombresAlumnos[userKey] = nombre;
+        return { key: userKey, nombre };
+      }).sort((x, y) => x.nombre.localeCompare(y.nombre));
 
+      lista.innerHTML = filas.map(f => `<label class="act-para-item" data-nombre="${this.esc(f.nombre.toLowerCase())}"><input type="checkbox" class="para-chk" value="${this.esc(f.key)}" onchange="ClasesModulo.actualizarCuentaPara()"> ${this.esc(f.nombre)} <small>(${this.esc(f.key)})</small></label>`).join('');
+      this.actualizarCuentaPara();
     } catch (err) {
-      console.error('Error al poblar combo estudiantes:', err);
+      console.error('Error al poblar lista de estudiantes:', err);
+      lista.innerHTML = '<small>No se pudo cargar la lista de estudiantes.</small>';
     }
+  },
+
+  /* ----- Destinatarios: todo el grupo o varios estudiantes elegidos ----- */
+  cambiarParaModo() {
+    const modo = document.getElementById('clase-para-modo')?.value;
+    const bloque = document.getElementById('clase-para-bloque');
+    if (bloque) bloque.style.display = modo === 'algunos' ? '' : 'none';
+  },
+  alCambiarCategoria() {
+    // Un recuperatorio o trabajo de refuerzo es para algunos estudiantes: se abre la lista
+    const cat = document.getElementById('clase-categoria')?.value;
+    const modo = document.getElementById('clase-para-modo');
+    if (cat && modo && modo.value === 'grupo') { modo.value = 'algunos'; this.cambiarParaModo(); }
+  },
+  seleccionadosPara() {
+    return [...document.querySelectorAll('#clase-para-lista .para-chk:checked')].map(c => c.value);
+  },
+  actualizarCuentaPara() {
+    const n = this.seleccionadosPara().length;
+    const el = document.getElementById('clase-para-cuenta');
+    if (el) el.textContent = n ? `${n} estudiante${n === 1 ? '' : 's'} elegido${n === 1 ? '' : 's'}` : 'Ningún estudiante elegido';
+  },
+  marcarPara(v) {
+    document.querySelectorAll('#clase-para-lista .act-para-item').forEach(l => {
+      if (l.style.display !== 'none') l.querySelector('.para-chk').checked = !!v;
+    });
+    this.actualizarCuentaPara();
+  },
+  filtrarPara(q) {
+    const t = String(q || '').trim().toLowerCase();
+    document.querySelectorAll('#clase-para-lista .act-para-item').forEach(l => {
+      l.style.display = !t || (l.dataset.nombre || '').includes(t) || l.textContent.toLowerCase().includes(t) ? '' : 'none';
+    });
+  },
+  fijarPara(dni) {
+    const modo = document.getElementById('clase-para-modo');
+    document.querySelectorAll('#clase-para-lista .para-chk').forEach(c => { c.checked = !!dni && c.value === String(dni); });
+    if (modo) modo.value = dni ? 'algunos' : 'grupo';
+    this.cambiarParaModo();
+    this.actualizarCuentaPara();
   },
 
   cambiarVistaPestana(pestana) {
@@ -517,7 +574,9 @@ const ClasesModulo = {
     const pl = A.plazo(c);
     const chips = [`<span class="act-chip tipo t-${this.esc(c.tipo)}">${T.ico} ${T.nombre}</span>`];
     if (c.es_evaluacion) chips.push('<span class="act-chip eval">🎓 Evaluación</span>');
-    if (c.estudiante_user) chips.push(`<span class="act-chip personal">🎯 ${ctx.esEstudiante ? 'Solo para vos' : 'Solo DNI ' + this.esc(c.estudiante_user)}</span>`);
+    if (c.categoria === 'recuperatorio') chips.push('<span class="act-chip categoria">🔁 Recuperatorio</span>');
+    if (c.categoria === 'refuerzo') chips.push('<span class="act-chip categoria">💪 Trabajo de refuerzo</span>');
+    if (c.estudiante_user) chips.push(`<span class="act-chip personal">🎯 ${ctx.esEstudiante ? 'Solo para vos' : 'Solo ' + this.esc((this.nombresAlumnos || {})[String(c.estudiante_user)] || 'DNI ' + c.estudiante_user)}</span>`);
     if (!ctx.esEstudiante && c.fecha_publicacion && String(c.fecha_publicacion).slice(0, 10) > ctx.hoy) chips.push(`<span class="act-chip prog">🗓️ Se publica el ${A.fechaDMY(c.fecha_publicacion)}</span>`);
     if (pl && (!ctx.esEstudiante || !ent)) chips.push(`<span class="act-chip ${pl.cls}">⏰ ${this.esc(pl.txt)}</span>`);
     if (ctx.esEstudiante && ent && A.tieneNota(ent)) chips.push(`<span class="act-chip ${parseFloat(ent.nota) >= 70 ? 'ok' : 'bad'}">Nota ${this.esc(ent.nota)}</span>`);
@@ -731,7 +790,8 @@ const ClasesModulo = {
     document.getElementById('clase-limite').value = Actividades.limiteLocal(clase.fecha_limite);
     document.getElementById('clase-evaluacion').checked = !!clase.es_evaluacion;
     if (document.getElementById('clase-modulo-id')) document.getElementById('clase-modulo-id').value = clase.modulo_id || '';
-    if (document.getElementById('clase-estudiante-user')) document.getElementById('clase-estudiante-user').value = clase.estudiante_user || '';
+    if (document.getElementById('clase-categoria')) document.getElementById('clase-categoria').value = clase.categoria || '';
+    this.fijarPara(clase.estudiante_user || '');
 
     this.elegirTipo(clase.tipo || 'material', { clase, clave });
     // Con entregas recibidas no se cambia el tipo (las respuestas dejarían de corresponder)
@@ -752,10 +812,12 @@ const ClasesModulo = {
   limpiarFormulario() {
     this.claseEditandoId = null;
     this.edicionConEntregas = false;
-    ['clase-titulo', 'clase-descripcion', 'clase-url-teoria', 'clase-url-actividad', 'clase-fecha', 'clase-limite', 'clase-modulo-id', 'clase-estudiante-user'].forEach(id => {
+    ['clase-titulo', 'clase-descripcion', 'clase-url-teoria', 'clase-url-actividad', 'clase-fecha', 'clase-limite', 'clase-modulo-id', 'clase-categoria'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    this.fijarPara('');
+    const bu = document.getElementById('clase-para-buscar'); if (bu) { bu.value = ''; this.filtrarPara(''); }
     const ev = document.getElementById('clase-evaluacion');
     if (ev) ev.checked = false;
     document.querySelectorAll('#act-tipos .act-tipo').forEach(b => { b.disabled = false; });
@@ -780,6 +842,9 @@ const ClasesModulo = {
     const limiteLocal = val('clase-limite');
 
     if (!titulo) return alert('Escribí un título.');
+    const modoPara = val('clase-para-modo') || 'grupo';
+    const destinatarios = modoPara === 'algunos' ? this.seleccionadosPara() : [null];
+    if (modoPara === 'algunos' && !destinatarios.length) return alert('Elegí al menos un estudiante, o cambiá «Para» a «Todo el grupo».');
     if (urlTeoria && !this.urlSegura(urlTeoria)) return alert('El enlace del material no es válido. Tiene que empezar con http:// o https://');
     if (urlActividad && !this.urlSegura(urlActividad)) return alert('El enlace de la consigna no es válido. Tiene que empezar con http:// o https://');
     const problema = Actividades.validar(Actividades.ed);
@@ -798,7 +863,7 @@ const ClasesModulo = {
       url_recurso: urlTeoria || null,
       url_actividad: ['tp', 'practica'].includes(tipo) && urlActividad ? this.urlSegura(urlActividad) : null,
       modulo_id: val('clase-modulo-id') ? Number(val('clase-modulo-id')) : null,
-      estudiante_user: val('clase-estudiante-user') || null,
+      categoria: val('clase-categoria') || null,
       tipo,
       contenido: sep.contenido,
       fecha_publicacion: fecha || null,
@@ -810,22 +875,38 @@ const ClasesModulo = {
     const btn = document.getElementById('btn-guardar-clase');
     if (btn) btn.disabled = true;
     try {
-      let id = this.claseEditandoId;
-      if (id) {
-        const { error } = await supabase.from('clases').update(objetoDatos).eq('id', id);
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase.from('clases').insert([objetoDatos]).select('id').single();
-        if (error) throw error;
-        id = data && data.id;
-      }
-      if (Actividades.AUTO.includes(tipo) && id) {
-        const { error: eK } = await supabase.from('claves_actividad').upsert({ clase_id: Number(id), clave: sep.clave || {}, updated_at: new Date().toISOString() }, { onConflict: 'clase_id' });
+      // Una fila por destinatario (o una sola para todo el grupo)
+      const filas = destinatarios.map(u => ({ ...objetoDatos, estudiante_user: u }));
+      const ETQ = { recuperatorio: '[Recuperatorio] ', refuerzo: '[Trabajo de refuerzo] ' };
+      // Si todavía no se ejecutó sql/51 (columna "categoria"), la clasificación se escribe delante del título
+      const sinCategoria = (fs) => fs.map(f => { const { categoria, ...r } = f; return categoria ? { ...r, titulo: ETQ[categoria] + r.titulo } : r; });
+      const guardar = async (fs) => {
+        const ids = [];
+        let resto = fs;
+        if (this.claseEditandoId) {
+          const { error } = await supabase.from('clases').update(fs[0]).eq('id', this.claseEditandoId);
+          if (error) return { error };
+          ids.push(this.claseEditandoId);
+          resto = fs.slice(1);
+        }
+        if (resto.length) {
+          const { data, error } = await supabase.from('clases').insert(resto).select('id');
+          if (error) return { error };
+          (data || []).forEach(d => ids.push(d.id));
+        }
+        return { ids };
+      };
+      let r = await guardar(filas);
+      if (r.error && /categoria/i.test(r.error.message || '')) r = await guardar(sinCategoria(filas));
+      if (r.error) throw r.error;
+      const idsGuardados = r.ids;
+      if (Actividades.AUTO.includes(tipo) && idsGuardados.length) {
+        const { error: eK } = await supabase.from('claves_actividad').upsert(idsGuardados.map(i => ({ clase_id: Number(i), clave: sep.clave || {}, updated_at: new Date().toISOString() })), { onConflict: 'clase_id' });
         if (eK) throw new Error('La actividad se guardó, pero no las respuestas correctas: ' + eK.message);
       }
       const avisoNotas = this.claseEditandoId && this.edicionConEntregas && Actividades.AUTO.includes(tipo)
         ? ' Las notas que ya tenían los alumnos no se recalculan.' : '';
-      if (typeof Swal !== 'undefined') Swal.fire({ icon: 'success', title: this.claseEditandoId ? 'Publicación actualizada' : 'Publicación guardada', text: (fecha && fecha > Actividades.hoyISO() ? `Los alumnos la van a ver desde el ${Actividades.fechaDMY(fecha)}.` : '') + avisoNotas, timer: avisoNotas ? undefined : 2200, showConfirmButton: !!avisoNotas });
+      if (typeof Swal !== 'undefined') Swal.fire({ icon: 'success', title: this.claseEditandoId ? 'Publicación actualizada' : (destinatarios.length > 1 ? `Publicado para ${destinatarios.length} estudiantes` : 'Publicación guardada'), text: (fecha && fecha > Actividades.hoyISO() ? `Los alumnos la van a ver desde el ${Actividades.fechaDMY(fecha)}.` : '') + avisoNotas, timer: avisoNotas ? undefined : 2200, showConfirmButton: !!avisoNotas });
       this.limpiarFormulario();
       const det = document.getElementById('details-form-clase');
       if (det) det.open = false;
