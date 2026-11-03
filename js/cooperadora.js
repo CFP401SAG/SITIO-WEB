@@ -179,7 +179,7 @@ const CooperadoraModulo = {
         supabase.from('cooperadora_comision').select('*').order('orden')
       ]);
       if (rSocios.error) throw rSocios.error;
-      this.socios = rSocios.data || [];
+      this.socios = (rSocios.data || []).slice().sort((a, b) => (a.numero ?? 1e9) - (b.numero ?? 1e9) || String(a.apellido || '').localeCompare(String(b.apellido || '')));
       this.movimientos = (rMov.error ? [] : rMov.data) || [];
       this.ejercicios = (rEjer.error ? [] : rEjer.data) || [];
       this.comision = (rCom.error ? [] : rCom.data) || [];
@@ -191,6 +191,9 @@ const CooperadoraModulo = {
       cont.innerHTML = `<div class="prog-vacio">No se pudo cargar la cooperadora.${falta ? ' Falta ejecutar <strong>sql/35_cooperadora.sql</strong> en Supabase.' : ''}<br><small>${this.esc(err.message || '')}</small></div>`;
     }
   },
+
+  // «Apellido, Nombre» (si el nombre quedó vacío, solo el apellido)
+  nomSocio(s) { return s.nombre ? `${s.apellido}, ${s.nombre}` : String(s.apellido || ''); },
 
   irA(tab) { this.tab = tab; this.render(); },
 
@@ -222,27 +225,69 @@ const CooperadoraModulo = {
     return `
       ${this.puedeEditar ? `<div style="margin-bottom:0.8rem;"><button class="act-btn" onclick="CooperadoraModulo.formSocio()">➕ Nuevo socio</button></div>` : ''}
       <p class="plan-meta">${activos.length} socio${activos.length === 1 ? '' : 's'} activo${activos.length === 1 ? '' : 's'} de ${this.socios.length} en total.</p>
-      <div class="sec-tabla-wrap"><table class="sec-tabla">
-        <thead><tr><th>Apellido y nombre</th><th>DNI</th><th>Categoría</th><th>Contacto</th><th>Estado</th><th></th></tr></thead>
+      <input type="search" class="form-control" id="coop-buscar-socio" placeholder="🔎 Buscar por apellido, nombre, DNI o N.º de socio…" style="max-width:420px; margin-bottom:0.7rem;" oninput="CooperadoraModulo.filtrarSocios(this.value)">
+      <div class="sec-tabla-wrap"><table class="sec-tabla" id="coop-tabla-socios">
+        <thead><tr><th>N.º</th><th>Apellido y nombre</th><th>DNI</th><th>Domicilio</th><th>Categoría</th><th>Contacto</th><th>Estado</th><th></th></tr></thead>
         <tbody>
           ${this.socios.map(s => `
             <tr>
-              <td>${this.esc(s.apellido)}, ${this.esc(s.nombre)}</td>
+              <td>${s.numero != null ? this.esc(s.numero) : ''}</td>
+              <td>${this.esc(this.nomSocio(s))}</td>
               <td>${this.esc(s.dni)}</td>
+              <td>${this.esc(s.domicilio || '')}</td>
               <td>${this.esc(s.categoria)}</td>
               <td>${this.esc(s.email || '')}${s.telefono ? ' · ' + this.esc(s.telefono) : ''}</td>
               <td>${s.estado === 'ACTIVO' ? '🟢 Activo' : '🔴 Baja'}</td>
-              <td>
+              <td style="white-space:nowrap;">
                 ${this.puedeEditar ? `
-                  <button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #cbd5e1; border-radius: 6px; cursor: pointer; margin-right:0.25rem;" title="Editar" onclick="CooperadoraModulo.formSocio(${s.id})">✏️</button>
-                  <button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #cbd5e1; border-radius: 6px; cursor: pointer; margin-right:0.25rem;" title="Historial / constancia" onclick="CooperadoraModulo.irA('constancias'); CooperadoraModulo.socioConstancia=${s.id}; CooperadoraModulo.render();">🧾</button>
+                  <button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #334155; border-radius: 6px; cursor: pointer; margin-right:0.25rem;" title="Editar" onclick="CooperadoraModulo.formSocio(${s.id})">✏️</button>
+                  <button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #334155; border-radius: 6px; cursor: pointer; margin-right:0.25rem;" title="Historial / constancia" onclick="CooperadoraModulo.irA('constancias'); CooperadoraModulo.socioConstancia=${s.id}; CooperadoraModulo.render();">🧾</button>
+                  <button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 6px; cursor: pointer; margin-right:0.25rem; color:#b91c1c;" title="Eliminar socio" onclick="CooperadoraModulo.borrarSocio(${s.id})">🗑️</button>
                 ` : ''}
               </td>
             </tr>
-          `).join('') || '<tr><td colspan="6">Todavía no hay socios cargados.</td></tr>'}
+          `).join('') || '<tr><td colspan="8">Todavía no hay socios cargados.</td></tr>'}
         </tbody>
       </table></div>
     `;
+  },
+
+  filtrarSocios(q) {
+    const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const t = norm(q).trim();
+    document.querySelectorAll('#coop-tabla-socios tbody tr').forEach(tr => { tr.style.display = !t || norm(tr.textContent).includes(t) ? '' : 'none'; });
+  },
+
+  async borrarSocio(id) {
+    const soc = this.socios.find(x => x.id === id);
+    if (!soc) return;
+    const cobros = this.movimientos.filter(m => m.socio_id === id);
+    const nombre = this.nomSocio(soc);
+    let r;
+    if (cobros.length) {
+      const total = cobros.reduce((a, m) => a + Number(m.monto || 0), 0);
+      r = await Swal.fire({
+        icon: 'warning', title: '¿Eliminar este socio?',
+        html: `<b>${this.esc(nombre)}</b> (DNI ${this.esc(soc.dni)}) tiene <b>${cobros.length}</b> cobro${cobros.length === 1 ? '' : 's'} registrado${cobros.length === 1 ? '' : 's'} por ${this.money(total)}.<br><small>«Eliminar socio y cobros» borra también esos ingresos y cambia el balance. «Solo el socio» los deja registrados como ingresos sin socio.</small>`,
+        showCancelButton: true, showDenyButton: true, confirmButtonText: 'Eliminar socio y cobros', denyButtonText: 'Solo el socio', cancelButtonText: 'Cancelar', confirmButtonColor: '#b91c1c', denyButtonColor: '#64748b'
+      });
+      if (r.isDismissed) return;
+    } else {
+      r = await Swal.fire({ icon: 'warning', title: '¿Eliminar este socio?', html: `<b>${this.esc(nombre)}</b> (DNI ${this.esc(soc.dni)}).`, showCancelButton: true, confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar', confirmButtonColor: '#b91c1c' });
+      if (!r.isConfirmed) return;
+    }
+    try {
+      if (cobros.length && r.isConfirmed) {
+        const { error: eM } = await supabase.from('cooperadora_movimientos').delete().eq('socio_id', id);
+        if (eM) throw eM;
+      }
+      const { error } = await supabase.from('cooperadora_socios').delete().eq('id', id);
+      if (error) throw error;
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Socio eliminado', showConfirmButton: false, timer: 1800 });
+      await this.cargar();
+    } catch (err) {
+      Swal.fire('No se pudo eliminar', err.message || '', 'error');
+    }
   },
 
   // Trae una vez (y cachea) a todas las personas ya cargadas en la plataforma
@@ -274,9 +319,11 @@ const CooperadoraModulo = {
         <datalist id="sw-buscar-list">${personas.map(p => `<option value="${this.esc(etiqueta(p))}">`).join('')}</datalist>
         <p class="plan-meta" style="margin-top:-0.3rem;">Elegí a alguien de la lista para completar los datos, o escribilos abajo si no está cargado/a.</p>
         `}
+        <input id="sw-numero" type="number" min="1" class="swal2-input" placeholder="N.º de socio" value="${this.esc(s ? (s.numero ?? '') : (Math.max(0, ...this.socios.map(x => Number(x.numero) || 0)) + 1))}">
         <input id="sw-apellido" class="swal2-input" placeholder="Apellido" value="${this.esc(s?.apellido || '')}">
         <input id="sw-nombre" class="swal2-input" placeholder="Nombre" value="${this.esc(s?.nombre || '')}">
         <input id="sw-dni" class="swal2-input" placeholder="DNI" value="${this.esc(s?.dni || '')}">
+        <input id="sw-domicilio" class="swal2-input" placeholder="Domicilio (opcional)" value="${this.esc(s?.domicilio || '')}">
         <select id="sw-categoria" class="swal2-input">
           <option value="activo" ${s?.categoria === 'activo' ? 'selected' : ''}>Activo</option>
           <option value="honorario" ${s?.categoria === 'honorario' ? 'selected' : ''}>Honorario</option>
@@ -305,9 +352,11 @@ const CooperadoraModulo = {
         const apellido = document.getElementById('sw-apellido').value.trim();
         const nombre = document.getElementById('sw-nombre').value.trim();
         const dni = document.getElementById('sw-dni').value.trim();
-        if (!apellido || !nombre || !dni) { Swal.showValidationMessage('Apellido, nombre y DNI son obligatorios.'); return false; }
+        if (!apellido || !dni) { Swal.showValidationMessage('Apellido y DNI son obligatorios.'); return false; }
         return {
-          apellido, nombre, dni,
+          apellido, nombre, dni: dni.replace(/\D/g, '') || dni,
+          numero: Number(document.getElementById('sw-numero').value) || null,
+          domicilio: document.getElementById('sw-domicilio').value.trim() || null,
           categoria: document.getElementById('sw-categoria').value,
           email: document.getElementById('sw-email').value.trim() || null,
           telefono: document.getElementById('sw-tel').value.trim() || null,
@@ -318,9 +367,16 @@ const CooperadoraModulo = {
     });
     if (!value) return;
     try {
-      const { error } = s
-        ? await supabase.from('cooperadora_socios').update(value).eq('id', s.id)
-        : await supabase.from('cooperadora_socios').insert([value]);
+      const guardar = (v) => s
+        ? supabase.from('cooperadora_socios').update(v).eq('id', s.id)
+        : supabase.from('cooperadora_socios').insert([v]);
+      let { error } = await guardar(value);
+      if (error && /numero|domicilio/i.test(error.message || '')) {
+        // Falta sql/52: se guarda sin N.º ni domicilio
+        const { numero, domicilio, ...resto } = value;
+        ({ error } = await guardar(resto));
+        if (!error) Swal.fire('Guardado sin N.º ni domicilio', 'Falta ejecutar sql/52 en Supabase para guardar esos dos datos.', 'info');
+      }
       if (error) throw error;
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Guardado', showConfirmButton: false, timer: 1800 });
       await this.cargar();
@@ -350,7 +406,7 @@ const CooperadoraModulo = {
               <td>${this.money(m.monto)}</td>
               <td>${({ banco_cc: 'Banco cta. cte.', caja_chica: 'Caja chica', plazo_fijo: 'Plazo fijo' })[m.medio] || m.medio}</td>
               <td>${m.socio_id ? this.esc((this.socios.find(s => s.id === m.socio_id) || {}).apellido || '') : ''}</td>
-              ${this.puedeEditar ? `<td><button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #cbd5e1; border-radius: 6px; cursor: pointer; margin-right:0.25rem;" title="Eliminar" onclick="CooperadoraModulo.borrarMovimiento(${m.id})">🗑️</button></td>` : ''}
+              ${this.puedeEditar ? `<td><button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #334155; border-radius: 6px; cursor: pointer; margin-right:0.25rem; color:#b91c1c;" title="Eliminar este movimiento" onclick="CooperadoraModulo.borrarMovimiento(${m.id})">🗑️ Eliminar</button></td>` : ''}
             </tr>
           `).join('') || `<tr><td colspan="${this.puedeEditar ? 8 : 7}">Todavía no hay movimientos registrados.</td></tr>`}
         </tbody>
@@ -389,7 +445,7 @@ const CooperadoraModulo = {
           <label class="cf-full">Socio (si es cuota social)
             <select id="sw-socio" class="swal2-input">
               <option value="">(no corresponde a cuota de un socio)</option>
-              ${socios.map(s => `<option value="${s.id}">${this.esc(s.apellido)}, ${this.esc(s.nombre)} — DNI ${this.esc(s.dni)}</option>`).join('')}
+              ${socios.map(s => `<option value="${s.id}">${this.esc(this.nomSocio(s))} — DNI ${this.esc(s.dni)}</option>`).join('')}
             </select>
           </label>
           <label>Mes que cubre la cuota<input id="sw-periodo" type="month" class="swal2-input"></label>
@@ -920,7 +976,7 @@ const CooperadoraModulo = {
       <div style="margin-bottom:0.8rem;">
         <select class="form-control" style="max-width:20rem;" onchange="CooperadoraModulo.socioConstancia=Number(this.value)||null; CooperadoraModulo.render();">
           <option value="">(elegir socio)</option>
-          ${this.socios.map(s => `<option value="${s.id}" ${s.id === socioId ? 'selected' : ''}>${this.esc(s.apellido)}, ${this.esc(s.nombre)} — DNI ${this.esc(s.dni)}</option>`).join('')}
+          ${this.socios.map(s => `<option value="${s.id}" ${s.id === socioId ? 'selected' : ''}>${this.esc(this.nomSocio(s))} — DNI ${this.esc(s.dni)}</option>`).join('')}
         </select>
       </div>
       ${!socio ? '<div class="prog-vacio">Elegí un socio para ver su historial y emitir la constancia.</div>' : `
@@ -943,7 +999,7 @@ const CooperadoraModulo = {
     const hoy = new Date().toLocaleDateString('es-AR');
     const win = window.open('', '_blank');
     win.document.write(`
-      <html><head><title>Constancia de pago — ${this.esc(socio.apellido)}, ${this.esc(socio.nombre)}</title>
+      <html><head><title>Constancia de pago — ${this.esc(this.nomSocio(socio))}</title>
       <style>
         body{font-family:Arial,sans-serif; padding:2rem; color:#111;}
         h1{font-size:1.2rem; margin-bottom:0;} h2{font-size:1rem; color:#555; margin-top:0.2rem;}
@@ -954,7 +1010,7 @@ const CooperadoraModulo = {
       </style></head><body>
       <h1>Cooperadora Escolar — CFP N.º 401 </h1>
       <h2>Constancia de pago de cuota social</h2>
-      <p><b>Socio:</b> ${this.esc(socio.apellido)}, ${this.esc(socio.nombre)} &nbsp; <b>DNI:</b> ${this.esc(socio.dni)}</p>
+      <p><b>Socio:</b> ${this.esc(this.nomSocio(socio))} &nbsp; <b>DNI:</b> ${this.esc(socio.dni)}</p>
       ${ultimo ? `<p><b>Último pago:</b> período ${this.esc(ultimo.periodo || '–')}, por ${this.money(ultimo.monto)} el ${this.fecha(ultimo.fecha)}.</p>` : ''}
       <table><thead><tr><th>Período</th><th>Fecha de pago</th><th>Monto pagado</th></tr></thead>
         <tbody>${historial.map(m => `<tr><td>${this.esc(m.periodo || '–')}</td><td>${this.fecha(m.fecha)}</td><td>${this.money(m.monto)}</td></tr>`).join('') || '<tr><td colspan="3">Sin pagos registrados.</td></tr>'}</tbody>
