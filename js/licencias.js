@@ -60,8 +60,9 @@ const LicenciasModulo = {
     if (!this.puede) { cont.innerHTML = '<div class="prog-vacio">No tenés acceso a este panel.</div>'; return; }
     cont.innerHTML = '<p class="seg-cargando">Cargando licencias…</p>';
     try {
-      let rDoc = await supabase.rpc('licencias_listar_docentes');
-      if (rDoc.error) rDoc = await supabase.from('profiles').select('id,dni,apellido,nombre').ilike('rol', 'docente').order('apellido');
+      // Igual que Trayectos: se leen directo de profiles (la administración tiene lectura)
+      let rDoc = await supabase.from('profiles').select('id,dni,apellido,nombre,estado').eq('rol', 'docente').order('apellido', { ascending: true });
+      if (rDoc.error || !(rDoc.data || []).length) { const r2 = await supabase.rpc('licencias_listar_docentes'); if (!r2.error && (r2.data || []).length) rDoc = r2; }
       const [rLic, rFer, rCic] = await Promise.all([
         supabase.from('licencias_docentes').select('*').order('desde', { ascending: false }),
         supabase.from('feriados').select('*').order('fecha'),
