@@ -54,7 +54,7 @@ const LicenciasModulo = {
     return {
       desde: iso(c.cad_desde) || `${anio - 1}-11-15`,
       hasta: iso(c.cad_hasta) || `${anio}-11-16`,
-      total: c.cad_total != null ? Number(c.cad_total) : (pre ? 248 : null),
+      total: ('cad_total' in c) ? (c.cad_total == null ? null : Number(c.cad_total)) : (pre ? 248 : null),   // vacío guardado = calcular con el calendario
       intDesde: iso(c.cad_interino_desde) || `${anio}-03-01`
     };
   },
@@ -147,7 +147,7 @@ const LicenciasModulo = {
     const ids = new Set(this.docentes.map(x => x.id));
     this.licencias.filter(l => !ids.has(l.docente_id)).forEach(l => { if (!filas.find(f => f.doc.id === l.docente_id)) { const doc = { id: l.docente_id, apellido: '(docente dado de baja)', nombre: '' }; filas.push({ doc, ...this.calcularDocente(doc, d, h) }); } });
     filas.sort((a, b) => b.total - a.total || this.nom(a.doc).localeCompare(this.nom(b.doc)));
-    const totalInput = `<input type="number" min="0" class="form-control" style="width:6.5rem; font-size:1.4rem; font-weight:800; padding:.1rem .4rem;" value="${this.totalOficial ?? ''}" placeholder="–" onchange="LicenciasModulo.guardarTotalCad(this.value)" title="Escribí el total oficial de días de asistencia">`;
+    const totalInput = `<input type="number" min="0" class="form-control" style="width:6.5rem; font-size:1.4rem; font-weight:800; padding:.1rem .4rem;" value="${this.totalOficial ?? ''}" placeholder="–" onchange="LicenciasModulo.guardarTotalCad(this.value)" onkeydown="if (event.key === 'Enter') this.blur()" title="Escribí el total oficial de días de asistencia">`;
     const tarj = (t, v, sub) => `<div style="flex:1 1 11rem; background:#fff; border:1px solid var(--cfp-line-2,#e2e8f0); border-radius:12px; padding:.7rem .9rem;"><div style="font-size:.75rem; color:#64748b; font-weight:700;">${t}</div><div style="font-size:1.5rem; font-weight:800; color:#0f172a;">${v}</div><div style="font-size:.72rem; color:#64748b;">${sub || ''}</div></div>`;
     return `
       <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; margin:.5rem 0;">
