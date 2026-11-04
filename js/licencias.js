@@ -82,6 +82,8 @@ const LicenciasModulo = {
         supabase.from('licencias_ciclo').select('*')
       ]);
       if (rLic.error) throw rLic.error;
+      if (!(rDoc.data || []).length) { const r3 = await supabase.from('profiles').select('*').in('rol', ['docente', 'Docente', 'DOCENTE']); if (!r3.error && (r3.data || []).length) rDoc = r3; }
+      this.errDocentes = (rDoc.error && rDoc.error.message) || '';
       this.docentes = rDoc.data || [];
       this.licencias = rLic.data || [];
       this.feriados = (rFer.error ? [] : rFer.data) || [];
@@ -145,6 +147,7 @@ const LicenciasModulo = {
     const ids = new Set(this.docentes.map(x => x.id));
     this.licencias.filter(l => !ids.has(l.docente_id)).forEach(l => { if (!filas.find(f => f.doc.id === l.docente_id)) { const doc = { id: l.docente_id, apellido: '(docente dado de baja)', nombre: '' }; filas.push({ doc, ...this.calcularDocente(doc, d, h) }); } });
     filas.sort((a, b) => b.total - a.total || this.nom(a.doc).localeCompare(this.nom(b.doc)));
+    const totalInput = `<input type="number" min="0" class="form-control" style="width:6.5rem; font-size:1.4rem; font-weight:800; padding:.1rem .4rem;" value="${this.totalOficial ?? ''}" placeholder="–" onchange="LicenciasModulo.guardarTotalCad(this.value)" title="Escribí el total oficial de días de asistencia">`;
     const tarj = (t, v, sub) => `<div style="flex:1 1 11rem; background:#fff; border:1px solid var(--cfp-line-2,#e2e8f0); border-radius:12px; padding:.7rem .9rem;"><div style="font-size:.75rem; color:#64748b; font-weight:700;">${t}</div><div style="font-size:1.5rem; font-weight:800; color:#0f172a;">${v}</div><div style="font-size:.72rem; color:#64748b;">${sub || ''}</div></div>`;
     return `
       <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; margin:.5rem 0;">
@@ -160,11 +163,12 @@ const LicenciasModulo = {
         <button class="act-btn-sec" onclick="LicenciasModulo.modo='ciclo'; LicenciasModulo.desde=null; LicenciasModulo.hasta=null; LicenciasModulo.render();">Ciclo completo</button>
         <button class="act-btn-sec" onclick="LicenciasModulo.exportar()">⬇️ Excel</button>
       </div>
+      ${this.docentes.length ? '' : `<p class="plan-meta" style="color:#b91c1c;">⚠️ No se pudo leer la lista de docentes${this.errDocentes ? ': ' + this.esc(this.errDocentes) : ' (la consulta no devolvió ninguno)'}.</p>`}
       ${cf.definido ? '' : `<p class="plan-meta" style="color:#b45309;">⚠️ El ciclo lectivo ${this.ciclo} todavía no tiene fechas cargadas: se usa del 01/03 al 31/12 de forma provisoria. Cargalas en «Ciclo lectivo».</p>`}
       <div style="display:flex; gap:.7rem; flex-wrap:wrap; margin:.5rem 0 1rem;">
         ${tarj('Días hábiles del ciclo ' + this.ciclo, habCiclo, `${this.fmt(cf.inicio)} al ${this.fmt(cf.fin)}`)}
         ${tarj('Transcurridos hasta hoy', transc, 'días hábiles')}
-        ${tarj(this.totalOficial != null ? 'Días de asistencia (total oficial)' : 'Período analizado', habPer, `${this.fmt(d)} al ${this.fmt(h)}` + (this.totalOficial != null ? ` · el calendario cargado daría ${habCalc}` : ''))}
+        ${tarj(this.modo === 'cad' ? 'Días de asistencia (total oficial, editable)' : this.totalOficial != null ? 'Días de asistencia (total oficial)' : 'Período analizado', this.modo === 'cad' ? totalInput : habPer, `${this.fmt(d)} al ${this.fmt(h)}` + (this.totalOficial != null ? ` · el calendario cargado daría ${habCalc}` : ''))}
       </div>
       ${this.modo === 'cad' && this.totalOficial != null ? '<p class="plan-meta">Total oficial según las Pautas de Orientación para la Calificación Anual Docente (editable en «Ciclo lectivo»). Los días trabajados = total oficial menos las faltas cargadas.</p>' : ''}
       ${this.modo === 'cadint' ? '<p class="plan-meta">Titulares interinos: la normativa no fija un total, se calcula con el calendario cargado.</p>' : ''}
@@ -211,6 +215,18 @@ const LicenciasModulo = {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
     a.download = `Licencias_docentes_${this.ciclo}.xlsx`; a.click(); URL.revokeObjectURL(a.href);
+  },
+
+  // Guarda el total oficial de días de asistencia del período de calificación (vacío = calcular con el calendario)
+  async guardarTotalCad(valor) {
+    const cf = this.cicloFechas(this.ciclo);
+    const total = String(valor).trim() === '' ? null : Math.max(0, Math.round(Number(valor)));
+    const ciclo = this.ciclos.find(x => Number(x.ciclo) === Number(this.ciclo));
+    if (ciclo) ciclo.cad_total = total; else this.ciclos.push({ ciclo: Number(this.ciclo), inicio: cf.inicio, fin: cf.fin, cad_total: total });
+    const { error } = await supabase.from('licencias_ciclo').upsert({ ciclo: Number(this.ciclo), inicio: cf.inicio, fin: cf.fin, cad_total: total }, { onConflict: 'ciclo' });
+    if (error) Swal.fire('No se pudo guardar el total', (/cad_/.test(error.message || '') ? 'Falta ejecutar sql/55_licencias_calificacion_anual.sql en Supabase. ' : '') + (error.message || ''), 'error');
+    else Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Total guardado', showConfirmButton: false, timer: 1400 });
+    this.render();
   },
 
   /* ============================== LICENCIAS ============================== */
