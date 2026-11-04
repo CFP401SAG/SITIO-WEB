@@ -92,7 +92,7 @@ const AyudaModulo = {
     licencias: {
       t: 'Licencias docentes', corto: 'Licencias administrativas, médicas y paros.',
       que: 'Registro de licencias y paros de cada docente, con cálculo de días hábiles (solo Dirección y Secretaría).',
-      pasos: ['«Licencias y paros» → «Cargar licencia / paro»: elegí docente, tipo y fechas desde-hasta; te muestra los días hábiles.', '«Feriados»: cargá los nacionales, provinciales y municipales, y asuetos o recesos (con «hasta» para varios días).', '«Ciclo lectivo»: guardá el inicio y el fin del año para contar sus días hábiles.', '«Resumen por docente»: días hábiles del ciclo, días trabajados, faltas totales y por tipo. En «Período» elegí el ciclo, la Calificación anual docente (15/11 al 16/11, con el total oficial de 248 días) u otro período; se baja en Excel.'],
+      pasos: ['«Licencias y paros» → «Cargar licencia / paro»: elegí docente, tipo y fechas desde-hasta; te muestra los días hábiles.', '«Feriados»: cargá los nacionales, provinciales y municipales, y asuetos o recesos (con «hasta» para varios días).', '«Ciclo lectivo»: guardá el inicio y el fin del año para contar sus días hábiles.', '«Resumen por docente»: días hábiles del ciclo, días trabajados, faltas totales y por tipo. En «Período» elegí el ciclo, la Calificación anual docente (con el total oficial de días que fija la normativa de cada año) u otro período; se baja en Excel.'],
       ojo: ['Los días hábiles son de lunes a viernes sin feriados cargados: si falta un feriado, el cálculo cambia.', 'Si dos licencias de un docente se superponen, el día repetido se cuenta una sola vez.']
     },
     planilla: {

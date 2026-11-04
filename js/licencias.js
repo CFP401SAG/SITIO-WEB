@@ -168,9 +168,9 @@ const LicenciasModulo = {
       <div style="display:flex; gap:.7rem; flex-wrap:wrap; margin:.5rem 0 1rem;">
         ${tarj('Días hábiles del ciclo ' + this.ciclo, habCiclo, `${this.fmt(cf.inicio)} al ${this.fmt(cf.fin)}`)}
         ${tarj('Transcurridos hasta hoy', transc, 'días hábiles')}
-        ${tarj(this.modo === 'cad' ? 'Días de asistencia (total oficial, editable)' : this.totalOficial != null ? 'Días de asistencia (total oficial)' : 'Período analizado', this.modo === 'cad' ? totalInput : habPer, `${this.fmt(d)} al ${this.fmt(h)}` + (this.totalOficial != null ? ` · el calendario cargado daría ${habCalc}` : ''))}
+        ${tarj(this.modo === 'cad' ? 'Días de asistencia (total oficial, editable)' : this.totalOficial != null ? 'Días de asistencia (total oficial)' : 'Período analizado', this.modo === 'cad' ? totalInput : habPer, this.totalOficial != null || this.modo === 'cad' ? `el calendario cargado daría ${habCalc}` : `${this.fmt(d)} al ${this.fmt(h)}`)}
       </div>
-      ${this.modo === 'cad' && this.totalOficial != null ? '<p class="plan-meta">Total oficial según las Pautas de Orientación para la Calificación Anual Docente (editable en «Ciclo lectivo»). Los días trabajados = total oficial menos las faltas cargadas.</p>' : ''}
+      ${this.modo === 'cad' && this.totalOficial != null ? '<p class="plan-meta">Total oficial según las Pautas de Orientación para la Calificación Anual Docente de cada año (el período se edita en «Ciclo lectivo»). Los días trabajados = total oficial menos las faltas cargadas.</p>' : ''}
       ${this.modo === 'cadint' ? '<p class="plan-meta">Titulares interinos: la normativa no fija un total, se calcula con el calendario cargado.</p>' : ''}
       <p class="plan-meta">Días hábiles = lunes a viernes sin feriados ni asuetos cargados. «Días trabajados» = días hábiles del período menos las faltas (licencias y paros) que caen en él.</p>
       <div class="sec-tabla-wrap"><table class="sec-tabla">
@@ -380,7 +380,7 @@ const LicenciasModulo = {
         <label>Total oficial de días de asistencia <input id="ci-ctotal" type="number" min="0" class="form-control" style="width:8rem;" value="${cad.total ?? ''}" placeholder="(calcular)"></label>
         <label>Titulares interinos desde <input id="ci-cint" type="date" class="form-control" value="${cad.intDesde}"></label>
       </div>
-      <p class="plan-meta">Según las Pautas de Orientación CAD 2026: continuidad del 15/11/2025 al 16/11/2026 con 248 días de asistencia; interinos desde el 01/03/2026. Si dejás el total vacío, se calcula con el calendario.</p>
+      <p class="plan-meta">El período y el total oficial los fija la normativa de cada año (Pautas de Orientación para la Calificación Anual Docente): cargalos acá cuando cambien. Si dejás el total vacío, se calcula con el calendario.</p>
       <button class="act-btn" onclick="LicenciasModulo.guardarCiclo()">Guardar ciclo ${this.ciclo}</button>
       ${cf.definido ? '' : '<p class="plan-meta" style="color:#b45309;">⚠️ Este ciclo todavía no está guardado; se muestran fechas provisorias (01/03 al 31/12).</p>'}
       <p class="plan-meta">Días hábiles del ciclo con las fechas de arriba y los feriados cargados: <b>${this.diasHabiles(cf.inicio, cf.fin).length}</b>.</p>`;
