@@ -10,7 +10,7 @@
    (Regla anotada también en CLAUDE.md.)
    ========================================================================== */
 
-const AYUDA_ACTUALIZADA = '03/11/2026';
+const AYUDA_ACTUALIZADA = '04/11/2026';
 
 const AyudaModulo = {
   contacto: null,    // texto editable desde Preinscripciones → "Contacto del CFP"
@@ -89,6 +89,12 @@ const AyudaModulo = {
       pasos: ['Socios, Ingresos y Egresos (con medio de pago y mes de la cuota), Balance, Ejercicio / PIA.', '«Nómina de autoridades» arma la nómina oficial con la comisión del ejercicio y la imprime en PDF.', 'Constancias: pago de cuota social de cada socio.'],
       ojo: ['No se cargan movimientos con fecha fuera de un ejercicio creado.']
     },
+    licencias: {
+      t: 'Licencias docentes', corto: 'Licencias administrativas, médicas y paros.',
+      que: 'Registro de licencias y paros de cada docente, con cálculo de días hábiles (solo Dirección y Secretaría).',
+      pasos: ['«Licencias y paros» → «Cargar licencia / paro»: elegí docente, tipo y fechas desde-hasta; te muestra los días hábiles.', '«Feriados»: cargá los nacionales, provinciales y municipales, y asuetos o recesos (con «hasta» para varios días).', '«Ciclo lectivo»: guardá el inicio y el fin del año para contar sus días hábiles.', '«Resumen por docente»: días hábiles del ciclo, días trabajados, faltas totales y por tipo; se puede acotar el período y bajar el Excel.'],
+      ojo: ['Los días hábiles son de lunes a viernes sin feriados cargados: si falta un feriado, el cálculo cambia.', 'Si dos licencias de un docente se superponen, el día repetido se cuenta una sola vez.']
+    },
     planilla: {
       t: 'Planilla de matrícula', corto: 'Planilla mensual POF/POFA.',
       que: 'Planilla de información básica de matrícula.',
@@ -132,7 +138,7 @@ const AyudaModulo = {
   BOTON_TEMA: {
     'btn-dashboard': 'dashboard', 'btn-progreso': 'progreso', 'btn-seguimiento': 'seguimiento',
     'btn-secretaria': 'secretaria', 'btn-preinscripciones': 'preinscripciones', 'btn-cuentas': 'cuentas',
-    'btn-observaciones': 'observaciones', 'btn-cooperadora': 'cooperadora', 'btn-planilla': 'planilla',
+    'btn-observaciones': 'observaciones', 'btn-cooperadora': 'cooperadora', 'btn-licencias': 'licencias', 'btn-planilla': 'planilla',
     'btn-constancias': 'constancias', 'btn-trayectos': 'trayectos', 'btn-actas': 'actas',
     'btn-nuevo-trayecto': 'nuevo-trayecto', 'btn-novedades': 'novedades',
     'btn-usuarios': 'usuarios', 'btn-backups': 'backups'
@@ -316,6 +322,7 @@ const AyudaModulo = {
       { ico: '📊', t: 'Cifras, matrícula escolar, POF/POFA y SISGE', r: 'Los números del ciclo y las exportaciones.', h: `<p>En <b>Cifras por trayecto</b> elegís el <b>ciclo</b> y ves inscriptos, bajas y egresados por trayecto. Arriba a la derecha:</p><ul><li><b>📑 Planilla de matrícula (POF/POFA)</b>: Excel con el formato oficial.</li><li><b>🏫 Matrícula escolar</b>: cifras por nacionalidad, discapacidad (con CUD y apoyo), etc.</li><li><b>📤 Exportar para SISGE</b>: Excel de estudiantes del ciclo con las columnas de SISGE. Lo que falte se completa con valores por defecto y se ofrece una lista de datos para revisar.</li><li><b>📋 Copiar tabla</b> y <b>📊 Descargar Excel</b>.</li></ul>` },
       { ico: '🔑', t: 'Cuentas y claves', r: 'Restablecer claves y aprobar pendientes.', h: `<p>En <b>Cuentas y claves</b> buscás a una persona por nombre o DNI y podés <b>restablecer su clave</b> (vuelve a la clave inicial) o <b>aprobar</b> a quienes se registraron y quedaron pendientes.</p>` },
       { ico: '👥', t: 'Usuarios y roles', r: 'Alta, roles e inhabilitaciones.', h: `<ul><li><b>+ Crear Nuevo Usuario:</b> completá apellido, nombre, DNI y rol. Si es estudiante, podés inscribirlo en trayectos.</li><li>Cambiá el <b>rol</b> con el desplegable (Estudiante, Docente, Secretaría).</li><li>Con ✏️ corregís apellido, nombre y correo. En el personal (docentes, Secretaría, Dirección) <b>el correo cambia también el de acceso</b>: desde ese momento ingresan con ese correo. Los estudiantes siguen ingresando con el DNI.</li><li>Con ✏️ también corregís el <b>DNI</b>, que es el usuario de ingreso: se actualiza en inscripciones, asistencias y notas, y la contraseña no cambia.</li><li><b>Inhabilitar / Reactivar</b> conserva el historial; ✏️ corrige datos; 🔑 restablece clave; 🗑️ elimina definitivamente (usalo solo en casos puntuales).</li></ul><div class="ay-tip">El rol <b>Administrador</b> solo lo asigna y modifica la Dirección.</div>` },
+      { ico: '🗓️', t: 'Licencias docentes', r: 'Licencias, paros y días hábiles.', h: `<p>Solo Dirección y Secretaría. Pestañas:</p><ul><li><b>Licencias y paros:</b> «Cargar licencia / paro» con docente, tipo (administrativa, médica o paro) y fechas desde-hasta. Te dice cuántos días hábiles son (sin fines de semana ni feriados).</li><li><b>Feriados:</b> cargá nacionales, provinciales y municipales, y asuetos o recesos.</li><li><b>Ciclo lectivo:</b> inicio y fin del año, para contar los días hábiles del ciclo.</li><li><b>Resumen por docente:</b> días hábiles del ciclo, días trabajados, faltas totales y cuántas fueron administrativas, médicas o paros. Se puede elegir un período y descargar el Excel.</li></ul>` },
       { ico: '💰', t: 'Cooperadora', r: 'Socios, ingresos y egresos, balance, PIA y nómina.', h: `<p>La sección es solo para Dirección y Secretaría. Pestañas:</p><ul><li><b>Socios:</b> padrón de la cooperadora (independiente de los estudiantes), con N.º de socio, DNI y domicilio. Tiene buscador. Con ✏️ se edita y con 🗑️ se elimina un socio (si tiene cobros registrados, te pregunta si borrar también esos cobros).</li><li><b>Ingresos y Egresos:</b> elegí fecha, rubro, monto y el <b>medio</b>: <i>Caja chica</i> es efectivo; <i>Banco cuenta corriente</i>, transferencias y depósitos. Para una cuota, elegí el socio y el <b>mes que cubre</b>.</li><li>En cada movimiento, el botón <b>🗑️ Eliminar</b> lo borra (cambia el balance).</li><li><b>Balance:</b> mensual y por ejercicio (el ejercicio va del 1 de mayo al 30 de abril del año siguiente).</li><li><b>Ejercicio / PIA:</b> datos del ejercicio y <b>📄 Generar PIA en PDF</b> (toma los movimientos del 1 de mayo al 30 de abril). Al crear el ejercicio, «hasta» es el año siguiente a «desde».</li><li><b>Nómina de autoridades:</b> cargá la Comisión Directiva, la Revisora y el Representante ante la Federación e <b>imprimí la nómina oficial en PDF</b>.</li><li><b>Constancias:</b> constancia de pago de cuota social de cada socio.</li></ul>` },
       { ico: '🧾', t: 'Constancias, actas y certificados', r: 'Los documentos de los estudiantes.', h: `<ul><li><b>Constancias:</b> de alumno regular y de examen, en PDF.</li><li><b>Actas y Certificados</b> (un solo botón del menú, con dos pestañas): <b>Fichas / Actas de Examen</b> (notas por módulo, ajustes, equivalencias, datos del acta y Excel con el formato del CFP) y <b>Emitir certificados</b> (arma los PDF en la plantilla oficial, según el catálogo de FP).</li><li><b>Fichas de curso:</b> se descargan desde cada trayecto.</li></ul>` },
       { ico: '👀', t: 'Seguimiento, bajas y observaciones', r: 'Acompañar a los estudiantes y al equipo.', h: `<ul><li><b>Seguimiento:</b> entregas por corregir y estudiantes en riesgo (asistencia o promedio menor a 70, o sin entregas). Desde ahí se registran <b>bajas automáticas</b> y se <b>reincorpora</b>.</li><li><b>Observaciones:</b> registro administrativo y pedagógico entre niveles de conducción, docentes y estudiantes. La persona observada lo lee y queda registrada la lectura.</li></ul>` },

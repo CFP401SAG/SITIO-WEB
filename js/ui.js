@@ -144,6 +144,9 @@ const UI = {
     // Cooperadora (Giles): solo Dirección y Secretaría. Nunca docentes ni estudiantes.
     const btnCoop = document.getElementById('btn-cooperadora');
     if (btnCoop) btnCoop.style.setProperty('display', Auth.esAdmin(rolNorm) ? 'flex' : 'none', 'important');
+    // Licencias docentes: solo Dirección y Secretaría.
+    const btnLic = document.getElementById('btn-licencias');
+    if (btnLic) btnLic.style.setProperty('display', Auth.esAdmin(rolNorm) ? 'flex' : 'none', 'important');
     // CFP 401 Giles: Secretaría tiene permisos plenos, así que ve Trayectos igual que Dirección.
 
     // Ayuda por rol: estudiantes, docentes y secretaría (la Dirección/administrador no la ve)
@@ -198,6 +201,7 @@ const UI = {
     if (tabId === 'observaciones' && rolPerfil === 'estudiante') tabId = 'trayectos';
     if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor' || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'cooperadora' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
+    if (tabId === 'licencias' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
     // Regencia: no entra a usuarios/roles ni a respaldos
     if ((tabId === 'usuarios' || tabId === 'backups') && !Auth.esAdmin(perfil.rol)) tabId = isAdmin ? 'dashboard' : 'trayectos';
 
@@ -242,6 +246,7 @@ const UI = {
         'estadisticas': 'Control y respaldo',
         'observaciones': 'Observaciones',
         'cooperadora': 'Cooperadora Escolar',
+        'licencias': 'Licencias docentes',
         'novedades': 'Novedades y calendario',
         'ayuda': 'Ayuda',
         'trayectos': (isAdmin || rolActual === 'preceptor') ? 'Trayectos Formativos' : 'Mis Trayectos Formativos',
@@ -305,6 +310,10 @@ const UI = {
 
     if (tabId === 'ayuda' && window.AyudaModulo) {
       window.AyudaModulo.cargar();
+    }
+
+    if (tabId === 'licencias' && window.LicenciasModulo) {
+      window.LicenciasModulo.cargar();
     }
 
     if (tabId === 'cooperadora' && window.CooperadoraModulo) {
