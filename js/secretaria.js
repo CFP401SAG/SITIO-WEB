@@ -17,6 +17,9 @@ const SecretariaModulo = {
   },
 
   num(n) { return Number(n || 0); },
+  // Asistencia media = promedio de estudiantes presentes por día de clase (presentes / clases con asistencia cargada)
+  media(pres, clases) { return clases ? Math.round(10 * pres / clases) / 10 : null; },
+  fmtMedia(v) { return v === null || v === undefined ? '–' : String(v).replace('.', ','); },
   pct(v) { return v === null || v === undefined ? '–' : String(v).replace('.', ',') + ' %'; },
 
   async cargar() {
@@ -100,12 +103,13 @@ const SecretariaModulo = {
   },
 
   totales() {
-    const t = { trayectos: this.filas.length, inscriptos: 0, bajas: 0, mujeres: 0, varones: 0, otros: 0, sinDato: 0, regs: 0, pres: 0 };
+    const t = { trayectos: this.filas.length, inscriptos: 0, bajas: 0, mujeres: 0, varones: 0, otros: 0, sinDato: 0, regs: 0, pres: 0, clases: 0 };
     this.filas.forEach(f => {
       const v = this.valores(f);
       ['inscriptos', 'bajas', 'mujeres', 'varones', 'otros', 'sinDato'].forEach(k => { t[k] += v[k]; });
-      t.regs += this.num(f.registros); t.pres += this.num(f.presentes);
+      t.regs += this.num(f.registros); t.pres += this.num(f.presentes); t.clases += this.num(f.dias_clase);
     });
+    t.mediaGral = this.media(t.pres, t.clases);
     t.pct = t.regs ? Math.round(1000 * t.pres / t.regs) / 10 : null;
     return t;
   },
@@ -146,6 +150,7 @@ const SecretariaModulo = {
         ${tarjeta(t.varones, 'varones')}
         ${tarjeta(t.otros, 'otros')}
         ${tarjeta(t.bajas, 'bajas')}
+        ${tarjeta(this.fmtMedia(t.mediaGral), 'asistencia media general')}
         ${tarjeta(this.pct(t.pct), 'asistencia general')}
       </div>
       ${t.sinDato ? `<div class="asis-aviso"><strong>${t.sinDato}</strong> estudiante(s) no tienen el género cargado: no entran en mujeres, varones ni otros. Se completa en la ficha del estudiante o con la columna <em>género</em> del CSV.</div>` : ''}
@@ -154,7 +159,7 @@ const SecretariaModulo = {
         <table class="sec-tabla">
           <thead><tr>
             <th>Trayecto</th><th>Sede</th><th>${this.modo === 'activos' ? 'Activos' : 'Inscriptos'}</th>
-            <th>Mujeres</th><th>Varones</th><th>Otros</th><th>Sin dato</th><th>Bajas</th><th>Clases</th><th>% asistencia</th>
+            <th>Mujeres</th><th>Varones</th><th>Otros</th><th>Sin dato</th><th>Bajas</th><th>Clases</th><th>Asistencia media</th><th>% asistencia</th>
           </tr></thead>
           <tbody>
             ${this.filas.length ? this.filas.map(f => { const v = this.valores(f); return `
@@ -163,13 +168,13 @@ const SecretariaModulo = {
                 <td>${f.sede === 'fuera' ? 'Fuera de sede' : 'Sede'}</td>
                 <td><b>${v.inscriptos}</b></td><td>${v.mujeres}</td><td>${v.varones}</td><td>${v.otros}</td>
                 <td class="${v.sinDato ? 'sec-aviso' : ''}">${v.sinDato}</td><td>${v.bajas}</td>
-                <td>${this.num(f.dias_clase)}</td><td><b>${this.pct(f.pct_asistencia)}</b></td>
+                <td>${this.num(f.dias_clase)}</td><td><b>${this.fmtMedia(this.media(this.num(f.presentes), this.num(f.dias_clase)))}</b></td><td><b>${this.pct(f.pct_asistencia)}</b></td>
               </tr>`; }).join('') : `<tr><td colspan="10">No hay trayectos en el ciclo ${this.esc(this.ciclo)}.</td></tr>`}
           </tbody>
-          ${this.filas.length ? `<tfoot><tr><td>Total</td><td></td><td>${t.inscriptos}</td><td>${t.mujeres}</td><td>${t.varones}</td><td>${t.otros}</td><td>${t.sinDato}</td><td>${t.bajas}</td><td></td><td>${this.pct(t.pct)}</td></tr></tfoot>` : ''}
+          ${this.filas.length ? `<tfoot><tr><td>Total</td><td></td><td>${t.inscriptos}</td><td>${t.mujeres}</td><td>${t.varones}</td><td>${t.otros}</td><td>${t.sinDato}</td><td>${t.bajas}</td><td>${t.clases}</td><td>${this.fmtMedia(t.mediaGral)}</td><td>${this.pct(t.pct)}</td></tr></tfoot>` : ''}
         </table>
       </div>
-      <p class="acta-ayuda">El porcentaje de asistencia es el de presentes (incluye las llegadas tarde) sobre todos los registros de los estudiantes activos del trayecto. "Clases" son los días con asistencia cargada.</p>
+      <p class="acta-ayuda">El porcentaje de asistencia es el de presentes (incluye las llegadas tarde) sobre todos los registros de los estudiantes activos del trayecto. "Clases" son los días con asistencia cargada. La asistencia media es el promedio de estudiantes presentes por clase (presentes ÷ clases); la general, el de todos los trayectos juntos.</p>
       ${window.MatriculaEscolar ? MatriculaEscolar.html() : ''}
       ${this.htmlDemografia()}`;
   },
@@ -186,9 +191,9 @@ const SecretariaModulo = {
   /* Matriz de la tabla (para copiar o armar el Excel) */
   matriz() {
     const t = this.totales();
-    const cab = ['Trayecto', 'Sede', this.modo === 'activos' ? 'Activos' : 'Inscriptos', 'Mujeres', 'Varones', 'Otros', 'Sin dato', 'Bajas', 'Clases', '% asistencia'];
-    const filas = this.filas.map(f => { const v = this.valores(f); return [f.trayecto, f.sede === 'fuera' ? 'Fuera de sede' : 'Sede', v.inscriptos, v.mujeres, v.varones, v.otros, v.sinDato, v.bajas, this.num(f.dias_clase), f.pct_asistencia === null ? '' : Number(f.pct_asistencia)]; });
-    filas.push(['Total', '', t.inscriptos, t.mujeres, t.varones, t.otros, t.sinDato, t.bajas, '', t.pct === null ? '' : t.pct]);
+    const cab = ['Trayecto', 'Sede', this.modo === 'activos' ? 'Activos' : 'Inscriptos', 'Mujeres', 'Varones', 'Otros', 'Sin dato', 'Bajas', 'Clases', 'Asistencia media', '% asistencia'];
+    const filas = this.filas.map(f => { const v = this.valores(f); return [f.trayecto, f.sede === 'fuera' ? 'Fuera de sede' : 'Sede', v.inscriptos, v.mujeres, v.varones, v.otros, v.sinDato, v.bajas, this.num(f.dias_clase), this.media(this.num(f.presentes), this.num(f.dias_clase)) ?? '', f.pct_asistencia === null ? '' : Number(f.pct_asistencia)]; });
+    filas.push(['Total', '', t.inscriptos, t.mujeres, t.varones, t.otros, t.sinDato, t.bajas, t.clases, t.mediaGral ?? '', t.pct === null ? '' : t.pct]);
     return { cab, filas };
   },
 
