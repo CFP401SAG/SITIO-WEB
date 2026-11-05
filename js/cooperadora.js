@@ -528,6 +528,8 @@ const CooperadoraModulo = {
     return res;
   },
 
+  sigMes(ym) { const [a, m] = ym.split('-').map(Number); return m === 12 ? `${a + 1}-01-01` : `${a}-${String(m + 1).padStart(2, '0')}-01`; },
+
   // Ejercicio de la cooperadora: del 1 de mayo de un año al 30 de abril del siguiente.
   // Se identifica por el año en que empieza (ej. 2026 = 01/05/2026 al 30/04/2027).
   ejercicioDeFecha(f) {
@@ -538,6 +540,21 @@ const CooperadoraModulo = {
   enEjercicio(fecha, desde) { return this.ejercicioDeFecha(fecha) === Number(desde); },
   etiquetaEjercicio(y) { return `Ejercicio ${y}/${Number(y) + 1} (01/05/${y} al 30/04/${Number(y) + 1})`; },
 
+  // Saldos por medio de pago (banco cta. cte., plazo fijo, caja chica) de un ejercicio.
+  // Parte del saldo del ejercicio anterior cargado en «Ejercicio / PIA» y suma los movimientos del ejercicio
+  // hasta la fecha límite (exclusive); sin límite, hasta el cierre.
+  saldoEjercicio(y, hastaExcl) {
+    const ej = this.ejercicios.find(e => Number(e.ciclo_desde) === Number(y));
+    const ini = { banco_cc: Number(ej?.saldo_inicial_banco_cc || 0), plazo_fijo: Number(ej?.saldo_inicial_plazo_fijo || 0), caja_chica: Number(ej?.saldo_inicial_caja_chica || 0) };
+    const fin = { ...ini };
+    this.movimientos.filter(m => this.enEjercicio(m.fecha, y) && (!hastaExcl || String(m.fecha).slice(0, 10) < hastaExcl)).forEach(m => {
+      const k = fin[m.medio] !== undefined ? m.medio : 'banco_cc';
+      fin[k] += (m.tipo === 'entrada' ? 1 : -1) * Number(m.monto || 0);
+    });
+    const suma = o => o.banco_cc + o.plazo_fijo + o.caja_chica;
+    return { existe: !!ej, ini, fin, totalIni: suma(ini), totalFin: suma(fin) };
+  },
+
   vistaBalance() {
     if (!this.balMes) this.balMes = new Date().toISOString().slice(0, 7);
     if (!this.balAnio) this.balAnio = this.ejercicioDeFecha(new Date().toISOString().slice(0, 10));
@@ -547,7 +564,13 @@ const CooperadoraModulo = {
     const movsAnio = this.movimientos.filter(m => this.enEjercicio(m.fecha, this.balAnio));
     const bMes = this.balanceDe(movsMes);
     const bAnio = this.balanceDe(movsAnio);
-    const bloque = (titulo, b) => `
+    const yMes = this.ejercicioDeFecha(this.balMes + '-01');
+    const sAnio = this.saldoEjercicio(this.balAnio);
+    const sMesAntes = this.saldoEjercicio(yMes, this.balMes + '-01');
+    const sMesFin = this.saldoEjercicio(yMes, this.sigMes(this.balMes));
+    const resMes = { existe: sMesAntes.existe, anterior: sMesAntes.totalFin, final: sMesFin.totalFin, porMedio: sMesFin.fin, lAnt: 'SALDO ANTERIOR (al inicio del mes)', lFin: 'SALDO AL CIERRE DEL MES' };
+    const resAnio = { existe: sAnio.existe, anterior: sAnio.totalIni, final: sAnio.totalFin, porMedio: sAnio.fin, lAnt: 'SALDO EJERCICIO ANTERIOR', lFin: 'SALDO PRÓXIMO EJERCICIO' };
+    const bloque = (titulo, b, r) => `
       <h4 style="margin:1rem 0 0.4rem;">${titulo}</h4>
       <div class="sec-tabla-wrap"><table class="sec-tabla">
         <thead><tr><th>Entradas</th><th style="text-align:right;">Monto</th><th>Salidas</th><th style="text-align:right;">Monto</th></tr></thead>
@@ -557,7 +580,14 @@ const CooperadoraModulo = {
             return `<tr><td>${e ? this.esc(e.nombre) : ''}</td><td style="text-align:right;">${e && e.monto ? this.money(e.monto) : ''}</td><td>${s ? this.esc(s.nombre) : ''}</td><td style="text-align:right;">${s && s.monto ? this.money(s.monto) : ''}</td></tr>`;
           }).join('')}
           <tr style="font-weight:700;"><td>TOTAL ENTRADAS</td><td style="text-align:right;">${this.money(b.totalEntradas)}</td><td>TOTAL SALIDAS</td><td style="text-align:right;">${this.money(b.totalSalidas)}</td></tr>
-          <tr style="font-weight:700;"><td colspan="3">SALDO DEL PERÍODO</td><td style="text-align:right;">${this.money(b.totalEntradas - b.totalSalidas)}</td></tr>
+          <tr style="font-weight:700;"><td colspan="3">SALDO DEL PERÍODO (entradas − salidas)</td><td style="text-align:right;">${this.money(b.totalEntradas - b.totalSalidas)}</td></tr>
+          <tr><td colspan="3">${r.lAnt}</td><td style="text-align:right;">${this.money(r.anterior)}</td></tr>
+          <tr><td colspan="3">TOTAL GENERAL (total entradas + saldo anterior)</td><td style="text-align:right;">${this.money(b.totalEntradas + r.anterior)}</td></tr>
+          <tr style="font-weight:700; background:#f1f5f9;"><td colspan="3">${r.lFin} (total general − total salidas)</td><td style="text-align:right;">${this.money(b.totalEntradas + r.anterior - b.totalSalidas)}</td></tr>
+          <tr><td colspan="3" style="padding-left:2rem;">· En banco, cuenta corriente</td><td style="text-align:right;">${this.money(r.porMedio.banco_cc)}</td></tr>
+          <tr><td colspan="3" style="padding-left:2rem;">· En banco, plazo fijo</td><td style="text-align:right;">${this.money(r.porMedio.plazo_fijo)}</td></tr>
+          <tr><td colspan="3" style="padding-left:2rem;">· En caja chica (dinero en efectivo)</td><td style="text-align:right;">${this.money(r.porMedio.caja_chica)}</td></tr>
+          ${r.existe ? '' : '<tr><td colspan="4" style="color:#b45309;">⚠️ Este ejercicio no está cargado en «Ejercicio / PIA»: el saldo del ejercicio anterior se toma como $0. Cargalo ahí.</td></tr>'}
         </tbody>
       </table></div>
     `;
@@ -566,8 +596,8 @@ const CooperadoraModulo = {
         <label>Balance mensual: <input type="month" class="form-control" value="${this.balMes}" onchange="CooperadoraModulo.balMes=this.value; CooperadoraModulo.render();"></label>
         <label>Balance del ejercicio: <select class="form-control" onchange="CooperadoraModulo.balAnio=Number(this.value); CooperadoraModulo.render();">${optsEj}</select></label>
       </div>
-      ${bloque('Balance mensual — ' + this.balMes, bMes)}
-      ${bloque('Balance del ' + this.etiquetaEjercicio(this.balAnio), bAnio)}
+      ${bloque('Balance mensual — ' + this.balMes, bMes, resMes)}
+      ${bloque('Balance del ' + this.etiquetaEjercicio(this.balAnio), bAnio, resAnio)}
     `;
   },
 
@@ -943,9 +973,11 @@ const CooperadoraModulo = {
       setTx(PIA_PDF.resumen.totalGeneral, montoStr(totalGeneral));
       setTx(PIA_PDF.resumen.totalSalidas, montoStr(bal.totalSalidas));
       setTx(PIA_PDF.resumen.saldoProximo, montoStr(saldoProximo));
-      setTx(PIA_PDF.resumen.banco_cc, montoStr(ej.saldo_inicial_banco_cc));
-      setTx(PIA_PDF.resumen.plazo_fijo, montoStr(ej.saldo_inicial_plazo_fijo));
-      setTx(PIA_PDF.resumen.caja_chica_efectivo, montoStr(ej.saldo_inicial_caja_chica));
+      // Saldo que pasa al próximo ejercicio, por medio (saldo inicial + entradas − salidas de cada medio)
+      const sf = this.saldoEjercicio(ej.ciclo_desde).fin;
+      setTx(PIA_PDF.resumen.banco_cc, montoStr(sf.banco_cc));
+      setTx(PIA_PDF.resumen.plazo_fijo, montoStr(sf.plazo_fijo));
+      setTx(PIA_PDF.resumen.caja_chica_efectivo, montoStr(sf.caja_chica));
 
       // Observaciones (en 2 renglones)
       const obs = String(ej.observaciones || '');
