@@ -406,7 +406,7 @@ const CooperadoraModulo = {
               <td>${this.money(m.monto)}</td>
               <td>${({ banco_cc: 'Banco cta. cte.', caja_chica: 'Caja chica', plazo_fijo: 'Plazo fijo' })[m.medio] || m.medio}</td>
               <td>${m.socio_id ? this.esc((this.socios.find(s => s.id === m.socio_id) || {}).apellido || '') : ''}</td>
-              ${this.puedeEditar ? `<td><button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #334155; border-radius: 6px; cursor: pointer; margin-right:0.25rem; color:#b91c1c;" title="Eliminar este movimiento" onclick="CooperadoraModulo.borrarMovimiento(${m.id})">🗑️ Eliminar</button></td>` : ''}
+              ${this.puedeEditar ? `<td style="white-space:nowrap;"><button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #334155; border-radius: 6px; cursor: pointer; margin-right:0.25rem;" title="Editar este movimiento" onclick="CooperadoraModulo.formMovimiento('${m.tipo}', ${m.id})">✏️ Editar</button><button style="padding: 0.3rem 0.55rem; font-size: 0.85rem; background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3); color: #334155; border-radius: 6px; cursor: pointer; margin-right:0.25rem; color:#b91c1c;" title="Eliminar este movimiento" onclick="CooperadoraModulo.borrarMovimiento(${m.id})">🗑️ Eliminar</button></td>` : ''}
             </tr>
           `).join('') || `<tr><td colspan="${this.puedeEditar ? 8 : 7}">Todavía no hay movimientos registrados.</td></tr>`}
         </tbody>
@@ -414,13 +414,14 @@ const CooperadoraModulo = {
     `;
   },
 
-  async formMovimiento(tipo) {
+  async formMovimiento(tipo, id) {
+    const mov = id ? this.movimientos.find(x => x.id === id) : null;
     const secciones = COOP_RUBROS[tipo];
     const opciones = [];
     secciones.forEach(sec => sec.rubros.forEach(r => opciones.push({ val: `${sec.seccion}|${r.codigo}`, label: `${sec.nombreSeccion.replace(/^\d+\.\s*/, '')} — ${r.nombre}`, libre: !!r.libre })));
-    const socios = this.socios.filter(s => s.estado === 'ACTIVO');
+    const socios = this.socios.filter(s => s.estado === 'ACTIVO' || (mov && s.id === mov.socio_id));
     const { value } = await Swal.fire({
-      title: tipo === 'entrada' ? 'Registrar ingreso' : 'Registrar egreso',
+      title: mov ? (tipo === 'entrada' ? 'Editar ingreso' : 'Editar egreso') : (tipo === 'entrada' ? 'Registrar ingreso' : 'Registrar egreso'),
       width: 560,
       customClass: { popup: 'coop-form' },
       html: `
@@ -458,6 +459,13 @@ const CooperadoraModulo = {
         const libreIn = document.getElementById('sw-rubro-libre');
         const toggle = () => { document.getElementById('sw-rubro-libre-wrap').style.display = sel.selectedOptions[0]?.dataset.libre ? 'block' : 'none'; };
         sel.addEventListener('change', toggle); toggle();
+        if (mov) {
+          const set = (i, v) => { const el = document.getElementById(i); if (el && v !== null && v !== undefined) el.value = v; };
+          set('sw-fecha', String(mov.fecha).slice(0, 10)); set('sw-monto', mov.monto); set('sw-desc', mov.descripcion || '');
+          set('sw-medio', mov.medio); set('sw-comprobante', mov.nro_comprobante || ''); set('sw-socio', mov.socio_id || ''); set('sw-periodo', mov.periodo || '');
+          sel.value = `${mov.seccion}|${mov.rubro_codigo}`; toggle();
+          if (sel.selectedOptions[0]?.dataset.libre) set('sw-rubro-libre', mov.rubro_nombre);
+        }
       },
       focusConfirm: false, showCancelButton: true, confirmButtonText: 'Guardar',
       preConfirm: () => {
@@ -489,10 +497,11 @@ const CooperadoraModulo = {
     if (!value) return;
     try {
       const perfil = (window.Auth && Auth.usuarioActual) || {};
-      value.creado_por_nombre = `${perfil.apellido || ''}, ${perfil.nombre || ''}`.trim();
-      const { error } = await supabase.from('cooperadora_movimientos').insert([value]);
+      let error;
+      if (mov) { ({ error } = await supabase.from('cooperadora_movimientos').update(value).eq('id', mov.id)); }
+      else { value.creado_por_nombre = `${perfil.apellido || ''}, ${perfil.nombre || ''}`.trim(); ({ error } = await supabase.from('cooperadora_movimientos').insert([value])); }
       if (error) throw error;
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Movimiento registrado', showConfirmButton: false, timer: 1800 });
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: mov ? 'Movimiento actualizado' : 'Movimiento registrado', showConfirmButton: false, timer: 1800 });
       await this.cargar();
     } catch (err) {
       Swal.fire('No se pudo guardar', err.message || '', 'error');
