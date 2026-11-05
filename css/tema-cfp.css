@@ -1402,3 +1402,11 @@ details.seg-grupo > .seg-item { margin: .5rem .7rem; }
 .act-form .act-para-item { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; text-align: left !important; gap: .5rem; font-weight: 500; }
 .act-form .act-para-item input { width: auto !important; margin: 0 !important; flex: 0 0 auto; }
 .act-form .act-para-item small { display: inline !important; margin: 0; }
+
+/* Menú lateral: si no entra en la pantalla, la lista de secciones tiene su propia barra de desplazamiento
+   (el logo arriba y «Cambiar mi contraseña» abajo quedan siempre visibles). */
+#app-screen .sidebar { height: 100vh !important; max-height: 100vh !important; min-height: 0 !important; overflow: hidden !important; }
+#app-screen .sidebar .sidebar-nav { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overflow-x: hidden; padding-right: .25rem; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .28) transparent; }
+#app-screen .sidebar .sidebar-nav::-webkit-scrollbar { width: 6px; }
+#app-screen .sidebar .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .28); border-radius: 6px; }
+#app-screen .sidebar .sidebar-nav .nav-item-btn { flex-shrink: 0; }
