@@ -128,8 +128,8 @@ const UI = {
       else el.style.removeProperty('display');
     });
     // Panel de cifras: Secretaría, dirección, regencia y preceptoría
-    const btnPlan = document.getElementById('btn-planilla');   // planilla de matrícula: todo el personal
-    if (btnPlan) btnPlan.style.setProperty('display', (rolNorm !== 'estudiante') ? 'flex' : 'none', 'important');
+    const btnPlan = document.getElementById('btn-planilla');   // planilla de matrícula: personal de conducción y administrativo (no estudiantes ni docentes)
+    if (btnPlan) btnPlan.style.setProperty('display', (rolNorm !== 'estudiante' && rolNorm !== 'docente') ? 'flex' : 'none', 'important');
     const btnCons = document.getElementById('btn-constancias');   // constancias: dirección, regencia, preceptoría y secretaría
     if (btnCons) btnCons.style.setProperty('display', (esSecretaria || isAdmin || rolNorm === 'preceptor') ? 'flex' : 'none', 'important');
     const btnCue = document.getElementById('btn-cuentas');   // restablecer claves y aprobar estudiantes: regencia y preceptoría
