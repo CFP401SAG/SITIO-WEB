@@ -14,7 +14,7 @@ const AMBITOS_FERIADO = { nacional: 'Nacional', provincial: 'Provincial', munici
 const LicenciasModulo = {
   puede: false,
   tab: 'resumen',
-  docentes: [], licencias: [], feriados: [], ciclos: [],
+  docentes: [], licencias: [], feriados: [], ciclos: [], trayectos: [],
   ciclo: new Date().getFullYear(),
   desde: null, hasta: null,     // período analizado en el resumen (vacío = ciclo completo)
   filtroDocente: '', filtroTipo: '', detalleDocente: null,
@@ -46,6 +46,39 @@ const LicenciasModulo = {
     return c ? { inicio: String(c.inicio).slice(0, 10), fin: String(c.fin).slice(0, 10), definido: true }
              : { inicio: `${anio}-03-01`, fin: `${anio}-12-31`, definido: false };
   },
+  /* ---------- días de clase afectados (cursada del trayecto) ---------- */
+  LETRA_DIA: { 1: 'L', 2: 'M', 3: 'X', 4: 'J', 5: 'V', 6: 'S' },
+  NOM_DIA_CORTO: { L: 'lun', M: 'mar', X: 'mié', J: 'jue', V: 'vie', S: 'sáb' },
+  trayectosDe(docId) {
+    const doc = this.docentes.find(x => x.id === docId);
+    const dni = String(doc?.dni || '').trim();
+    return dni ? this.trayectos.filter(t => String(t.docente_user || '').trim() === dni) : [];
+  },
+  // Para una licencia (o un tramo desde-hasta): por cada trayecto del docente, las fechas en que había clase
+  // (día de cursada del trayecto, no feriado, dentro de las fechas del trayecto).
+  clasesAfectadas(docId, desde, hasta) {
+    if (!desde || !hasta || hasta < desde) return [];
+    const fer = this.setFeriados();
+    return this.trayectosDe(docId).map(t => {
+      const dias = t.horario_dias && typeof t.horario_dias === 'object' ? t.horario_dias : {};
+      const ini = t.fecha_inicio ? String(t.fecha_inicio).slice(0, 10) : null, fin = t.fecha_cierre ? String(t.fecha_cierre).slice(0, 10) : null;
+      const fechas = [];
+      const d = new Date(desde + 'T00:00:00Z'), tope = new Date(hasta + 'T00:00:00Z');
+      for (; d <= tope; d.setUTCDate(d.getUTCDate() + 1)) {
+        const letra = this.LETRA_DIA[d.getUTCDay()], iso = d.toISOString().slice(0, 10);
+        if (!letra || !dias[letra] || fer.has(iso)) continue;
+        if ((ini && iso < ini) || (fin && iso > fin)) continue;
+        fechas.push(iso);
+      }
+      return { trayecto: t, fechas, sinHorario: !Object.values(dias).some(Boolean) };
+    });
+  },
+  fmtCorto(iso) { const l = this.LETRA_DIA[new Date(iso + 'T00:00:00Z').getUTCDay()]; return `${this.NOM_DIA_CORTO[l] || ''} ${this.fmt(iso).slice(0, 5)}`; },
+  resumenClases(docId, desde, hasta) {
+    const r = this.clasesAfectadas(docId, String(desde).slice(0, 10), String(hasta).slice(0, 10));
+    return { porTrayecto: r, total: r.reduce((a, x) => a + x.fechas.length, 0) };
+  },
+
   // Calificación Anual Docente: período y total oficial (Pautas CAD 2026: 15/11/2025 al 16/11/2026 = 248 días)
   cadConfig(anio) {
     const c = this.ciclos.find(x => Number(x.ciclo) === Number(anio)) || {};
@@ -76,6 +109,8 @@ const LicenciasModulo = {
       // Igual que Trayectos: se leen directo de profiles (la administración tiene lectura)
       let rDoc = await supabase.from('profiles').select('id,dni,apellido,nombre,estado').eq('rol', 'docente').order('apellido', { ascending: true });
       if (rDoc.error || !(rDoc.data || []).length) { const r2 = await supabase.rpc('licencias_listar_docentes'); if (!r2.error && (r2.data || []).length) rDoc = r2; }
+      const rTray = await supabase.from('trayectos').select('id,nombre,docente_user,horario_dias,fecha_inicio,fecha_cierre');
+      this.trayectos = (rTray.error ? [] : rTray.data) || [];
       const [rLic, rFer, rCic] = await Promise.all([
         supabase.from('licencias_docentes').select('*').order('desde', { ascending: false }),
         supabase.from('feriados').select('*').order('fecha'),
@@ -174,13 +209,28 @@ const LicenciasModulo = {
       ${this.modo === 'cadint' ? '<p class="plan-meta">Titulares interinos: la normativa no fija un total, se calcula con el calendario cargado.</p>' : ''}
       <p class="plan-meta">Días hábiles = lunes a viernes sin feriados ni asuetos cargados. «Días trabajados» = días hábiles del período menos las faltas (licencias y paros) que caen en él.</p>
       <div class="sec-tabla-wrap"><table class="sec-tabla">
-        <thead><tr><th>Docente</th><th>Días hábiles del período</th><th>Días trabajados</th><th>Faltas totales</th><th>🗂️ Administrativas</th><th>🩺 Médicas</th><th>✊ Paros</th><th>% asistencia</th><th></th></tr></thead>
+        <thead><tr><th>Docente</th><th>Días hábiles del período</th><th>Días trabajados</th><th>Faltas totales</th><th>🗂️ Administrativas</th><th>🩺 Médicas</th><th>✊ Paros</th><th>% asistencia</th><th>Días de clase perdidos</th><th></th></tr></thead>
         <tbody>${filas.map(f => `<tr>
           <td>${this.esc(this.nom(f.doc))}</td><td>${habPer}</td><td><b>${Math.max(habPer - f.total, 0)}</b></td><td><b>${f.total}</b></td>
           <td>${f.por.administrativa.size}</td><td>${f.por.medica.size}</td><td>${f.por.paro.size}</td>
-          <td>${habPer ? Math.round((Math.max(habPer - f.total, 0) / habPer) * 100) + '%' : '–'}</td>
-          <td><button class="act-btn-sec" onclick="LicenciasModulo.verDetalle('${f.doc.id}')">Ver detalle</button></td></tr>`).join('') || '<tr><td colspan="9">No hay docentes cargados.</td></tr>'}</tbody>
+          <td>${habPer ? Math.round((Math.max(habPer - f.total, 0) / habPer) * 100) + '%' : '–'}</td><td>${this.clasesPerdidasDocente(f.doc.id, d, h)}</td>
+          <td><button class="act-btn-sec" onclick="LicenciasModulo.verDetalle('${f.doc.id}')">Ver detalle</button></td></tr>`).join('') || '<tr><td colspan="10">No hay docentes cargados.</td></tr>'}</tbody>
       </table></div>`;
+  },
+
+  // Días de clase (según los días de cursada de sus trayectos) en que el docente faltó dentro del período, por trayecto
+  clasesPerdidasData(docId, d, h) {
+    const ls = this.licencias.filter(l => l.docente_id === docId && l.hasta >= d && l.desde <= h);
+    const trs = this.trayectosDe(docId);
+    const por = new Map(trs.map(t => [t.id, new Set()]));
+    ls.forEach(l => this.clasesAfectadas(docId, String(l.desde).slice(0, 10) > d ? String(l.desde).slice(0, 10) : d, String(l.hasta).slice(0, 10) < h ? String(l.hasta).slice(0, 10) : h).forEach(x => x.fechas.forEach(f => por.get(x.trayecto.id).add(f))));
+    const filas = trs.map(t => ({ nombre: t.nombre, n: por.get(t.id).size }));
+    return { tiene: trs.length > 0, total: filas.reduce((a, x) => a + x.n, 0), filas };
+  },
+  clasesPerdidasDocente(docId, d, h) {
+    const r = this.clasesPerdidasData(docId, d, h);
+    if (!r.tiene) return '<span style="color:#94a3b8;">–</span>';
+    return `<b>${r.total}</b>` + r.filas.map(x => `<div style="font-size:.72rem; color:#475569;">${this.esc(x.nombre)}: ${x.n}</div>`).join('');
   },
 
   verDetalle(docId) {
@@ -190,8 +240,8 @@ const LicenciasModulo = {
     Swal.fire({
       title: this.esc(this.nom(doc)), width: 720,
       html: `<p class="plan-meta" style="text-align:left;">Período: ${this.fmt(d)} al ${this.fmt(h)}</p>
-        <table class="sec-tabla" style="width:100%; text-align:left;"><thead><tr><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Días hábiles</th><th>Detalle</th></tr></thead><tbody>
-        ${ls.map(l => `<tr><td>${TIPOS_LICENCIA[l.tipo]?.ico || ''} ${this.esc(TIPOS_LICENCIA[l.tipo]?.corto || l.tipo)}</td><td>${this.fmt(l.desde)}</td><td>${this.fmt(l.hasta)}</td><td>${this.diasLicencia(l, d, h).length}</td><td>${this.esc([l.articulo, l.detalle].filter(Boolean).join(' — '))}</td></tr>`).join('') || '<tr><td colspan="5">Sin licencias ni paros en el período.</td></tr>'}
+        <table class="sec-tabla" style="width:100%; text-align:left;"><thead><tr><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Días hábiles</th><th>Días de clase</th><th>Detalle</th></tr></thead><tbody>
+        ${ls.map(l => `<tr><td>${TIPOS_LICENCIA[l.tipo]?.ico || ''} ${this.esc(TIPOS_LICENCIA[l.tipo]?.corto || l.tipo)}</td><td>${this.fmt(l.desde)}</td><td>${this.fmt(l.hasta)}</td><td>${this.diasLicencia(l, d, h).length}</td><td>${this.resumenClases(docId, l.desde > d ? l.desde : d, l.hasta < h ? l.hasta : h).total}</td><td>${this.esc([l.articulo, l.detalle].filter(Boolean).join(' — '))}</td></tr>`).join('') || '<tr><td colspan="6">Sin licencias ni paros en el período.</td></tr>'}
         </tbody></table>`,
       confirmButtonText: 'Cerrar'
     });
@@ -204,12 +254,12 @@ const LicenciasModulo = {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Resumen');
     ws.addRow([`Licencias docentes — ciclo ${this.ciclo} — período ${this.fmt(d)} al ${this.fmt(h)} (${habPer} días hábiles)`]).font = { bold: true };
-    ws.addRow(['Docente', 'DNI', 'Días hábiles', 'Días trabajados', 'Faltas totales', 'Administrativas', 'Médicas', 'Paros']).font = { bold: true };
-    this.docentes.forEach(doc => { const f = this.calcularDocente(doc, d, h); ws.addRow([this.nom(doc), doc.dni || '', habPer, Math.max(habPer - f.total, 0), f.total, f.por.administrativa.size, f.por.medica.size, f.por.paro.size]); });
+    ws.addRow(['Docente', 'DNI', 'Días hábiles', 'Días trabajados', 'Faltas totales', 'Administrativas', 'Médicas', 'Paros', 'Días de clase perdidos']).font = { bold: true };
+    this.docentes.forEach(doc => { const f = this.calcularDocente(doc, d, h); ws.addRow([this.nom(doc), doc.dni || '', habPer, Math.max(habPer - f.total, 0), f.total, f.por.administrativa.size, f.por.medica.size, f.por.paro.size, (() => { const r = this.clasesPerdidasData(doc.id, d, h); return r.tiene ? r.total : ''; })()]); });
     ws.columns.forEach((c, i) => { c.width = i === 0 ? 34 : 16; });
     const ws2 = wb.addWorksheet('Detalle');
-    ws2.addRow(['Docente', 'Tipo', 'Desde', 'Hasta', 'Días hábiles', 'Artículo / causal', 'Detalle']).font = { bold: true };
-    this.licencias.filter(l => l.hasta >= d && l.desde <= h).forEach(l => ws2.addRow([this.nom(this.docentes.find(x => x.id === l.docente_id)), TIPOS_LICENCIA[l.tipo]?.corto || l.tipo, this.fmt(l.desde), this.fmt(l.hasta), this.diasLicencia(l, d, h).length, l.articulo || '', l.detalle || '']));
+    ws2.addRow(['Docente', 'Tipo', 'Desde', 'Hasta', 'Días hábiles', 'Días de clase afectados', 'Artículo / causal', 'Detalle']).font = { bold: true };
+    this.licencias.filter(l => l.hasta >= d && l.desde <= h).forEach(l => ws2.addRow([this.nom(this.docentes.find(x => x.id === l.docente_id)), TIPOS_LICENCIA[l.tipo]?.corto || l.tipo, this.fmt(l.desde), this.fmt(l.hasta), this.diasLicencia(l, d, h).length, this.resumenClases(l.docente_id, l.desde > d ? l.desde : d, l.hasta < h ? l.hasta : h).total, l.articulo || '', l.detalle || '']));
     ws2.columns.forEach((c, i) => { c.width = i === 0 ? 34 : 18; });
     const buf = await wb.xlsx.writeBuffer();
     const a = document.createElement('a');
@@ -230,6 +280,11 @@ const LicenciasModulo = {
   },
 
   /* ============================== LICENCIAS ============================== */
+  htmlClases(docId, desde, hasta) {
+    const r = this.resumenClases(docId, desde, hasta);
+    if (!r.porTrayecto.length) return '<span style="color:#94a3b8;">Sin trayecto asignado</span>';
+    return `<b>${r.total}</b>` + r.porTrayecto.map(x => `<div style="font-size:.75rem; color:#475569;">${this.esc(x.trayecto.nombre)}: ${x.fechas.length}${x.sinHorario ? ' (sin días de cursada cargados)' : ''}</div>`).join('');
+  },
   vistaLicencias() {
     const anio = Number(this.ciclo);
     const ls = this.licencias.filter(l => String(l.desde).slice(0, 4) == anio || String(l.hasta).slice(0, 4) == anio)
@@ -243,14 +298,15 @@ const LicenciasModulo = {
         <button class="act-btn" onclick="LicenciasModulo.formLicencia()">➕ Cargar licencia / paro</button>
       </div>
       <div class="sec-tabla-wrap"><table class="sec-tabla">
-        <thead><tr><th>Docente</th><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Días hábiles</th><th>Artículo / causal</th><th>Detalle</th><th></th></tr></thead>
+        <thead><tr><th>Docente</th><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Días hábiles</th><th>Días de clase afectados</th><th>Artículo / causal</th><th>Detalle</th><th></th></tr></thead>
         <tbody>${ls.map(l => `<tr>
           <td>${this.esc(this.nom(this.docentes.find(x => x.id === l.docente_id)))}</td>
           <td>${TIPOS_LICENCIA[l.tipo]?.ico || ''} ${this.esc(TIPOS_LICENCIA[l.tipo]?.corto || l.tipo)}</td>
           <td>${this.fmt(l.desde)}</td><td>${this.fmt(l.hasta)}</td>
           <td><b>${this.diasHabiles(String(l.desde).slice(0, 10), String(l.hasta).slice(0, 10)).length}</b></td>
+          <td>${this.htmlClases(l.docente_id, l.desde, l.hasta)}</td>
           <td>${this.esc(l.articulo || '')}</td><td>${this.esc(l.detalle || '')}</td>
-          <td style="white-space:nowrap;"><button class="act-btn-sec" title="Editar" onclick="LicenciasModulo.formLicencia(${l.id})">✏️</button> <button class="act-btn-sec" title="Eliminar" style="color:#b91c1c !important;" onclick="LicenciasModulo.borrarLicencia(${l.id})">🗑️</button></td></tr>`).join('') || '<tr><td colspan="8">No hay licencias ni paros cargados para este ciclo.</td></tr>'}</tbody>
+          <td style="white-space:nowrap;"><button class="act-btn-sec" title="Editar" onclick="LicenciasModulo.formLicencia(${l.id})">✏️</button> <button class="act-btn-sec" title="Eliminar" style="color:#b91c1c !important;" onclick="LicenciasModulo.borrarLicencia(${l.id})">🗑️</button></td></tr>`).join('') || '<tr><td colspan="9">No hay licencias ni paros cargados para este ciclo.</td></tr>'}</tbody>
       </table></div>`;
   },
 
@@ -279,7 +335,10 @@ const LicenciasModulo = {
           const dias = self.diasHabiles(d, h);
           const corridos = Math.round((new Date(h) - new Date(d)) / 86400000) + 1;
           const sol = doc ? self.licencias.filter(x => x.docente_id === doc && x.id !== id && x.desde <= h && x.hasta >= d) : [];
-          box.innerHTML = `<b>${dias.length}</b> días hábiles (${corridos} corridos; se excluyen fines de semana y feriados cargados).${sol.length ? `<br><span style="color:#b45309;">⚠️ Se superpone con otra licencia de este docente (${sol.map(x => self.fmt(x.desde) + ' al ' + self.fmt(x.hasta)).join('; ')}). Los días repetidos se cuentan una sola vez.</span>` : ''}`;
+          const cl = doc ? self.resumenClases(doc, d, h) : null;
+          const clHtml = !doc ? '' : !cl.porTrayecto.length ? '<br>🎓 El docente no tiene trayecto asignado: no se calculan días de clase.'
+            : `<br>🎓 <b>Días de clase afectados: ${cl.total}</b>` + cl.porTrayecto.map(x => `<div style="margin-left:1rem;">· ${self.esc(x.trayecto.nombre)}: <b>${x.fechas.length}</b>${x.fechas.length ? ' (' + x.fechas.map(f => self.fmtCorto(f)).join(', ') + ')' : ''}${x.sinHorario ? ' — el trayecto no tiene días de cursada cargados' : ''}</div>`).join('');
+          box.innerHTML = `<b>${dias.length}</b> días hábiles (${corridos} corridos; se excluyen fines de semana y feriados cargados).${clHtml}${sol.length ? `<br><span style="color:#b45309;">⚠️ Se superpone con otra licencia de este docente (${sol.map(x => self.fmt(x.desde) + ' al ' + self.fmt(x.hasta)).join('; ')}). Los días repetidos se cuentan una sola vez.</span>` : ''}`;
         };
         ['lc-desde', 'lc-hasta', 'lc-doc'].forEach(i => document.getElementById(i).addEventListener('change', calc)); calc();
       },
