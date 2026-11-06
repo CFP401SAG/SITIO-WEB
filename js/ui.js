@@ -147,6 +147,14 @@ const UI = {
     // Licencias docentes: solo Dirección y Secretaría.
     const btnLic = document.getElementById('btn-licencias');
     if (btnLic) btnLic.style.setProperty('display', Auth.esAdmin(rolNorm) ? 'flex' : 'none', 'important');
+    // EPS: Dirección, Secretaría y la coordinadora EPS (vinculada en eps_personal)
+    const btnEps = document.getElementById('btn-eps');
+    if (btnEps) {
+      btnEps.style.setProperty('display', Auth.esAdmin(rolNorm) ? 'flex' : 'none', 'important');
+      if (!Auth.esAdmin(rolNorm) && rolNorm !== 'estudiante' && window.EpsModulo) {
+        EpsModulo.chequearCoordinador().then(ok => { if (ok) btnEps.style.setProperty('display', 'flex', 'important'); });
+      }
+    }
     // CFP 401 Giles: Secretaría tiene permisos plenos, así que ve Trayectos igual que Dirección.
 
     // Ayuda por rol: estudiantes, docentes y secretaría (la Dirección/administrador no la ve)
@@ -202,6 +210,8 @@ const UI = {
     if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor' || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'cooperadora' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'licencias' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
+    // EPS: el acceso real lo controla la base (RLS); para la coordinadora se permite la pestaña
+
     // Regencia: no entra a usuarios/roles ni a respaldos
     if ((tabId === 'usuarios' || tabId === 'backups') && !Auth.esAdmin(perfil.rol)) tabId = isAdmin ? 'dashboard' : 'trayectos';
 
@@ -247,6 +257,7 @@ const UI = {
         'observaciones': 'Observaciones',
         'cooperadora': 'Cooperadora Escolar',
         'licencias': 'Licencias docentes',
+        'eps': 'EPS — estudiantes desvinculados',
         'novedades': 'Novedades y calendario',
         'ayuda': 'Ayuda',
         'trayectos': (isAdmin || rolActual === 'preceptor') ? 'Trayectos Formativos' : 'Mis Trayectos Formativos',
@@ -310,6 +321,10 @@ const UI = {
 
     if (tabId === 'ayuda' && window.AyudaModulo) {
       window.AyudaModulo.cargar();
+    }
+
+    if (tabId === 'eps' && window.EpsModulo) {
+      window.EpsModulo.cargar();
     }
 
     if (tabId === 'licencias' && window.LicenciasModulo) {
