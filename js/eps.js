@@ -6,6 +6,7 @@
 const FUNCIONES_EPS = { coordinador: 'Coordinador/a', docente_general: 'Docente de formación general', docente_especifica: 'Docente de formación específica' };
 
 const EpsModulo = {
+  asistencia: [], ptfs: [], faltaAsis: false, mesAsis: new Date().toISOString().slice(0, 7), anioCifras: new Date().getFullYear(),
   modulos: [], faltaPtf: false, ptfId: null, ptf: null,
   tab: 'estudiantes', estudiantes: [], personal: [], trayectosCat: [], filtro: '', verBajas: false,
 
@@ -34,6 +35,11 @@ const EpsModulo = {
       const rM = await supabase.from('eps_modulos').select('*').order('nivel').order('orden').order('nombre');
       this.modulos = rM.error ? [] : (rM.data || []);
       this.faltaPtf = !!rM.error;
+      const rA = await supabase.from('eps_asistencia').select('*');
+      this.asistencia = rA.error ? [] : (rA.data || []);
+      this.faltaAsis = !!rA.error;
+      const rPt = await supabase.from('eps_ptf').select('estudiante_id,notas');
+      this.ptfs = rPt.error ? [] : (rPt.data || []);
       this.trayectosCat = [...new Set(((rT.error ? [] : rT.data) || []).map(t => (t.nombre || '').trim()).filter(Boolean))].sort();
       this.render();
     } catch (err) {
@@ -47,10 +53,10 @@ const EpsModulo = {
 
   render() {
     const cont = document.getElementById('eps-contenido');
-    const tabs = [['estudiantes', '🎓 Estudiantes'], ['personal', '👥 Personal EPS'], ['modulos', '📚 Módulos por trayecto']];
+    const tabs = [['estudiantes', '🎓 Estudiantes'], ['personal', '👥 Personal EPS'], ['modulos', '📚 Módulos por trayecto'], ['asistencia', '🗓️ Asistencia'], ['cifras', '📊 Cifras EPS']];
     cont.innerHTML = `
       <div class="plan-tabs">${tabs.map(([id, et]) => `<button type="button" class="plan-tab ${this.tab === id ? 'activo' : ''}" onclick="EpsModulo.irA('${id}')">${et}</button>`).join('')}</div>
-      ${this.tab === 'estudiantes' ? this.vistaEstudiantes() : this.tab === 'personal' ? this.vistaPersonal() : this.vistaModulos()}`;
+      ${this.tab === 'estudiantes' ? this.vistaEstudiantes() : this.tab === 'personal' ? this.vistaPersonal() : this.tab === 'modulos' ? this.vistaModulos() : this.tab === 'asistencia' ? this.vistaAsistencia() : this.vistaCifras()}`;
   },
 
   /* ---------- estudiantes ---------- */
@@ -230,10 +236,10 @@ const EpsModulo = {
   },
   cerrarPtf() { this.ptfId = null; this.ptf = null; this.render(); },
 
-  estadoNivel(n) {
-    const e = this.estudiantes.find(x => x.id === this.ptfId), p = this.ptf;
+  estadoNivel(n) { return this.estadoNivelDe(this.estudiantes.find(x => x.id === this.ptfId), this.ptf, n); },
+  estadoNivelDe(e, p, n) {
     const mods = this.modulos.filter(m => m.trayecto === e.trayecto && m.nivel === n);
-    const nn = p.notas[n] || {};
+    const nn = ((p && p.notas) || {})[n] || {};
     const finales = [...mods.map(m => (nn.fp || {})[m.nombre]?.[4]), ...this.materiasGen(n).map(g => (nn.gen || {})[g]?.[4])];
     if (!mods.length || finales.some(v => !String(v ?? '').trim())) return 'En curso';
     return finales.some(v => /^TEP$/i.test(String(v).trim())) ? 'Con pendientes' : 'Acreditado';
@@ -329,6 +335,76 @@ const EpsModulo = {
     }
     const buf = await wb.xlsx.writeBuffer();
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf])); a.download = `PTF_${e.apellido}_${e.nombre}.xlsx`; a.click();
+  },
+
+
+  /* ---------- asistencia mensual (carga manual) ---------- */
+  nomMes(m) { const [y, mm] = m.split('-'); return ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][Number(mm) - 1] + ' ' + y; },
+  vistaAsistencia() {
+    if (this.faltaAsis) return '<div class="prog-vacio">Falta ejecutar <strong>sql/59_eps_asistencia.sql</strong> en Supabase.</div>';
+    const act = this.estudiantes.filter(e => e.estado === 'activo');
+    const reg = id => this.asistencia.find(a => a.estudiante_id === id && a.mes === this.mesAsis) || {};
+    return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:10px">
+        <label style="font-size:.8rem">Mes<input type="month" class="form-control" value="${this.mesAsis}" onchange="EpsModulo.mesAsis=this.value||EpsModulo.mesAsis;EpsModulo.render()"></label>
+        <label style="font-size:.8rem">Días de clase del mes (para todos)<input id="eps-dias-todos" type="number" min="0" class="form-control" style="width:90px"></label>
+        <button class="btn-secundario" onclick="EpsModulo.aplicarDias()">Aplicar a todos</button>
+        <button class="btn-primary" onclick="EpsModulo.guardarAsistencia()">💾 Guardar ${this.nomMes(this.mesAsis)}</button></div>
+      <div style="overflow-x:auto"><table class="tabla-simple" style="width:100%"><thead><tr><th>Estudiante</th><th>Trayecto</th><th>Días de clase</th><th>Presentes</th><th>%</th></tr></thead>
+      <tbody>${act.map(e => { const r = reg(e.id); return `<tr data-e="${e.id}"><td>${this.esc(e.apellido)}, ${this.esc(e.nombre)}</td><td>${this.esc(e.trayecto || '')}</td>
+        <td><input type="number" min="0" data-k="d" value="${r.dias_clase ?? ''}" style="width:70px"></td><td><input type="number" min="0" data-k="p" value="${r.presentes ?? ''}" style="width:70px"></td>
+        <td>${r.dias_clase ? Math.round(r.presentes * 100 / r.dias_clase) + '%' : ''}</td></tr>`; }).join('') || '<tr><td colspan="5" style="text-align:center">No hay estudiantes activos.</td></tr>'}</tbody></table></div>`;
+  },
+  aplicarDias() {
+    const v = document.getElementById('eps-dias-todos').value; if (v === '') return;
+    document.querySelectorAll('input[data-k="d"]').forEach(i => { i.value = v; });
+  },
+  async guardarAsistencia() {
+    const filas = [], borrar = [];
+    for (const tr of document.querySelectorAll('tr[data-e]')) {
+      const id = Number(tr.dataset.e), d = tr.querySelector('[data-k="d"]').value, p = tr.querySelector('[data-k="p"]').value;
+      if (d === '' && p === '') { if (this.asistencia.some(a => a.estudiante_id === id && a.mes === this.mesAsis)) borrar.push(id); continue; }
+      if (d === '' || p === '' || Number(p) > Number(d)) { const e = this.estudiantes.find(x => x.id === id); return Swal.fire('Revisá los datos', `${e.apellido}, ${e.nombre}: completá ambos campos y los presentes no pueden superar los días de clase.`, 'warning'); }
+      filas.push({ estudiante_id: id, mes: this.mesAsis, dias_clase: Number(d), presentes: Number(p) });
+    }
+    if (filas.length) { const r = await supabase.from('eps_asistencia').upsert(filas, { onConflict: 'estudiante_id,mes' }); if (r.error) return Swal.fire('No se pudo guardar', r.error.message, 'error'); }
+    if (borrar.length) await supabase.from('eps_asistencia').delete().eq('mes', this.mesAsis).in('estudiante_id', borrar);
+    const m = this.mesAsis; await this.cargar(); this.mesAsis = m; this.render();
+    Swal.fire({ icon: 'success', title: 'Asistencia guardada', timer: 1200, showConfirmButton: false });
+  },
+
+  /* ---------- cifras ---------- */
+  cifras() {
+    const a = this.anioCifras, act = this.estudiantes.filter(e => e.estado === 'activo');
+    const cnt = est => this.estudiantes.filter(e => e.estado === est).length;
+    const asisDe = ids => { const r = this.asistencia.filter(x => x.mes.startsWith(a + '-') && (!ids || ids.has(x.estudiante_id))); const d = r.reduce((s, x) => s + x.dias_clase, 0); return d ? Math.round(r.reduce((s, x) => s + x.presentes, 0) * 1000 / d) / 10 : null; };
+    const trs = [...new Set(act.map(e => e.trayecto || '(sin trayecto)'))].sort();
+    const porTray = trs.map(t => { const es = act.filter(e => (e.trayecto || '(sin trayecto)') === t); return { t, n: es.length, asis: asisDe(new Set(es.map(e => e.id))),
+      niv: [1, 2, 3, 4].map(n => es.filter(e => this.estadoNivelDe(e, this.ptfs.find(p => p.estudiante_id === e.id), n) === 'Acreditado').length) }; });
+    return { activos: act.length, bajas: cnt('baja'), egresados: cnt('egresado'), asis: asisDe(null), porTray, nivTot: [0, 1, 2, 3].map(i => porTray.reduce((s, x) => s + x.niv[i], 0)) };
+  },
+  vistaCifras() {
+    const c = this.cifras(), f = v => v == null ? '—' : v + '%';
+    return `<div style="display:flex;gap:8px;align-items:end;margin-bottom:10px;flex-wrap:wrap"><label style="font-size:.8rem">Año<input type="number" class="form-control" style="width:100px" value="${this.anioCifras}" onchange="EpsModulo.anioCifras=Number(this.value)||EpsModulo.anioCifras;EpsModulo.render()"></label>
+        <button class="btn-secundario" onclick="EpsModulo.exportarCifras()">⬇️ Excel</button></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px">
+        <div class="seg-card"><small>Matrícula activa</small><div style="font-size:1.6rem"><b>${c.activos}</b></div></div>
+        <div class="seg-card"><small>Bajas / egresados</small><div style="font-size:1.6rem"><b>${c.bajas} / ${c.egresados}</b></div></div>
+        <div class="seg-card"><small>Asistencia media ${this.anioCifras}</small><div style="font-size:1.6rem"><b>${f(c.asis)}</b></div></div></div>
+      <div style="overflow-x:auto"><table class="tabla-simple" style="width:100%"><thead><tr><th>Trayecto</th><th>Matrícula</th><th>Asistencia media</th><th>Nivel I acreditado</th><th>Nivel II</th><th>Nivel III</th><th>Nivel IV</th></tr></thead>
+      <tbody>${c.porTray.map(x => `<tr><td>${this.esc(x.t)}</td><td>${x.n}</td><td>${f(x.asis)}</td>${x.niv.map(n => `<td>${n}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="7" style="text-align:center">Sin datos.</td></tr>'}
+      <tr style="font-weight:bold"><td>Total</td><td>${c.activos}</td><td>${f(c.asis)}</td>${c.nivTot.map(n => `<td>${n}</td>`).join('')}</tr></tbody></table></div>
+      <small>Acreditados: estudiantes activos con todas las notas finales del nivel cargadas en el PTF y ninguna TEP. La asistencia media es el total de presentes sobre el total de días de clase cargados en el año.</small>`;
+  },
+  async exportarCifras() {
+    if (typeof ExcelJS === 'undefined') return Swal.fire('Excel no disponible', 'No se cargó la librería de Excel.', 'error');
+    const c = this.cifras(), wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Cifras EPS');
+    ws.columns = [{ width: 36 }, ...Array(6).fill({ width: 16 })];
+    ws.addRow(['Cifras EPS ' + this.anioCifras]).font = { bold: true };
+    ws.addRow(['Matrícula activa', c.activos]); ws.addRow(['Bajas', c.bajas]); ws.addRow(['Egresados', c.egresados]); ws.addRow(['Asistencia media (%)', c.asis ?? '']); ws.addRow([]);
+    ws.addRow(['Trayecto', 'Matrícula', 'Asistencia media (%)', 'Nivel I acreditado', 'Nivel II', 'Nivel III', 'Nivel IV']).font = { bold: true };
+    c.porTray.forEach(x => ws.addRow([x.t, x.n, x.asis ?? '', ...x.niv]));
+    ws.addRow(['Total', c.activos, c.asis ?? '', ...c.nivTot]).font = { bold: true };
+    const buf = await wb.xlsx.writeBuffer(), a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf])); a.download = `cifras_EPS_${this.anioCifras}.xlsx`; a.click();
   },
 
   /* ---------- Excel ---------- */
