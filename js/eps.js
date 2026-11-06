@@ -130,7 +130,7 @@ const EpsModulo = {
   /* ---------- personal ---------- */
   vistaPersonal() {
     return `
-      <p style="font-size:.85rem">Coordinadora y docentes de EPS se cargan como registros (no necesitan cuenta). Para que la coordinadora entre a EPS necesita una cuenta en la plataforma (creada como cualquier usuario); se vincula sola por el DNI al cargarla como «Coordinador/a». 🔗 indica que ya está vinculada.</p>
+      <p style="font-size:.85rem">Coordinadora y docentes de EPS se cargan como registros (no necesitan cuenta). Para que la coordinadora entre a EPS, creale la cuenta en Usuarios con el rol «Coordinador/a EPS»: solo ve esta sección. Cargarla acá es solo el registro.</p>
       <div style="margin-bottom:10px"><button class="btn-primary" onclick="EpsModulo.formPersonal()">+ Nueva persona</button></div>
       <div style="overflow-x:auto"><table class="tabla-simple" style="width:100%">
         <thead><tr><th>Apellido y nombre</th><th>Función</th><th>Materia / trayecto</th><th>DNI</th><th>Contacto</th><th></th></tr></thead>

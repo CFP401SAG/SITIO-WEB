@@ -151,7 +151,8 @@ const UI = {
     const btnEps = document.getElementById('btn-eps');
     if (btnEps) {
       btnEps.style.setProperty('display', Auth.esAdmin(rolNorm) ? 'flex' : 'none', 'important');
-      if (!Auth.esAdmin(rolNorm) && rolNorm !== 'estudiante' && window.EpsModulo) {
+      if (rolNorm === 'coord_eps') btnEps.style.setProperty('display', 'flex', 'important');
+      else if (!Auth.esAdmin(rolNorm) && rolNorm !== 'estudiante' && window.EpsModulo) {
         EpsModulo.chequearCoordinador().then(ok => { if (ok) btnEps.style.setProperty('display', 'flex', 'important'); });
       }
     }
@@ -168,9 +169,18 @@ const UI = {
     if (btnSeg) btnSeg.style.setProperty('display', puedeSeguir ? 'flex' : 'none', 'important');
     if (puedeSeguir && window.SeguimientoModulo) setTimeout(() => SeguimientoModulo.contarPendientes(), 800);
 
+    // Coordinador/a EPS: ve únicamente la sección EPS (nada del resto del CFP)
+    if (rolNorm === 'coord_eps') {
+      document.querySelectorAll('.sidebar .nav-item-btn').forEach(b => {
+        b.style.setProperty('display', b.id === 'btn-eps' ? 'flex' : 'none', 'important');
+      });
+    }
+
     if (window.AyudaModulo) setTimeout(() => AyudaModulo.iniciarSiPrimeraVez(), 1500);
 
-    if (isAdmin) {
+    if (rolNorm === 'coord_eps') {
+      this.showTab('eps');
+    } else if (isAdmin) {
       this.showTab('dashboard');
     } else if (esSecretaria) {
       this.showTab('secretaria');
@@ -210,7 +220,8 @@ const UI = {
     if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor' || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'cooperadora' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'licencias' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
-    // EPS: el acceso real lo controla la base (RLS); para la coordinadora se permite la pestaña
+    // Coordinador/a EPS: solo la pestaña EPS
+    if (rolPerfil === 'coord_eps') tabId = 'eps';
 
     // Regencia: no entra a usuarios/roles ni a respaldos
     if ((tabId === 'usuarios' || tabId === 'backups') && !Auth.esAdmin(perfil.rol)) tabId = isAdmin ? 'dashboard' : 'trayectos';

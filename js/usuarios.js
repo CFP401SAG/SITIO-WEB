@@ -162,6 +162,7 @@ const UsuariosAdmin = {
               <option value="estudiante" ${u.rol === 'estudiante' ? 'selected' : ''}>Estudiante</option>
               <option value="docente" ${u.rol === 'docente' ? 'selected' : ''}>Docente</option>
               <option value="secretaria" ${u.rol === 'secretaria' ? 'selected' : ''}>Secretaría</option>
+              <option value="coord_eps" ${u.rol === 'coord_eps' ? 'selected' : ''}>Coordinador/a EPS</option>
               ${(this.soyDirector() || esFilaAdmin) ? `<option value="admin" ${esFilaAdmin ? 'selected' : ''}>Administrador</option>` : ''}
             </select>
           </td>
