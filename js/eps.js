@@ -130,7 +130,7 @@ const EpsModulo = {
   /* ---------- personal ---------- */
   vistaPersonal() {
     return `
-      <p style="font-size:.85rem">Coordinadora y docentes de EPS se cargan como registros (no necesitan cuenta). Si la coordinadora tiene cuenta en la plataforma, vinculala para que acceda a esta sección.</p>
+      <p style="font-size:.85rem">Coordinadora y docentes de EPS se cargan como registros (no necesitan cuenta). Para que la coordinadora entre a EPS necesita una cuenta en la plataforma (creada como cualquier usuario); se vincula sola por el DNI al cargarla como «Coordinador/a». 🔗 indica que ya está vinculada.</p>
       <div style="margin-bottom:10px"><button class="btn-primary" onclick="EpsModulo.formPersonal()">+ Nueva persona</button></div>
       <div style="overflow-x:auto"><table class="tabla-simple" style="width:100%">
         <thead><tr><th>Apellido y nombre</th><th>Función</th><th>Materia / trayecto</th><th>DNI</th><th>Contacto</th><th></th></tr></thead>
@@ -149,7 +149,7 @@ const EpsModulo = {
       title: id ? 'Editar persona' : 'Nueva persona EPS', width: 560, showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar',
       html: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">${campo('apellido', 'Apellido')}${campo('nombre', 'Nombre')}${campo('dni', 'DNI')}
         <label style="text-align:left;font-size:.8rem">Función<select id="epp-funcion" class="swal2-select" style="margin:2px 0 8px;width:100%">${Object.entries(FUNCIONES_EPS).map(([k, n]) => `<option value="${k}" ${p.funcion === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-        ${campo('area', 'Materia / trayecto')}${campo('telefono', 'Teléfono')}${campo('email', 'Correo (si tiene cuenta, se vincula por este correo)', 'email')}
+        ${campo('area', 'Materia / trayecto')}${campo('telefono', 'Teléfono')}${campo('email', 'Correo', 'email')}
         <label style="text-align:left;font-size:.8rem">Estado<select id="epp-activo" class="swal2-select" style="margin:2px 0 8px;width:100%"><option value="1" ${p.activo === false ? '' : 'selected'}>Activo</option><option value="0" ${p.activo === false ? 'selected' : ''}>Inactivo</option></select></label></div>`,
       preConfirm: () => {
         const g = k => (document.getElementById('epp-' + k)?.value || '').trim();
