@@ -6,6 +6,7 @@
 const FUNCIONES_EPS = { coordinador: 'Coordinador/a', docente_general: 'Docente de formación general', docente_especifica: 'Docente de formación específica' };
 
 const EpsModulo = {
+  modulos: [], faltaPtf: false, ptfId: null, ptf: null,
   tab: 'estudiantes', estudiantes: [], personal: [], trayectosCat: [], filtro: '', verBajas: false,
 
   esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); },
@@ -30,6 +31,9 @@ const EpsModulo = {
       if (rP.error) throw rP.error;
       this.estudiantes = rE.data || [];
       this.personal = rP.data || [];
+      const rM = await supabase.from('eps_modulos').select('*').order('nivel').order('orden').order('nombre');
+      this.modulos = rM.error ? [] : (rM.data || []);
+      this.faltaPtf = !!rM.error;
       this.trayectosCat = [...new Set(((rT.error ? [] : rT.data) || []).map(t => (t.nombre || '').trim()).filter(Boolean))].sort();
       this.render();
     } catch (err) {
@@ -43,10 +47,10 @@ const EpsModulo = {
 
   render() {
     const cont = document.getElementById('eps-contenido');
-    const tabs = [['estudiantes', '🎓 Estudiantes'], ['personal', '👥 Personal EPS']];
+    const tabs = [['estudiantes', '🎓 Estudiantes'], ['personal', '👥 Personal EPS'], ['modulos', '📚 Módulos por trayecto']];
     cont.innerHTML = `
       <div class="plan-tabs">${tabs.map(([id, et]) => `<button type="button" class="plan-tab ${this.tab === id ? 'activo' : ''}" onclick="EpsModulo.irA('${id}')">${et}</button>`).join('')}</div>
-      ${this.tab === 'estudiantes' ? this.vistaEstudiantes() : this.vistaPersonal()}`;
+      ${this.tab === 'estudiantes' ? this.vistaEstudiantes() : this.tab === 'personal' ? this.vistaPersonal() : this.vistaModulos()}`;
   },
 
   /* ---------- estudiantes ---------- */
@@ -74,7 +78,7 @@ const EpsModulo = {
         <tbody>${lista.map(e => `<tr>
           <td>${this.esc(e.apellido)}, ${this.esc(e.nombre)}</td><td>${this.esc(e.dni)}</td><td>${this.esc(e.trayecto || '')}</td>
           <td>${this.esc(e.escuela_origen || '')}</td><td>${e.anio_desvinculo || ''}</td><td>${this.esc(e.estado)}</td>
-          <td style="white-space:nowrap"><button class="btn-secundario" onclick="EpsModulo.formEstudiante(${e.id})">✏️</button> <button class="btn-secundario" onclick="EpsModulo.borrarEstudiante(${e.id})">🗑️</button></td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center">Sin resultados.</td></tr>'}</tbody>
+          <td style="white-space:nowrap"><button class="btn-secundario" onclick="EpsModulo.abrirPtf(${e.id})">📋 PTF</button> <button class="btn-secundario" onclick="EpsModulo.formEstudiante(${e.id})">✏️</button> <button class="btn-secundario" onclick="EpsModulo.borrarEstudiante(${e.id})">🗑️</button></td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center">Sin resultados.</td></tr>'}</tbody>
       </table></div>`;
   },
 
@@ -165,6 +169,166 @@ const EpsModulo = {
     const r = await supabase.from('eps_personal').delete().eq('id', id);
     if (r.error) return Swal.fire('Error', r.error.message, 'error');
     this.cargar();
+  },
+
+
+  /* ---------- módulos de FP por trayecto y nivel (se definen una vez) ---------- */
+  vistaModulos() {
+    if (this.faltaPtf) return '<div class="prog-vacio">Falta ejecutar <strong>sql/58_eps_ptf.sql</strong> en Supabase.</div>';
+    const trs = [...new Set([...this.trayectosCat, ...this.modulos.map(m => m.trayecto)])].sort();
+    return `<p style="font-size:.85rem">Definí los módulos de Formación Profesional de cada nivel. Después aparecen en el PTF de cada estudiante de ese trayecto.</p>
+      <div style="margin-bottom:10px"><button class="btn-primary" onclick="EpsModulo.formModulo()">+ Agregar módulo</button></div>
+      ${trs.map(t => { const ms = this.modulos.filter(m => m.trayecto === t); if (!ms.length) return ''; return `<div class="seg-card" style="margin-bottom:10px"><strong>${this.esc(t)}</strong>${[1, 2, 3, 4].map(n => { const l = ms.filter(m => m.nivel === n); return l.length ? `<div style="margin-top:6px;font-size:.85rem"><b>Nivel ${this.ROM[n]}:</b> ${l.map(m => `${this.esc(m.nombre)} <a href="#" onclick="EpsModulo.borrarModulo(${m.id});return false" title="Quitar">✖</a>`).join(' · ')}</div>` : ''; }).join('')}</div>`; }).join('') || '<p>Sin módulos cargados.</p>'}`;
+  },
+  async formModulo() {
+    const opt = this.trayectosCat.map(t => `<option>${this.esc(t)}</option>`).join('');
+    const { value } = await Swal.fire({
+      title: 'Agregar módulos', width: 560, showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar',
+      html: `<label style="text-align:left;font-size:.8rem;display:block">Trayecto<select id="epm-t" class="swal2-select" style="width:100%;margin:2px 0 8px">${opt}</select></label>
+        <label style="text-align:left;font-size:.8rem;display:block">Nivel<select id="epm-n" class="swal2-select" style="width:100%;margin:2px 0 8px">${[1, 2, 3, 4].map(n => `<option value="${n}">Nivel ${this.ROM[n]}</option>`).join('')}</select></label>
+        <label style="text-align:left;font-size:.8rem;display:block">Módulos (uno por línea)<textarea id="epm-m" class="swal2-textarea" style="width:100%;margin:2px 0"></textarea></label>`,
+      preConfirm: () => {
+        const t = document.getElementById('epm-t').value, n = Number(document.getElementById('epm-n').value);
+        const nombres = document.getElementById('epm-m').value.split('\n').map(x => x.trim()).filter(Boolean);
+        if (!t || !nombres.length) { Swal.showValidationMessage('Elegí trayecto y escribí al menos un módulo.'); return false; }
+        const base = this.modulos.filter(m => m.trayecto === t && m.nivel === n).length;
+        return nombres.map((nombre, i) => ({ trayecto: t, nivel: n, nombre, orden: base + i }));
+      }
+    });
+    if (!value) return;
+    const r = await supabase.from('eps_modulos').upsert(value, { onConflict: 'trayecto,nivel,nombre', ignoreDuplicates: true });
+    if (r.error) return Swal.fire('No se pudo guardar', r.error.message, 'error');
+    this.cargar();
+  },
+  async borrarModulo(id) {
+    const r = await supabase.from('eps_modulos').delete().eq('id', id);
+    if (r.error) return Swal.fire('Error', r.error.message, 'error');
+    this.cargar();
+  },
+
+  /* ---------- PTF ---------- */
+  ROM: { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' },
+  COL_FP: ['1er Inf', 'Cuat', '2do Inf', 'Cuat', 'Fin'],
+  COL_GEN: ['1° V', '1° C', '2° V', '2° C', 'Final'],
+  GEN: ['Prácticas del Lenguaje', 'Matemática', 'Ciencias Sociales', 'Ciencias Naturales', 'Inglés'],
+  materiasGen(n) { return n >= 3 ? this.GEN : this.GEN.slice(0, 4); },
+  TEXTOS: [
+    ['DIAGNÓSTICO INICIAL Y SITUACIÓN DE PARTIDA', [['antecedentes', 'Antecedentes de escolarización, trayectorias, interrupciones'], ['saberes', 'Reconocimiento de saberes previos (formales y no formales)'], ['condiciones', 'Condiciones sociales y laborales'], ['partida', 'Definición del punto de partida']]],
+    ['ORGANIZACIÓN DEL RECORRIDO FORMATIVO', [['trayecto_pers', 'Trayecto personalizado del estudiante (qué y cómo va a cursar)'], ['cuatrimestral', 'Distribución cuatrimestral'], ['articulacion', 'Articulación con el contexto socio-comunitario']]],
+    ['ESTRATEGIAS', [['estrategias', 'Estrategias de enseñanza personalizadas'], ['acompanamiento', 'Acciones de acompañamiento y tutoría'], ['revision', 'Instancias de revisión y actualización']]],
+    ['EVALUACIÓN DE REVISIÓN Y ACTUALIZACIÓN', [['referenciales', 'Referenciales de evaluación'], ['rubricas', 'Rúbricas o registros de reconocimiento de saberes'], ['informes', 'Informes cuatrimestrales con apreciaciones cualitativas']]]
+  ],
+
+  async abrirPtf(id) {
+    const e = this.estudiantes.find(x => x.id === id); if (!e) return;
+    if (this.faltaPtf) return Swal.fire('Falta el SQL 58', 'Ejecutá sql/58_eps_ptf.sql en Supabase para usar el PTF.', 'info');
+    const r = await supabase.from('eps_ptf').select('*').eq('estudiante_id', id).maybeSingle();
+    if (r.error) return Swal.fire('Error', r.error.message, 'error');
+    this.ptfId = id;
+    this.ptf = r.data || { estudiante_id: id, oferta: e.trayecto || '', turno: '', anio: new Date().getFullYear(), textos: {}, notas: {}, pendientes: {}, observaciones: '' };
+    this.renderPtf();
+  },
+  cerrarPtf() { this.ptfId = null; this.ptf = null; this.render(); },
+
+  estadoNivel(n) {
+    const e = this.estudiantes.find(x => x.id === this.ptfId), p = this.ptf;
+    const mods = this.modulos.filter(m => m.trayecto === e.trayecto && m.nivel === n);
+    const nn = p.notas[n] || {};
+    const finales = [...mods.map(m => (nn.fp || {})[m.nombre]?.[4]), ...this.materiasGen(n).map(g => (nn.gen || {})[g]?.[4])];
+    if (!mods.length || finales.some(v => !String(v ?? '').trim())) return 'En curso';
+    return finales.some(v => /^TEP$/i.test(String(v).trim())) ? 'Con pendientes' : 'Acreditado';
+  },
+
+  renderPtf() {
+    const cont = document.getElementById('eps-contenido');
+    const e = this.estudiantes.find(x => x.id === this.ptfId), p = this.ptf;
+    const ta = ([k, et]) => `<label style="display:block;font-size:.8rem;margin:6px 0 2px"><b>${et}</b></label><textarea class="form-control" data-t="${k}" rows="3" style="width:100%">${this.esc(p.textos[k] || '')}</textarea>`;
+    const celda = (n, bloque, mat, i) => `<td><input data-n="${n}" data-b="${bloque}" data-m="${this.esc(mat)}" data-i="${i}" value="${this.esc(((p.notas[n] || {})[bloque] || {})[mat]?.[i] ?? '')}" style="width:54px;text-align:center"></td>`;
+    const niveles = [1, 2, 3, 4].map(n => {
+      const mods = this.modulos.filter(m => m.trayecto === e.trayecto && m.nivel === n);
+      const est = this.estadoNivel(n);
+      return `<div class="seg-card" style="margin:10px 0;overflow-x:auto"><strong>Nivel ${this.ROM[n]}</strong> <span style="font-size:.8rem">— ${est}</span>
+        <table class="tabla-simple" style="width:100%;margin-top:6px"><thead><tr><th>Formación Profesional</th>${this.COL_FP.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${mods.map(m => `<tr><td>${this.esc(m.nombre)}</td>${[0, 1, 2, 3, 4].map(i => celda(n, 'fp', m.nombre, i)).join('')}</tr>`).join('') || '<tr><td colspan="6"><small>Sin módulos definidos para este trayecto y nivel (pestaña «Módulos por trayecto»).</small></td></tr>'}</tbody></table>
+        <table class="tabla-simple" style="width:100%;margin-top:8px"><thead><tr><th>Formación General</th>${this.COL_GEN.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${this.materiasGen(n).map(g => `<tr><td>${g}</td>${[0, 1, 2, 3, 4].map(i => celda(n, 'gen', g, i)).join('')}</tr>`).join('')}</tbody></table></div>`;
+    }).join('');
+    const pend = this.GEN.map(g => `<label style="display:block;font-size:.8rem;margin:6px 0 2px"><b>${g}</b></label><textarea class="form-control" data-p="${g}" rows="2" style="width:100%">${this.esc(p.pendientes[g] || '')}</textarea>`).join('');
+    cont.innerHTML = `
+      <button class="btn-secundario" onclick="EpsModulo.cerrarPtf()">← Volver a estudiantes</button>
+      <h3 style="margin:10px 0 2px">Plan de Trabajo Formativo — ${this.esc(e.apellido)}, ${this.esc(e.nombre)}</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">
+        <label style="font-size:.8rem">Oferta<input id="ptf-oferta" class="form-control" value="${this.esc(p.oferta || '')}" style="min-width:260px"></label>
+        <label style="font-size:.8rem">Turno<input id="ptf-turno" class="form-control" value="${this.esc(p.turno || '')}" style="width:130px"></label>
+        <label style="font-size:.8rem">Año<input id="ptf-anio" type="number" class="form-control" value="${p.anio || ''}" style="width:90px"></label>
+      </div>
+      <div id="ptf-form">
+      ${this.TEXTOS.map(([t, cs]) => `<h4 style="margin:14px 0 2px">${t}</h4>${cs.map(ta).join('')}`).join('')}
+      <h4 style="margin:14px 0 2px">NIVELES</h4><small>Notas numéricas, TEA o TEP. «Acreditado» = todas las notas finales cargadas y ninguna TEP.</small>${niveles}
+      <h4 style="margin:14px 0 2px">CONTENIDOS PENDIENTES DE ACREDITACIÓN</h4>
+      <label style="font-size:.8rem">Nivel<input id="ptf-pend-nivel" class="form-control" value="${this.esc(p.pendientes.nivel || '')}" style="width:100px"></label>${pend}
+      <label style="display:block;font-size:.8rem;margin:10px 0 2px"><b>OBSERVACIONES</b></label><textarea id="ptf-obs" class="form-control" rows="3" style="width:100%">${this.esc(p.observaciones || '')}</textarea>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-primary" onclick="EpsModulo.guardarPtf()">💾 Guardar PTF</button><button class="btn-secundario" onclick="EpsModulo.exportarPtf()">⬇️ Excel del PTF</button></div>`;
+  },
+
+  leerPtf() {
+    const f = document.getElementById('ptf-form'), p = this.ptf;
+    p.oferta = document.getElementById('ptf-oferta').value.trim(); p.turno = document.getElementById('ptf-turno').value.trim();
+    p.anio = Number(document.getElementById('ptf-anio').value) || null;
+    f.querySelectorAll('[data-t]').forEach(x => { p.textos[x.dataset.t] = x.value; });
+    const notas = {};
+    f.querySelectorAll('input[data-n]').forEach(x => {
+      const v = x.value.trim(); if (!v) return;
+      const { n, b, m, i } = x.dataset;
+      notas[n] = notas[n] || {}; notas[n][b] = notas[n][b] || {}; notas[n][b][m] = notas[n][b][m] || ['', '', '', '', ''];
+      notas[n][b][m][Number(i)] = v;
+    });
+    p.notas = notas;
+    const pend = { nivel: document.getElementById('ptf-pend-nivel').value.trim() };
+    f.querySelectorAll('[data-p]').forEach(x => { if (x.value.trim()) pend[x.dataset.p] = x.value; });
+    p.pendientes = pend; p.observaciones = document.getElementById('ptf-obs').value;
+  },
+
+  async guardarPtf() {
+    this.leerPtf();
+    const p = this.ptf;
+    const r = await supabase.from('eps_ptf').upsert({ estudiante_id: p.estudiante_id, oferta: p.oferta, turno: p.turno, anio: p.anio, textos: p.textos, notas: p.notas, pendientes: p.pendientes, observaciones: p.observaciones, updated_at: new Date().toISOString() });
+    if (r.error) return Swal.fire('No se pudo guardar', r.error.message, 'error');
+    this.renderPtf();
+    Swal.fire({ icon: 'success', title: 'PTF guardado', timer: 1200, showConfirmButton: false });
+  },
+
+  async exportarPtf() {
+    if (typeof ExcelJS === 'undefined') return Swal.fire('Excel no disponible', 'No se cargó la librería de Excel.', 'error');
+    this.leerPtf();
+    const e = this.estudiantes.find(x => x.id === this.ptfId), p = this.ptf;
+    const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('PTF');
+    ws.columns = [{ width: 46 }, { width: 44 }, ...Array(10).fill({ width: 10 })];
+    const B = r => { r.font = { bold: true }; };
+    const fila = (...v) => ws.addRow(v);
+    B(fila('PLAN DE TRABAJO FORMATIVO'));
+    fila('Oferta: ' + (p.oferta || '')); fila('Región 10', '', '', 'EEST N1', '', '', '', 'CFP', '', '', p.turno || '');
+    fila(`${e.apellido}, ${e.nombre}`); fila('Año ' + (p.anio || '')); fila();
+    this.TEXTOS.forEach(([t, cs]) => { B(fila(t)); cs.forEach(([k, et]) => { const r = fila(et, p.textos[k] || ''); r.getCell(2).alignment = { wrapText: true, vertical: 'top' }; r.getCell(1).alignment = { wrapText: true, vertical: 'top' }; }); });
+    [1, 2, 3, 4].forEach(n => {
+      const mods = this.modulos.filter(m => m.trayecto === e.trayecto && m.nivel === n), nn = p.notas[n] || {};
+      B(fila('Nivel ' + this.ROM[n], 'Formación Profesional', ...this.COL_FP, 'Formación General', ...this.COL_GEN));
+      const gen = this.materiasGen(n), filas = Math.max(mods.length, gen.length);
+      for (let i = 0; i < filas; i++) {
+        const m = mods[i], g = gen[i];
+        fila('', m ? m.nombre : '', ...(m ? (nn.fp?.[m.nombre] || ['', '', '', '', '']) : ['', '', '', '', '']), g || '', ...(g ? (nn.gen?.[g] || ['', '', '', '', '']) : ['', '', '', '', '']));
+      }
+      fila('', 'Estado: ' + this.estadoNivel(n));
+    });
+    fila(); fila('FIRMA COORDINADORA', '', 'FIRMA CONDUCCIÓN CFP', '', '', '', '', 'FIRMA CONDUCCIÓN EEST');
+    fila(); fila('OBSERVACIONES: ' + (p.observaciones || ''));
+    if (Object.keys(p.pendientes).some(k => k !== 'nivel' && p.pendientes[k])) {
+      B(fila('CONTENIDOS PENDIENTES DE ACREDITACIÓN' + (p.pendientes.nivel ? ' - NIVEL ' + p.pendientes.nivel : '')));
+      this.GEN.forEach(g => { if (p.pendientes[g]) fila(g, p.pendientes[g]); });
+    }
+    const buf = await wb.xlsx.writeBuffer();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf])); a.download = `PTF_${e.apellido}_${e.nombre}.xlsx`; a.click();
   },
 
   /* ---------- Excel ---------- */
