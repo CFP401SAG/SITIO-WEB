@@ -498,6 +498,7 @@ const DashboardAdmin = {
       if (elDesglose) {
         if (trayectos.length === 0) {
           elDesglose.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; padding: 0.5rem;">No hay trayectos registrados para este ciclo lectivo.</p>';
+          if (window.InteligenciaModulo) InteligenciaModulo.cargar();
           return;
         }
 
@@ -516,6 +517,7 @@ const DashboardAdmin = {
         elDesglose.innerHTML = htmlTabla;
       }
 
+      if (window.InteligenciaModulo) InteligenciaModulo.cargar();
     } catch (err) {
       console.error('Error al calcular métricas del Dashboard:', err);
     }
