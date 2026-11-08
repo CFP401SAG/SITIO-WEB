@@ -10,7 +10,7 @@ const InteligenciaModulo = {
   esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); },
   pct(a, b) { return b > 0 ? Math.round(1000 * a / b) / 10 : null; },
   fp(p) { return p == null ? '–' : String(p).replace('.', ',') + ' %'; },
-  money(n) { return '$ ' + Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }); },
+  money(n) { const v = Math.round(Number(n || 0)); return `<span style="white-space:nowrap">${v < 0 ? '-' : ''}$ ${Math.abs(v).toLocaleString('es-AR')}</span>`; },
   ciclo() { const s = document.getElementById('filtro-ciclo-dashboard'); return s ? s.value : String(new Date().getFullYear()); },
 
   async pagina(tabla, cols, filtro) {
@@ -105,13 +105,14 @@ const InteligenciaModulo = {
   },
 
   /* ---------- vistas ---------- */
-  bloque(titulo, cuerpo, ayuda) { return `<div class="card-panel intel-bloque"><div class="card-panel-header"><h4 style="margin:0">${titulo}</h4></div>${cuerpo}${ayuda ? `<small style="color:var(--text-muted);display:block;margin-top:6px">${ayuda}</small>` : ''}</div>`; },
+  fila(et, v) { return `<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:3px 0;border-bottom:1px solid #EEF3F6;font-size:.88rem"><span>${et}</span><b style="white-space:nowrap">${v}</b></div>`; },
+  bloque(titulo, cuerpo, ayuda) { return `<div class="card-panel intel-bloque"><div class="card-panel-header"><h4 style="margin:0">${titulo}</h4></div><div class="intel-cuerpo">${cuerpo}</div>${ayuda ? `<small class="intel-nota">${ayuda}</small>` : ''}</div>`; },
   barra(rot, n, max, col) { return `<div style="margin:5px 0"><div style="display:flex;justify-content:space-between;font-size:.82rem"><span>${this.esc(rot)}</span><b>${n}</b></div><div style="background:#E5EEF3;border-radius:4px;height:8px"><div style="width:${max ? Math.round(100 * n / max) : 0}%;background:${col || '#3FA7E0'};height:8px;border-radius:4px"></div></div></div>`; },
 
   indicadores(c, p) {
     const ret = this.pct(c.perm, c.n), rp = p ? this.pct(p.perm, p.n) : null, eg = this.pct(c.aprob, c.n), ep = p ? this.pct(p.aprob, p.n) : null;
-    const t = (tit, val, dl) => `<div class="stat-card" style="display:block"><h4 style="margin:0 0 4px">${tit}</h4><p class="stat-value" style="margin:0">${val}</p>${dl}</div>`;
-    return `<div class="stats-grid" style="margin-bottom:12px">
+    const t = (tit, val, dl) => `<div class="stat-card intel-stat"><h4>${tit}</h4><p class="stat-value">${val}</p>${dl}</div>`;
+    return `<div class="intel-grid" style="margin-bottom:12px">
       ${t('Matrícula', c.n, this.delta(c.n, p && p.n ? p.n : null, false))}
       ${t('Retención', this.fp(ret), this.delta(ret, rp, true))}
       ${t('Asistencia media', this.fp(c.asis), this.delta(c.asis, p ? p.asis : null, true))}
@@ -134,7 +135,7 @@ const InteligenciaModulo = {
   tablaTrayectos(c) {
     const col = v => v == null ? '#94a3b8' : v >= 30 ? '#B42318' : v >= 15 ? '#B7791F' : '#146B47';
     const filas = c.porT.map(x => `<tr><td><span style="color:${col(x.bajaPct)}">●</span> ${this.esc(x.nombre)}</td><td>${x.insc}</td><td>${x.bajas} (${this.fp(x.bajaPct)})</td><td>${this.fp(x.asis)}</td><td>${x.aprob} (${this.fp(x.aprobPct)})</td></tr>`).join('');
-    return this.bloque('Comparación entre trayectos', `<div style="overflow-x:auto"><table class="tabla-simple" style="width:100%"><thead><tr><th>Trayecto</th><th>Inscriptos</th><th>Bajas</th><th>Asistencia</th><th>Certificados</th></tr></thead><tbody>${filas || '<tr><td colspan="5">Sin trayectos.</td></tr>'}</tbody></table></div>`,
+    return this.bloque('Comparación entre trayectos', `<div style="overflow-x:auto"><table class="tabla-simple intel-t" style="width:100%"><thead><tr><th>Trayecto</th><th>Inscriptos</th><th>Bajas</th><th>Asistencia</th><th>Certificados</th></tr></thead><tbody>${filas || '<tr><td colspan="5">Sin trayectos.</td></tr>'}</tbody></table></div>`,
       'Ordenado por mayor pérdida. Punto: rojo = 30 % o más de bajas, ámbar = 15 % o más, verde = menos de 15 %.');
   },
 
@@ -154,14 +155,14 @@ const InteligenciaModulo = {
     const franja = e => e == null ? null : e < 18 ? 'Menos de 18' : e < 30 ? '18 a 29' : e < 45 ? '30 a 44' : '45 o más';
     const grupos = {}, loc = {};
     const sumar = (o, k, i) => { if (!k) return; o[k] = o[k] || { n: 0, baja: 0 }; o[k].n++; if (String(i.estado || '').toUpperCase() === 'BAJA') o[k].baja++; };
-    c.ins.forEach(i => { const x = dat[String(i.estudiante_user)]; sumar(grupos, franja(edad(x)), i); sumar(loc, x && x.localidad ? String(x.localidad).trim().toUpperCase() : null, i); });
+    c.ins.forEach(i => { const x = dat[String(i.estudiante_user)]; sumar(grupos, franja(edad(x)), i); sumar(loc, x && x.localidad ? String(x.localidad).trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ') : null, i); });
     const orden = ['Menos de 18', '18 a 29', '30 a 44', '45 o más'];
     const fila = (k, v) => `<tr><td>${this.esc(k)}</td><td>${v.n}</td><td>${v.baja} (${this.fp(this.pct(v.baja, v.n))})</td></tr>`;
     const tl = Object.entries(loc).sort((a, b) => b[1].n - a[1].n).slice(0, 6);
     const sinDatos = !Object.keys(grupos).length && !tl.length;
     const cuerpo = sinDatos ? '<p style="font-size:.85rem">Todavía no hay datos de edad ni de localidad cargados para cruzar.</p>' :
-      `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"><div><b style="font-size:.85rem">Por edad</b><table class="tabla-simple" style="width:100%"><thead><tr><th>Franja</th><th>Inscr.</th><th>Bajas</th></tr></thead><tbody>${orden.filter(k => grupos[k]).map(k => fila(k, grupos[k])).join('')}</tbody></table></div>
-      <div><b style="font-size:.85rem">Por localidad (las 6 más numerosas)</b><table class="tabla-simple" style="width:100%"><thead><tr><th>Localidad</th><th>Inscr.</th><th>Bajas</th></tr></thead><tbody>${tl.map(([k, v]) => fila(k, v)).join('')}</tbody></table></div></div>`;
+      `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"><div><b style="font-size:.85rem">Por edad</b><table class="tabla-simple intel-t" style="width:100%"><thead><tr><th>Franja</th><th>Inscr.</th><th>Bajas</th></tr></thead><tbody>${orden.filter(k => grupos[k]).map(k => fila(k, grupos[k])).join('')}</tbody></table></div>
+      <div><b style="font-size:.85rem">Por localidad (las 6 más numerosas)</b><table class="tabla-simple intel-t" style="width:100%"><thead><tr><th>Localidad</th><th>Inscr.</th><th>Bajas</th></tr></thead><tbody>${tl.map(([k, v]) => fila(k, v)).join('')}</tbody></table></div></div>`;
     return this.bloque('Quiénes son y a quiénes se pierde', cuerpo, 'Cruza los datos personales de la ficha con las bajas. Si una persona no tiene la ficha completa, no entra en el cruce.');
   },
 
@@ -172,23 +173,23 @@ const InteligenciaModulo = {
       const l = d.lic.filter(x => String(x.desde).startsWith(String(anio)));
       const por = {}; l.forEach(x => { por[x.tipo] = (por[x.tipo] || 0) + dias(String(x.desde).slice(0, 10), String(x.hasta).slice(0, 10)); });
       const nom = { administrativa: 'administrativas', medica: 'médicas', paro: 'de paro' };
-      tarj.push(this.bloque('Docentes: licencias ' + anio, `<p style="font-size:1.4rem;margin:0"><b>${l.length}</b> <small>licencias y paros</small></p><p style="font-size:.85rem">${Object.entries(por).map(([k, v]) => `${v} días hábiles ${nom[k] || k}`).join(' · ') || 'Sin licencias cargadas.'}</p>`, 'Los días son lunes a viernes, sin descontar feriados. El detalle exacto está en Licencias docentes.'));
+      tarj.push(this.bloque('Docentes: licencias ' + anio, `<p style="font-size:1.5rem;line-height:1.2;margin:0 0 6px"><b>${l.length}</b> <small>licencias y paros</small></p><p style="font-size:.85rem">${Object.entries(por).map(([k, v]) => `${v} días hábiles ${nom[k] || k}`).join(' · ') || 'Sin licencias cargadas.'}</p>`, 'Los días son lunes a viernes, sin descontar feriados. El detalle exacto está en Licencias docentes.'));
     }
     if (d.mov) {
       const ini = `${anio}-05-01`, fin = `${anio + 1}-04-30`;
       const m = d.mov.filter(x => String(x.fecha).slice(0, 10) >= ini && String(x.fecha).slice(0, 10) <= fin);
       const ent = m.filter(x => x.tipo === 'entrada').reduce((s, x) => s + Number(x.monto), 0), sal = m.filter(x => x.tipo === 'salida').reduce((s, x) => s + Number(x.monto), 0);
-      tarj.push(this.bloque(`Cooperadora: ejercicio ${anio}/${anio + 1}`, `<p style="margin:0;font-size:.9rem">Ingresos <b>${this.money(ent)}</b><br>Egresos <b>${this.money(sal)}</b><br>Resultado del ejercicio <b style="color:${ent - sal >= 0 ? '#146B47' : '#B42318'}">${this.money(ent - sal)}</b></p>`, 'No incluye el saldo del ejercicio anterior; el saldo total está en Cooperadora → Balance.'));
+      tarj.push(this.bloque(`Cooperadora: ejercicio ${anio}/${anio + 1}`, this.fila('Ingresos', this.money(ent)) + this.fila('Egresos', this.money(sal)) + this.fila('Resultado', `<span style="color:${ent - sal >= 0 ? '#146B47' : '#B42318'}">${this.money(ent - sal)}</span>`), 'No incluye el saldo del ejercicio anterior; el saldo total está en Cooperadora → Balance.'));
     }
     if (d.epsE) {
       const act = d.epsE.filter(e => e.estado === 'activo').length;
       const a = (d.epsA || []).filter(x => String(x.mes).startsWith(String(anio) + '-')), dd = a.reduce((s, x) => s + x.dias_clase, 0);
-      tarj.push(this.bloque('EPS (estudiantes desvinculados)', `<p style="font-size:1.4rem;margin:0"><b>${act}</b> <small>estudiantes activos</small></p><p style="font-size:.85rem">Asistencia media ${anio}: <b>${this.fp(this.pct(a.reduce((s, x) => s + x.presentes, 0), dd))}</b></p>`, 'Se cuenta aparte de la matrícula de FP. Detalle en la sección EPS.'));
+      tarj.push(this.bloque('EPS (estudiantes desvinculados)', `<p style="font-size:1.5rem;line-height:1.2;margin:0 0 6px"><b>${act}</b> <small>estudiantes activos</small></p><p style="font-size:.85rem">Asistencia media ${anio}: <b>${this.fp(this.pct(a.reduce((s, x) => s + x.presentes, 0), dd))}</b></p>`, 'Se cuenta aparte de la matrícula de FP. Detalle en la sección EPS.'));
     }
     const sd = this.d.tray.filter(t => (ciclo === 'TODOS' || String(t.ciclo_lectivo || '2026') === String(ciclo)) && !String(t.docente_user || '').trim()).length;
     const sh = this.d.tray.filter(t => (ciclo === 'TODOS' || String(t.ciclo_lectivo || '2026') === String(ciclo)) && !(t.horario_dias && Object.keys(t.horario_dias).length)).length;
-    tarj.push(this.bloque('Personal y organización', `<p style="font-size:.9rem;margin:0">Docentes con cuenta: <b>${d.doc ? d.doc.length : '–'}</b><br>Trayectos sin docente asignado: <b>${sd}</b><br>Trayectos sin días de cursada: <b>${sh}</b></p>`, 'Sin días de cursada no se pueden calcular los días de clase afectados por licencias.'));
-    return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">${tarj.join('')}</div>`;
+    tarj.push(this.bloque('Personal y organización', this.fila('Docentes con cuenta', d.doc ? d.doc.length : '–') + this.fila('Trayectos sin docente', sd) + this.fila('Trayectos sin días de cursada', sh), 'Sin días de cursada no se pueden calcular los días de clase afectados por licencias.'));
+    return `<div class="intel-grid">${tarj.join('')}</div>`;
   },
 
   render() {
@@ -206,7 +207,11 @@ const InteligenciaModulo = {
       ${fpv ? this.indicadores(c, p) + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">${this.embudo(c)}${this.bajasMotivo(c)}</div><div style="margin-top:12px">${this.tablaTrayectos(c)}</div><div style="margin-top:12px">${this.quienes(c)}</div>` : ''}
       ${inst ? `<div style="margin-top:12px">${this.institucional(ciclo)}</div>` : ''}
       ${c.nAsis >= 50000 ? '<small>Asistencia calculada sobre los primeros 60.000 registros.</small>' : ''}`;
-    if (!document.getElementById('intel-estilo')) { const s = document.createElement('style'); s.id = 'intel-estilo'; s.textContent = '.intel-bloque{margin:0}@media print{.sidebar,header,.plan-tabs,button{display:none!important}}'; document.head.appendChild(s); }
+    let st = document.getElementById('intel-estilo'); if (!st) { st = document.createElement('style'); st.id = 'intel-estilo'; document.head.appendChild(st); }
+    st.textContent = `.intel-bloque{margin:0;display:flex;flex-direction:column;height:100%;box-sizing:border-box}.intel-cuerpo{flex:0 0 auto}.intel-cuerpo p{margin:0 0 6px}.intel-nota{color:var(--text-muted);display:block;margin-top:auto;padding-top:8px;font-size:.78rem;line-height:1.35}
+      .intel-t{table-layout:auto;border-collapse:collapse}.intel-t th,.intel-t td{text-align:center;padding:6px 8px;vertical-align:middle;white-space:nowrap}.intel-t th:first-child,.intel-t td:first-child{text-align:left;white-space:normal;width:40%}
+      .intel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;align-items:stretch}.intel-stat{display:flex;flex-direction:column;gap:4px;min-height:96px}.intel-stat h4,.intel-stat .stat-value{margin:0}
+      @media print{.sidebar,header,.plan-tabs,button{display:none!important}}`;
   },
 
   /* ---------- exportar ---------- */
