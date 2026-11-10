@@ -167,7 +167,7 @@ const ClasesModulo = {
           <summary id="summary-clase-titulo">➕ Nueva publicación: clase, trabajo, cuestionario…</summary>
           <form id="form-clase" class="act-form" onsubmit="ClasesModulo.guardarClase(event)" novalidate>
             <div class="act-tipos" id="act-tipos" role="radiogroup" aria-label="Tipo de publicación">
-              ${Object.entries(T).map(([k, v]) => `<button type="button" class="act-tipo" data-tipo="${k}" role="radio" aria-checked="false" onclick="ClasesModulo.elegirTipo('${k}')"><span class="act-tipo-ico">${v.ico}</span><span>${v.nombre}</span></button>`).join('')}
+              ${Object.entries(T).filter(([k]) => k !== 'bitacora').map(([k, v]) => `<button type="button" class="act-tipo" data-tipo="${k}" role="radio" aria-checked="false" onclick="ClasesModulo.elegirTipo('${k}')"><span class="act-tipo-ico">${v.ico}</span><span>${v.nombre}</span></button>`).join('')}
             </div>
             <input type="hidden" id="clase-tipo" value="material">
             <p class="act-tipo-desc" id="act-tipo-desc"></p>

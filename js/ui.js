@@ -147,6 +147,9 @@ const UI = {
     // Licencias docentes: solo Dirección y Secretaría.
     const btnLic = document.getElementById('btn-licencias');
     if (btnLic) btnLic.style.setProperty('display', Auth.esAdmin(rolNorm) ? 'flex' : 'none', 'important');
+    // Encuestas de cierre: Dirección, Secretaría y docentes (resultados agrupados)
+    const btnEnc = document.getElementById('btn-encuestas');
+    if (btnEnc) btnEnc.style.setProperty('display', (isAdmin || rolNorm === 'docente') ? 'flex' : 'none', 'important');
     // EPS: Dirección, Secretaría y la coordinadora EPS (vinculada en eps_personal)
     const btnEps = document.getElementById('btn-eps');
     if (btnEps) {
@@ -175,6 +178,9 @@ const UI = {
         b.style.setProperty('display', b.id === 'btn-eps' ? 'flex' : 'none', 'important');
       });
     }
+
+    // Encuesta de cierre: a cada estudiante le aparece sola 15 días antes del fin de su trayecto
+    if (rolNorm === 'estudiante' && window.EncuestaFinal) setTimeout(() => EncuestaFinal.avisar(), 1200);
 
     if (window.AyudaModulo) setTimeout(() => AyudaModulo.iniciarSiPrimeraVez(), 1500);
 
@@ -220,6 +226,7 @@ const UI = {
     if (tabId === 'cuentas' && !(rolPerfil === 'regente' || rolPerfil === 'preceptor' || Auth.esSecretaria(rolPerfil))) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'cooperadora' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
     if (tabId === 'licencias' && !Auth.esAdmin(rolPerfil)) tabId = isAdmin ? 'dashboard' : 'trayectos';
+    if (tabId === 'encuestas' && !(isAdmin || rolPerfil === 'docente')) tabId = 'trayectos';
     // Coordinador/a EPS: solo la pestaña EPS
     if (rolPerfil === 'coord_eps') tabId = 'eps';
 
@@ -269,6 +276,7 @@ const UI = {
         'cooperadora': 'Cooperadora Escolar',
         'licencias': 'Licencias docentes',
         'eps': 'EPS — estudiantes desvinculados',
+        'encuestas': 'Encuestas de cierre',
         'novedades': 'Novedades y calendario',
         'ayuda': 'Ayuda',
         'trayectos': (isAdmin || rolActual === 'preceptor') ? 'Trayectos Formativos' : 'Mis Trayectos Formativos',
@@ -332,6 +340,10 @@ const UI = {
 
     if (tabId === 'ayuda' && window.AyudaModulo) {
       window.AyudaModulo.cargar();
+    }
+
+    if (tabId === 'encuestas' && window.EncuestaFinal) {
+      window.EncuestaFinal.cargar();
     }
 
     if (tabId === 'eps' && window.EpsModulo) {

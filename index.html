@@ -345,6 +345,9 @@
   <button id="btn-licencias" class="nav-item-btn" style="display:none" onclick="UI.showTab('licencias')">
     <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg></span> Licencias docentes
   </button>
+  <button id="btn-encuestas" class="nav-item-btn" style="display:none" onclick="UI.showTab('encuestas')">
+    <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/></svg></span> Encuestas de cierre
+  </button>
   <button id="btn-eps" class="nav-item-btn" style="display:none" onclick="UI.showTab('eps')">
     <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></span> EPS
   </button>
@@ -411,6 +414,7 @@
 
       <!-- CONTENIDO PRINCIPAL -->
       <main class="main-content-body">
+      <div id="encuesta-aviso" style="display:none"></div>
 
       <!-- VISTA 1: DASHBOARD DE RESUMEN ANALÍTICO -->
         <section id="sec-dashboard" class="section-tab active">
@@ -524,6 +528,7 @@
         <div id="estadisticas-contenido"></div></section>
         <section id="observaciones" class="section-tab" style="display: none;"><div id="observaciones-contenido"></div></section>
         <section id="cooperadora" class="section-tab" style="display: none;"><div id="cooperadora-contenido"></div></section>
+        <section id="encuestas" class="section-tab" style="display: none;"><div id="encuestas-contenido"></div></section>
         <section id="eps" class="section-tab" style="display: none;"><div id="eps-contenido"></div></section>
         <section id="licencias" class="section-tab" style="display: none;"><div id="licencias-contenido"></div></section>
         <section id="seguimiento" class="section-tab" style="display: none;"><div id="seguimiento-contenido"></div></section>
@@ -957,7 +962,7 @@
   <script src="js/supabase-config.js?v=70008" defer></script>
   <script src="js/avisos.js?v=70008" defer></script>
   <script src="js/reglas.js?v=70023" defer></script>
-  <script src="js/ui.js?v=70105" defer></script>
+  <script src="js/ui.js?v=70110" defer></script>
   <script src="js/auth.js?v=70028" defer></script>
   <script src="js/trayectos.js?v=70082" defer></script>
   <script src="js/usuarios.js?v=70103" defer></script>
@@ -969,7 +974,7 @@
   <script src="js/importador.js?v=70027" defer></script>
   <script src="js/corrector.js?v=70020" defer></script>
   <script src="js/actividades.js?v=70027" defer></script>
-  <script src="js/clases.js?v=70083" defer></script>
+  <script src="js/clases.js?v=70110" defer></script>
   <script src="js/asistencias.js?v=70052" defer></script>
   <script src="js/reportes.js?v=70025" defer></script>
   <script src="js/notificaciones.js?v=70007" defer></script>
@@ -977,7 +982,7 @@
   <script src="js/usobase.js?v=70020" defer></script>
   <script src="js/secretaria.js?v=70093" defer></script>
   <script src="js/sisge.js?v=70073" defer></script>
-  <script src="js/ayuda.js?v=70109" defer></script>
+  <script src="js/ayuda.js?v=70110" defer></script>
   <script src="js/matricula_escolar.js?v=70055" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
   <script src="js/ficha_inscripcion.js?v=70073" defer></script>
@@ -988,6 +993,7 @@
   <script src="js/cooperadora.js?v=70095" defer></script>
   <script src="js/licencias.js?v=70109" defer></script>
   <script src="js/eps.js?v=70104" defer></script>
+  <script src="js/encuesta_final.js?v=70110" defer></script>
   <script src="js/inteligencia.js?v=70110" defer></script>
   <script src="js/planilla.js?v=70051" defer></script>
   <script src="js/sedes.js?v=70050" defer></script>
