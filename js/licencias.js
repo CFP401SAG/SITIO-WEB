@@ -325,8 +325,12 @@ const LicenciasModulo = {
     const self = this;
     const { value } = await Swal.fire({
       title: l ? 'Editar licencia / paro' : 'Cargar licencia / paro', width: 560,
-      html: `<div style="text-align:left; display:grid; gap:.4rem;">
-        <label>Docente<select id="lc-doc" class="swal2-input"><option value="">(elegir)</option>${this.docentes.map(x => `<option value="${x.id}" ${l?.docente_id === x.id ? 'selected' : ''}>${this.esc(this.nom(x))} — DNI ${this.esc(x.dni || '')}</option>`).join('')}</select></label>
+      html: `<style>.lc-f label{display:flex;flex-direction:column;gap:3px;font-size:.85rem;font-weight:600;text-align:left}.lc-f .swal2-input,.lc-f .swal2-textarea,.lc-f .swal2-select{margin:0;width:100%;box-sizing:border-box;font-size:.95rem}.lc-f .swal2-textarea{min-height:70px}</style><div class="lc-f" style="text-align:left; display:grid; gap:.55rem;">
+        ${l ? `<label>Docente<select id="lc-doc" class="swal2-input"><option value="">(elegir)</option>${this.docentes.map(x => `<option value="${x.id}" ${l?.docente_id === x.id ? 'selected' : ''}>${this.esc(this.nom(x))} — DNI ${this.esc(x.dni || '')}</option>`).join('')}</select></label>`
+        : `<div><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:.85rem">Docentes (podés elegir varios)</b><a href="#" id="lc-todos" style="font-size:.8rem">Marcar / desmarcar todos</a></div>
+          <input id="lc-buscar" class="swal2-input" placeholder="Buscar docente…" style="margin:4px 0">
+          <div id="lc-docs" style="max-height:170px;overflow:auto;border:1px solid #d8e3ea;border-radius:8px;padding:4px 8px">${this.docentes.map(x => `<label class="lc-fila" data-t="${this.esc((this.nom(x) + ' ' + (x.dni || '')).toLowerCase())}" style="flex-direction:row;align-items:center;gap:8px;font-weight:400;margin:2px 0"><input type="checkbox" class="lc-d" value="${x.id}"> ${this.esc(this.nom(x))} <small style="color:#64748b">DNI ${this.esc(x.dni || '')}</small></label>`).join('') || '<small>No hay docentes con cuenta.</small>'}</div>
+          <small id="lc-cuenta" style="color:#64748b">Ninguno elegido</small></div>`}
         <label>Tipo<select id="lc-tipo" class="swal2-input">${Object.entries(TIPOS_LICENCIA).map(([k, v]) => `<option value="${k}" ${l?.tipo === k ? 'selected' : ''}>${v.nombre}</option>`).join('')}</select></label>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem;">
           <label>Desde<input id="lc-desde" type="date" class="swal2-input" value="${l ? String(l.desde).slice(0, 10) : ''}"></label>
@@ -338,13 +342,20 @@ const LicenciasModulo = {
         <label>Detalle (opcional)<textarea id="lc-det" class="swal2-textarea" maxlength="500" placeholder="N.º de certificado, expediente, observaciones…">${this.esc(l?.detalle || '')}</textarea></label>
       </div>`,
       didOpen: () => {
+        const docsSel = self._docsSel = () => l ? (document.getElementById('lc-doc').value ? [document.getElementById('lc-doc').value] : []) : [...document.querySelectorAll('.lc-d:checked')].map(x => x.value);
         const calc = () => {
-          const d = document.getElementById('lc-desde').value, h = document.getElementById('lc-hasta').value, doc = document.getElementById('lc-doc').value;
+          const d = document.getElementById('lc-desde').value, h = document.getElementById('lc-hasta').value, docs = docsSel(), doc = docs.length === 1 ? docs[0] : '';
           const box = document.getElementById('lc-calc');
+          const cu = document.getElementById('lc-cuenta'); if (cu) cu.textContent = docs.length ? `${docs.length} docente${docs.length > 1 ? 's' : ''} elegido${docs.length > 1 ? 's' : ''}` : 'Ninguno elegido';
           if (!d || !h) { box.textContent = 'Elegí las fechas para ver los días hábiles.'; return; }
           if (h < d) { box.innerHTML = '<span style="color:#b91c1c;">La fecha «hasta» es anterior a «desde».</span>'; return; }
           const dias = self.diasHabiles(d, h);
           const corridos = Math.round((new Date(h) - new Date(d)) / 86400000) + 1;
+          if (docs.length > 1) {
+            const filas = docs.map(di => { const dc = self.docentes.find(x => x.id === di), cl = self.resumenClases(di, d, h, null), sol = self.licencias.some(x => x.docente_id === di && x.desde <= h && x.hasta >= d);
+              return `<div style="margin-left:1rem;">· ${self.esc(self.nom(dc))}: <b>${cl.porTrayecto.length ? cl.total + ' días de clase' : 'sin trayecto asignado'}</b>${sol ? ' <span style="color:#b45309;">⚠️ ya tiene una licencia en esas fechas</span>' : ''}</div>`; }).join('');
+            box.innerHTML = `<b>${dias.length}</b> días hábiles (${corridos} corridos). Se cargará una licencia por cada docente, para todos sus cargos:${filas}`; return;
+          }
           const sol = doc ? self.licencias.filter(x => x.docente_id === doc && x.id !== id && x.desde <= h && x.hasta >= d) : [];
           const sel = self.trayectosDe(doc).length > 1 ? self._selCargos?.() : null;
           const cl = doc ? self.resumenClases(doc, d, h, sel && sel.length ? sel : null) : null;
@@ -355,7 +366,7 @@ const LicenciasModulo = {
         // Cargos / trayectos del docente: la licencia puede corresponder a todos o solo a algunos
         const selCargos = () => [...document.querySelectorAll('.lc-cargo:checked')].map(x => Number(x.value));
         const pintarCargos = () => {
-          const doc = document.getElementById('lc-doc').value, box = document.getElementById('lc-cargos');
+          const ds = docsSel(), doc = ds.length === 1 ? ds[0] : '', box = document.getElementById('lc-cargos');
           const trs = doc ? self.trayectosDe(doc) : [];
           if (trs.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
           const previas = l && l.docente_id === doc && Array.isArray(l.trayecto_ids) && l.trayecto_ids.length ? l.trayecto_ids.map(Number) : null;
@@ -363,40 +374,51 @@ const LicenciasModulo = {
           box.innerHTML = `<div style="font-size:.85rem; font-weight:600; margin-bottom:.2rem;">Corresponde a (cada cargo se evalúa por separado)</div>` + trs.map(t => `<label style="display:flex; gap:.5rem; align-items:center; font-size:.85rem; margin:.1rem 0;"><input type="checkbox" class="lc-cargo" value="${t.id}" ${!previas || previas.includes(Number(t.id)) ? 'checked' : ''}> ${self.esc(t.nombre)}</label>`).join('');
           box.querySelectorAll('.lc-cargo').forEach(c => c.addEventListener('change', calc));
         };
-        document.getElementById('lc-doc').addEventListener('change', () => { pintarCargos(); calc(); });
+        const cambio = () => { pintarCargos(); calc(); };
+        if (l) document.getElementById('lc-doc').addEventListener('change', cambio);
+        else {
+          document.querySelectorAll('.lc-d').forEach(c => c.addEventListener('change', cambio));
+          document.getElementById('lc-buscar').addEventListener('input', e => { const q = e.target.value.toLowerCase().trim(); document.querySelectorAll('.lc-fila').forEach(f => { f.style.display = !q || f.dataset.t.includes(q) ? 'flex' : 'none'; }); });
+          document.getElementById('lc-todos').addEventListener('click', e => { e.preventDefault(); const vis = [...document.querySelectorAll('.lc-fila')].filter(f => f.style.display !== 'none').map(f => f.querySelector('.lc-d')); const marcar = vis.some(c => !c.checked); vis.forEach(c => { c.checked = marcar; }); cambio(); });
+        }
         ['lc-desde', 'lc-hasta'].forEach(i => document.getElementById(i).addEventListener('change', calc)); pintarCargos(); calc();
         self._selCargos = selCargos;
       },
       focusConfirm: false, showCancelButton: true, confirmButtonText: 'Guardar',
       preConfirm: () => {
         const g = i => document.getElementById(i).value.trim();
-        if (!g('lc-doc')) { Swal.showValidationMessage('Elegí el docente.'); return false; }
+        const docs = self._docsSel();
+        if (!docs.length) { Swal.showValidationMessage(l ? 'Elegí el docente.' : 'Elegí al menos un docente.'); return false; }
         if (!g('lc-desde') || !g('lc-hasta')) { Swal.showValidationMessage('Completá las fechas desde y hasta.'); return false; }
         if (g('lc-hasta') < g('lc-desde')) { Swal.showValidationMessage('La fecha «hasta» no puede ser anterior a «desde».'); return false; }
-        const trs = self.trayectosDe(g('lc-doc'));
         let ids = null;
-        if (trs.length > 1) {
-          const sel = self._selCargos();
-          if (!sel.length) { Swal.showValidationMessage('Elegí al menos un cargo / trayecto.'); return false; }
-          ids = sel.length === trs.length ? null : sel;
+        if (docs.length === 1) {
+          const trs = self.trayectosDe(docs[0]);
+          if (trs.length > 1) {
+            const sel = self._selCargos();
+            if (!sel.length) { Swal.showValidationMessage('Elegí al menos un cargo / trayecto.'); return false; }
+            ids = sel.length === trs.length ? null : sel;
+          }
         }
-        return { docente_id: g('lc-doc'), tipo: g('lc-tipo'), desde: g('lc-desde'), hasta: g('lc-hasta'), articulo: g('lc-art') || null, detalle: g('lc-det') || null, trayecto_ids: ids };
+        return { docs, comun: { tipo: g('lc-tipo'), desde: g('lc-desde'), hasta: g('lc-hasta'), articulo: g('lc-art') || null, detalle: g('lc-det') || null, trayecto_ids: ids } };
       }
     });
     if (!value) return;
     try {
       const perfil = (window.Auth && Auth.usuarioActual) || {};
-      const guardar = v => (l ? supabase.from('licencias_docentes').update(v).eq('id', l.id)
-        : supabase.from('licencias_docentes').insert([{ ...v, creado_por_nombre: `${perfil.apellido || ''}, ${perfil.nombre || ''}`.trim() }]));
-      let { error } = await guardar(value);
+      const quien = `${perfil.apellido || ''}, ${perfil.nombre || ''}`.trim();
+      const filas = value.docs.map(di => ({ docente_id: di, ...value.comun }));
+      const guardar = vs => (l ? supabase.from('licencias_docentes').update(vs[0]).eq('id', l.id)
+        : supabase.from('licencias_docentes').insert(vs.map(v => ({ ...v, creado_por_nombre: quien }))));
+      let { error } = await guardar(filas);
       if (error && /trayecto_ids/.test(error.message || '')) {
         // Falta ejecutar sql/56: se guarda sin el cargo y se avisa
-        const { trayecto_ids, ...sinCargo } = value;
-        ({ error } = await guardar(sinCargo));
-        if (!error && trayecto_ids) Swal.fire('Guardada para todos los cargos', 'Falta ejecutar sql/56_licencias_por_cargo.sql en Supabase para poder asignar la licencia a un cargo / trayecto puntual.', 'info');
+        const tenia = value.comun.trayecto_ids;
+        ({ error } = await guardar(filas.map(({ trayecto_ids, ...r }) => r)));
+        if (!error && tenia) Swal.fire('Guardada para todos los cargos', 'Falta ejecutar sql/56_licencias_por_cargo.sql en Supabase para poder asignar la licencia a un cargo / trayecto puntual.', 'info');
       }
       if (error) throw error;
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Guardado', showConfirmButton: false, timer: 1600 });
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: filas.length > 1 ? `Guardado para ${filas.length} docentes` : 'Guardado', showConfirmButton: false, timer: 1800 });
       await this.cargar();
     } catch (err) { Swal.fire('No se pudo guardar', err.message || '', 'error'); }
   },
