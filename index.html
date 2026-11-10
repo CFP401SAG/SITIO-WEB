@@ -433,6 +433,29 @@
 
           <div id="intel-contenido" style="margin-bottom:1.5rem"></div>
 
+          <!-- Acciones rápidas (siempre visibles) -->
+          <div style="margin-top:1.5rem">
+            <!-- Acciones Rápidas -->
+            <div class="card-panel" style="margin: 0;">
+              <div class="card-panel-header">
+                <h4 style="margin: 0; color: #f8fafc;">Acciones rápidas</h4>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                <button type="button" class="btn btn-primary solo-admin-total" style="text-align: left; justify-content: flex-start;" onclick="if(window.UsuariosAdmin && UsuariosAdmin.abrirModal) { UsuariosAdmin.abrirModal(); } else if(window.UI && UI.abrirModalNuevoUsuario) { UI.abrirModalNuevoUsuario(); }">
+                  + Crear Nuevo Usuario
+                </button>
+                <button type="button" class="btn btn-secondary" style="text-align: left; justify-content: flex-start;" onclick="UI.showTab('trayectos')">
+                  📚 Gestionar Trayectos Formativos
+                </button>
+                <button type="button" class="btn btn-gold" style="text-align: left; justify-content: flex-start;" onclick="UI.showTab('certificados')">
+                  📜 Emitir Certificados PDF
+                </button>
+              </div>
+          </div>
+          <!-- Panel anterior: plegado para no repetir cifras del análisis -->
+          <details class="dash-anterior" style="margin-top:1.5rem">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text-muted);font-size:.9rem">Resumen rápido anterior (tarjetas y barras por trayecto)</summary>
+            <div style="margin-top:1rem">
           <!-- Grilla de Tarjetas KPI -->
           <div class="stats-grid">
             <div class="stat-card" style="cursor:pointer" title="Ver cifras por trayecto (sexo, edades, bajas, asistencia y planillas)" onclick="UI.showTab('secretaria')">
@@ -476,10 +499,7 @@
               </div>
             </div>
           </div>
-
-          <!-- Desglose por Trayecto y Acciones Rápidas -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-            <!-- Tabla de Rendimiento por Trayecto -->
+            <div style="margin-top:1.5rem">
             <div class="card-panel" style="margin: 0;">
               <div class="card-panel-header">
                 <h4 style="margin: 0; color: #f8fafc;">Rendimiento por trayecto</h4>
@@ -488,25 +508,9 @@
                 <p style="color: #94a3b8; font-size: 0.85rem;">Cargando resumen de trayectos...</p>
               </div>
             </div>
-
-            <!-- Acciones Rápidas -->
-            <div class="card-panel" style="margin: 0;">
-              <div class="card-panel-header">
-                <h4 style="margin: 0; color: #f8fafc;">Acciones rápidas</h4>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <button type="button" class="btn btn-primary solo-admin-total" style="text-align: left; justify-content: flex-start;" onclick="if(window.UsuariosAdmin && UsuariosAdmin.abrirModal) { UsuariosAdmin.abrirModal(); } else if(window.UI && UI.abrirModalNuevoUsuario) { UI.abrirModalNuevoUsuario(); }">
-                  + Crear Nuevo Usuario
-                </button>
-                <button type="button" class="btn btn-secondary" style="text-align: left; justify-content: flex-start;" onclick="UI.showTab('trayectos')">
-                  📚 Gestionar Trayectos Formativos
-                </button>
-                <button type="button" class="btn btn-gold" style="text-align: left; justify-content: flex-start;" onclick="UI.showTab('certificados')">
-                  📜 Emitir Certificados PDF
-                </button>
-              </div>
             </div>
-          </div>
+            </div>
+          </details>
         </section>
 
         <!-- VISTA 2: LISTA DE TRAYECTOS DENTRO DEL DASHBOARD -->
@@ -973,7 +977,7 @@
   <script src="js/usobase.js?v=70020" defer></script>
   <script src="js/secretaria.js?v=70093" defer></script>
   <script src="js/sisge.js?v=70073" defer></script>
-  <script src="js/ayuda.js?v=70106" defer></script>
+  <script src="js/ayuda.js?v=70107" defer></script>
   <script src="js/matricula_escolar.js?v=70055" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
   <script src="js/ficha_inscripcion.js?v=70073" defer></script>
@@ -984,7 +988,7 @@
   <script src="js/cooperadora.js?v=70095" defer></script>
   <script src="js/licencias.js?v=70098" defer></script>
   <script src="js/eps.js?v=70104" defer></script>
-  <script src="js/inteligencia.js?v=70108" defer></script>
+  <script src="js/inteligencia.js?v=70109" defer></script>
   <script src="js/planilla.js?v=70051" defer></script>
   <script src="js/sedes.js?v=70050" defer></script>
   <script src="js/constancias.js?v=70051" defer></script>
