@@ -11,6 +11,8 @@ const LibroTemasModulo = {
   temas: [],
   visados: [],
   comentarios: [],
+  sinClase: [],
+  MOTIVOS: { paro: 'Paro', jornada_institucional: 'Jornada institucional', licencia: 'Licencia', otro: 'Otro motivo' },
 
   esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); },
   hoyISO() { return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10); },
@@ -31,17 +33,19 @@ const LibroTemasModulo = {
     this.puedeVisar = this.esAdminTotal || this.esRegente;
 
     try {
-      const [rTemas, rVis, rCom, rMod] = await Promise.all([
+      const [rTemas, rVis, rCom, rMod, rSC] = await Promise.all([
         supabase.from('libro_temas').select('*').eq('trayecto_id', this.trayectoId).order('fecha', { ascending: true }),
         supabase.from('libro_temas_visados').select('*').eq('trayecto_id', this.trayectoId).order('created_at', { ascending: false }).limit(12),
         supabase.from('libro_temas_comentarios').select('*').eq('trayecto_id', this.trayectoId).order('created_at', { ascending: true }),
-        supabase.from('modulos').select('id, nombre').eq('trayecto_id', this.trayectoId).order('id')
+        supabase.from('modulos').select('id, nombre').eq('trayecto_id', this.trayectoId).order('id'),
+        supabase.from('dias_sin_clase').select('*').eq('trayecto_id', this.trayectoId)
       ]);
       if (rTemas.error) throw rTemas.error;
       this.temas = rTemas.data || [];
       this.visados = (!rVis.error && rVis.data) || [];
       this.comentarios = (!rCom.error && rCom.data) || [];
       this.modulos = (!rMod.error && rMod.data) || [];
+      this.sinClase = (!rSC.error && rSC.data) || [];   // los mismos «Ese día no hubo clase» que se cargan al tomar asistencia
 
       // El Director/la Regente quedan visados con solo abrir esta pantalla (una vez por día)
       if (this.puedeVisar) supabase.rpc('visar_libro_temas', { p_trayecto: this.trayectoId }).then(() => {});
@@ -51,6 +55,14 @@ const LibroTemasModulo = {
       cont.innerHTML = `<div class="prog-vacio">No se pudo cargar el libro de temas: ${this.esc(err.message || '')}${/libro_temas/.test(err.message || '') ? ' (falta ejecutar sql/32_libro_de_temas.sql en Supabase)' : ''}</div>`;
     }
   },
+
+  fechaISO(f) { return String(f || '').slice(0, 10); },
+  // ¿Ese día (y módulo) figura como «sin clase»? Un sin clase sin módulo vale para todos los módulos.
+  sinClaseDe(fecha, modId) {
+    const mid = modId ? Number(modId) : null;
+    return this.sinClase.find(d => this.fechaISO(d.fecha) === fecha && (d.modulo_id === null || d.modulo_id === undefined || mid === null || Number(d.modulo_id) === mid)) || null;
+  },
+  textoSinClase(d) { return `${this.MOTIVOS[d.motivo] || d.motivo}${d.detalle ? ' · ' + d.detalle : ''}`; },
 
   comentariosDe(temaId) { return this.comentarios.filter(c => Number(c.tema_id) === Number(temaId)); },
   comentariosGenerales() { return this.comentarios.filter(c => c.tema_id === null); },
@@ -87,6 +99,7 @@ const LibroTemasModulo = {
             <label>Actividad realizada<textarea id="lt-actividad" class="act-in" rows="2" maxlength="2000" placeholder="Qué hicieron en la clase (opcional)"></textarea></label>
             <div class="act-form-pie">
               <button type="button" id="lt-btn-cancelar" class="act-btn-sec" style="display:none;" onclick="LibroTemasModulo.cancelarEdicion()">Cancelar edición</button>
+              <button type="button" class="act-btn-sec" title="Es el mismo registro que «Ese día no hubo clase» de Tomar asistencia: se carga una sola vez" onclick="LibroTemasModulo.marcarSinClase()">🚫 Ese día no hubo clase</button>
               <button type="submit" class="act-btn">💾 Guardar</button>
             </div>
           </form>
@@ -99,11 +112,22 @@ const LibroTemasModulo = {
   renderLista() {
     const cont = document.getElementById('lt-lista');
     if (!cont) return;
-    if (!this.temas.length) { cont.innerHTML = '<div class="prog-vacio">Todavía no hay clases cargadas.</div>'; return; }
+    if (!this.temas.length && !this.sinClase.length) { cont.innerHTML = '<div class="prog-vacio">Todavía no hay clases cargadas.</div>'; return; }
     const porModulo = new Map(this.modulos.map(m => [Number(m.id), m.nombre]));
+    const filas = [...this.temas.map(t => ({ k: 't', f: this.fechaISO(t.fecha), t })), ...this.sinClase.map(d => ({ k: 's', f: this.fechaISO(d.fecha), d }))]
+      .sort((x, y) => x.f < y.f ? -1 : x.f > y.f ? 1 : (x.k === 's' ? 1 : 0) - (y.k === 's' ? 1 : 0));
+    const cols = 4 + (this.modulos.length ? 1 : 0);
     cont.innerHTML = `<table class="lt-tabla"><thead><tr><th>Fecha</th>${this.modulos.length ? '<th>Módulo</th>' : ''}<th>Tema</th><th>Actividad</th><th></th></tr></thead><tbody>
-      ${this.temas.map(t => {
-        const coms = this.comentariosDe(t.id);
+      ${filas.map(r => {
+        if (r.k === 's') {
+          const d = r.d;
+          return `<tr class="lt-sinclase" style="background:#FDF2F0">
+            <td data-label="Fecha">${this.fmt(r.f)}</td>
+            ${this.modulos.length ? `<td data-label="Módulo">${d.modulo_id ? this.esc(porModulo.get(Number(d.modulo_id)) || '—') : 'Todos'}</td>` : ''}
+            <td data-label="Tema" colspan="2" style="color:#B42318"><b>🚫 Sin clase</b> — ${this.esc(this.textoSinClase(d))} <small style="color:#64748b">(el mismo registro de Tomar asistencia)</small></td>
+            <td class="lt-col-acciones">${this.puedeCargar ? `<button type="button" class="lt-mini" title="Quitar la marca: sí hubo clase" onclick="LibroTemasModulo.quitarSinClase(${d.modulo_id === null || d.modulo_id === undefined ? 'null' : Number(d.modulo_id)}, '${r.f}')">↩️</button>` : ''}</td></tr>`;
+        }
+        const t = r.t, coms = this.comentariosDe(t.id);
         return `<tr>
           <td data-label="Fecha">${this.fmt(t.fecha)}</td>
           ${this.modulos.length ? `<td data-label="Módulo">${this.esc(porModulo.get(Number(t.modulo_id)) || '—')}</td>` : ''}
@@ -119,6 +143,35 @@ const LibroTemasModulo = {
     </tbody></table>`;
   },
 
+  /* ---------- «Ese día no hubo clase» (mismo registro que Tomar asistencia) ---------- */
+  async marcarSinClase() {
+    const fecha = document.getElementById('lt-fecha').value;
+    const modSel = document.getElementById('lt-modulo'), modulo = modSel && modSel.value ? Number(modSel.value) : null;
+    if (!fecha) { alert('Elegí la fecha.'); return; }
+    const hay = this.temas.find(t => this.fechaISO(t.fecha) === fecha && (modulo === null || !t.modulo_id || Number(t.modulo_id) === modulo));
+    if (hay) { await Swal.fire('Ese día ya tiene una clase cargada', `«${hay.tema}» figura como dictada el ${this.fmt(fecha)}. Si no hubo clase, borrala primero.`, 'info'); return; }
+    const ya = this.sinClaseDe(fecha, modulo);
+    if (ya) { await Swal.fire('Ya está registrado', `El ${this.fmt(fecha)} ya figura sin clase (${this.textoSinClase(ya)}).`, 'info'); return; }
+    const r = await Swal.fire({
+      title: 'Ese día no hubo clase', showCancelButton: true, confirmButtonText: 'Registrar', cancelButtonText: 'Cancelar', focusConfirm: false,
+      html: `<p style="margin:0 0 .75rem;text-align:left;font-size:.9rem">${this.fmt(fecha)}. Queda registrado también en Tomar asistencia: no computa asistencia ni inasistencia y no hace falta cargarlo de nuevo. <b>Si ya había asistencia cargada ese día, se borra.</b></p>
+        <select id="lt-sc-motivo" class="swal2-select" style="display:flex;width:100%;margin:0 0 .5rem">${Object.entries(this.MOTIVOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+        <input id="lt-sc-detalle" class="swal2-input" style="margin:0;width:100%" maxlength="300" placeholder="Detalle (opcional)">`,
+      preConfirm: () => ({ motivo: document.getElementById('lt-sc-motivo').value, detalle: document.getElementById('lt-sc-detalle').value })
+    });
+    if (!r.isConfirmed) return;
+    const { error } = await supabase.rpc('marcar_dia_sin_clase', { p_trayecto: this.trayectoId, p_modulo: modulo, p_fecha: fecha, p_motivo: r.value.motivo, p_detalle: r.value.detalle });
+    if (error) { alert(/marcar_dia_sin_clase|PGRST202|dias_sin_clase/i.test(error.message || '') ? 'Falta ejecutar sql/39_dias_sin_clase.sql en Supabase.' : 'No se pudo registrar: ' + error.message); return; }
+    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Día sin clase registrado', showConfirmButton: false, timer: 1800 });
+    await this.cargar(this.trayectoId, this.nombreTrayecto);
+  },
+  async quitarSinClase(modulo, fecha) {
+    if (!confirm('¿Quitar la marca «sin clase»? Pasa a figurar como día con clase (después cargá el tema o tomá asistencia).')) return;
+    const { error } = await supabase.rpc('quitar_dia_sin_clase', { p_trayecto: this.trayectoId, p_modulo: modulo, p_fecha: fecha });
+    if (error) { alert('No se pudo modificar: ' + error.message); return; }
+    await this.cargar(this.trayectoId, this.nombreTrayecto);
+  },
+
   async guardar(e) {
     e.preventDefault();
     const id = document.getElementById('lt-id').value;
@@ -127,6 +180,16 @@ const LibroTemasModulo = {
     const actividad = document.getElementById('lt-actividad').value.trim();
     const modSel = document.getElementById('lt-modulo');
     if (!fecha || !tema) { alert('Completá la fecha y el tema.'); return; }
+    const modId = modSel && modSel.value ? Number(modSel.value) : null;
+    const sc = this.sinClaseDe(fecha, modId);
+    if (sc) { await Swal.fire('Ese día figura sin clase', `El ${this.fmt(fecha)} está registrado como «sin clase» (${this.textoSinClase(sc)}). Si sí hubo clase, tocá ↩️ en esa fila para quitar la marca y después cargala.`, 'warning'); return; }
+    const norm = x => String(x || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const otras = this.temas.filter(t => String(t.id) !== String(id) && this.fechaISO(t.fecha) === fecha && Number(t.modulo_id || 0) === Number(modId || 0));
+    if (otras.some(t => norm(t.tema) === norm(tema))) { await Swal.fire('Esa clase ya está cargada', `Ya hay una clase «${tema}» el ${this.fmt(fecha)}${modId ? ' en ese módulo' : ''}. Si querés cambiarla, usá ✏️ en la lista.`, 'warning'); return; }
+    if (otras.length) {
+      const r = await Swal.fire({ icon: 'question', title: 'Ya hay una clase ese día', html: `El ${this.fmt(fecha)}${modId ? ' en ese módulo' : ''} ya figura: «${this.esc(otras[0].tema)}». ¿Es una clase distinta (por ejemplo, otro tema el mismo día)?`, showCancelButton: true, confirmButtonText: 'Sí, cargarla igual', cancelButtonText: 'Cancelar' });
+      if (!r.isConfirmed) return;
+    }
     const perfil = (window.Auth && Auth.usuarioActual) || {};
     const registro = {
       trayecto_id: this.trayectoId, fecha, tema, actividad: actividad || null,
@@ -255,7 +318,9 @@ const LibroTemasModulo = {
       <h1>Libro de temas</h1>
       <h2>${this.esc(this.nombreTrayecto)} — impreso el ${this.fmt(this.hoyISO())}</h2>
       <table><thead><tr><th>Fecha</th>${this.modulos.length ? '<th>Módulo</th>' : ''}<th>Tema</th><th>Actividad</th></tr></thead><tbody>
-      ${this.temas.map(t => `<tr><td>${this.fmt(t.fecha)}</td>${this.modulos.length ? `<td>${this.esc(porModulo.get(Number(t.modulo_id)) || '—')}</td>` : ''}<td>${this.esc(t.tema)}</td><td>${this.esc(t.actividad || '')}</td></tr>`).join('')}
+      ${[...this.temas.map(t => ({ f: this.fechaISO(t.fecha), t })), ...this.sinClase.map(d => ({ f: this.fechaISO(d.fecha), d }))].sort((x, y) => x.f < y.f ? -1 : x.f > y.f ? 1 : 0).map(r => r.d
+        ? `<tr><td>${this.fmt(r.f)}</td>${this.modulos.length ? `<td>${r.d.modulo_id ? this.esc(porModulo.get(Number(r.d.modulo_id)) || '—') : 'Todos'}</td>` : ''}<td colspan="2"><i>Sin clase — ${this.esc(this.textoSinClase(r.d))}</i></td></tr>`
+        : `<tr><td>${this.fmt(r.t.fecha)}</td>${this.modulos.length ? `<td>${this.esc(porModulo.get(Number(r.t.modulo_id)) || '—')}</td>` : ''}<td>${this.esc(r.t.tema)}</td><td>${this.esc(r.t.actividad || '')}</td></tr>`).join('')}
       </tbody></table>
       <div class="vis"><b>Visados de Dirección/Regencia:</b> ${this.visados.length ? this.visados.map(v => `${this.esc(v.visado_por_nombre)} (${this.fmt(v.created_at.slice(0, 10))})`).join(' · ') : 'sin registrar'}</div>
       </body></html>`);

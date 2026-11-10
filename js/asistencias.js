@@ -482,6 +482,15 @@ const AsistenciasModulo = {
       detalle = prompt('Detalle (opcional):', '') || '';
     }
 
+    // Si en el Libro de temas ya figura una clase dictada ese día, se avisa (no se borra nada del libro)
+    try {
+      const rl = await supabase.from('libro_temas').select('tema,modulo_id').eq('trayecto_id', this.trayectoActualId).eq('fecha', fecha);
+      const lib = (!rl.error && rl.data || []).find(t => modulo === null || !t.modulo_id || Number(t.modulo_id) === Number(modulo));
+      if (lib && typeof Swal !== 'undefined') {
+        const c = await Swal.fire({ icon: 'warning', title: 'Ese día figura con clase en el Libro de temas', html: `Está cargado «${this.esc(lib.tema)}» el ${this.fechaAR(fecha)}. ¿Marcar igual como sin clase? El libro no se modifica: si corresponde, borrá esa clase desde el Libro de temas.`, showCancelButton: true, confirmButtonText: 'Marcar igual', cancelButtonText: 'Cancelar' });
+        if (!c.isConfirmed) return;
+      }
+    } catch (e) { /* sin libro de temas: se sigue */ }
     const { error } = await supabase.rpc('marcar_dia_sin_clase', { p_trayecto: this.trayectoActualId, p_modulo: modulo, p_fecha: fecha, p_motivo: motivo, p_detalle: detalle });
     if (error) {
       const falta = /marcar_dia_sin_clase|PGRST202|42883|dias_sin_clase/i.test(error.message || '') || error.code === 'PGRST202';
