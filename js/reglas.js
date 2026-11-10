@@ -246,6 +246,84 @@ const ReglasFP = {
     return { trayecto: rT.data, modulos, alumnos: out };
   },
 
+  /* ---------- Consultas completas (Supabase entrega de a 1000 filas) ----------
+     armar(): devuelve la consulta sin .range(); conviene que traiga .order() para que las páginas no se pisen. */
+  async todas(armar, maxPag = 60) {
+    const out = [];
+    for (let i = 0; i < maxPag; i++) {
+      const r = await armar().range(i * 1000, i * 1000 + 999);
+      if (r.error) return { error: r.error, data: out };
+      out.push(...(r.data || []));
+      if ((r.data || []).length < 1000) return { data: out, completo: true };
+    }
+    return { data: out, completo: false };
+  },
+  /* Igual que todas(), pero con un filtro .in() largo partido en lotes (la URL tiene límite). */
+  async enLotes(valores, armar, tam = 150) {
+    const out = [];
+    let completo = true;
+    for (let i = 0; i < valores.length; i += tam) {
+      const r = await this.todas(() => armar(valores.slice(i, i + tam)));
+      if (r.error) return { error: r.error, data: out };
+      out.push(...r.data);
+      if (r.completo === false) completo = false;
+    }
+    return { data: out, completo };
+  },
+
+  /* ---------- Riesgo de abandono (lo usan Seguimiento y el Dashboard: un solo criterio) ----------
+     info = { dias: [[fecha 'AAAA-MM-DD', presente bool], ...] (un registro por día),
+              promedio, sinEntregas, bajaPendiente, cierres: [{ modulo, fecha, nota }] }
+     Medio: 2 faltas seguidas · asistencia < 75 % (con 4 clases o más) · asistencia en baja en las últimas 4 clases
+            · promedio de actividades < 70 · ninguna entrega.
+     Alto:  3 faltas seguidas · asistencia < 60 % · baja automática sin registrar
+            · un módulo cierra en 14 días o menos y la nota actual es menor a 70. */
+  RIESGO_ASIS: 75,
+  RIESGO_ASIS_ALTO: 60,
+  riesgo(info) {
+    const dias = (info.dias || []).slice().sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    let seguidas = 0;
+    for (let j = dias.length - 1; j >= 0 && !dias[j][1]; j--) seguidas++;
+    const n = dias.length, pres = dias.filter(x => x[1]).length;
+    const pct = n ? Math.round(100 * pres / n) : null;
+    const ult4 = dias.slice(-4), pct4 = ult4.length ? Math.round(100 * ult4.filter(x => x[1]).length / ult4.length) : null;
+    const bajando = n >= 8 && pct4 !== null && pct !== null && pct4 <= pct - 25;
+    const ultimaPres = [...dias].reverse().find(x => x[1]);
+    const motivos = [];
+    let alto = false;
+    const fecha = f => String(f || '').slice(0, 10).split('-').reverse().slice(0, 2).join('/');
+    if (info.bajaPendiente) { motivos.push('Baja automática sin registrar'); alto = true; }
+    (info.cierres || []).forEach(c => { motivos.push(`${c.modulo} cierra el ${fecha(c.fecha)} con nota ${c.nota}`); alto = true; });
+    if (seguidas >= 2) { motivos.push(`${seguidas} faltas seguidas`); if (seguidas >= 3) alto = true; }
+    if (n >= 4 && pct !== null && pct < this.RIESGO_ASIS) { motivos.push(`Asistencia ${pct} %`); if (pct < this.RIESGO_ASIS_ALTO) alto = true; }
+    if (bajando && seguidas < 2) motivos.push(`Viene faltando (${pct4} % en las últimas 4)`);
+    if (info.promedio !== null && info.promedio !== undefined && info.promedio < this.MINIMO) motivos.push(`Promedio ${info.promedio}`);
+    if (info.sinEntregas) motivos.push('Sin entregas');
+    return { nivel: motivos.length ? (alto ? 'alto' : 'medio') : null, motivos, seguidas, pct, n, ultima: ultimaPres ? ultimaPres[0] : null };
+  },
+  /* Módulos que cierran dentro de N días con la nota actual por debajo del mínimo (aviso antes de la baja automática) */
+  cierresProximos(ev, modulos, dentroDias = 14, hoy) {
+    const h = hoy || this.hoyISO(), lim = new Date(Date.parse(h + 'T12:00:00Z') + dentroDias * 864e5).toISOString().slice(0, 10);
+    const out = [];
+    (ev && ev.modulos || []).forEach((m, i) => {
+      const mod = (modulos || [])[i];
+      if (!mod || m.equivalencia || m.bloqueado || m.nota === null || m.nota >= this.MINIMO) return;
+      const fin = mod.fecha_fin ? String(mod.fecha_fin).slice(0, 10) : '';
+      if (fin && fin >= h && fin <= lim) out.push({ modulo: (modulos.length > 1 ? `Módulo ${i + 1}` : 'El trayecto'), fecha: fin, nota: m.nota });
+    });
+    return out;
+  },
+  /* Teléfono de la ficha → número para wa.me (Argentina). null si no parece un celular válido. */
+  telWhatsapp(tel) {
+    let d = String(tel || '').replace(/\D/g, '');
+    if (!d) return null;
+    if (d.startsWith('00')) d = d.slice(2);
+    if (d.startsWith('54')) { d = d.slice(2); if (d.startsWith('9')) d = d.slice(1); }
+    if (d.startsWith('0')) d = d.slice(1);
+    if (d.length === 12) d = d.replace(/^(\d{2,4})15(\d{6,8})$/, '$1$2');   // 02325 15 123456 → 2325123456
+    return d.length === 10 ? '549' + d : null;
+  },
+
   /* Número en letras (0-100), en mayúsculas, como se escribe en las actas */
   enLetras(n) {
     const v = Math.round(Number(n));

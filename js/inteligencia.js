@@ -9,6 +9,7 @@
 const InteligenciaModulo = {
   area: 'todo', d: null, cargando: false, t: 0, pend: {}, pendCargando: {}, verTodasAlertas: false,
   LIMITE_ASIS: 60000,
+  RES: { contactado: 'contactado', no_responde: 'no responde', vuelve: 'dice que vuelve', abandona: 'dice que abandona', otro: 'contactado' },
 
   esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); },
   pct(a, b) { return b > 0 ? Math.round(1000 * a / b) / 10 : null; },
@@ -56,24 +57,25 @@ const InteligenciaModulo = {
     cont.innerHTML = '<p class="seg-cargando">Analizando datos…</p>';
     try {
       const op = (tabla, cols, filtro) => this.pagina(tabla, cols, filtro).then(r => (r.error && !r.data.length ? null : r.data), () => null);
-      const [tray, insc, pre, asisR, dat, per, sinClase, lic, mov, epsE, epsA] = await Promise.all([
+      const [tray, insc, pre, asisR, dat, per, sinClase, lic, mov, epsE, epsA, cont] = await Promise.all([
         op('trayectos', 'id,nombre,sector,ciclo_lectivo,docente_user,horario_dias,computa_asistencia,fecha_inicio,fecha_cierre'),
-        op('inscripciones', 'estudiante_user,trayecto_id,estado,num_egresado,fecha_inscripcion,fecha_baja,motivo_baja,baja_tipo'),
+        op('inscripciones', 'id,estudiante_user,trayecto_id,estado,num_egresado,fecha_inscripcion,fecha_baja,motivo_baja,baja_tipo', q => q.order('id')),
         op('preinscripciones', 'ciclo,estado,trayecto_id,created_at'),
-        this.pagina('asistencias', 'trayecto_id,estudiante_user,fecha,estado', null, this.LIMITE_ASIS / 1000).catch(() => ({ data: [], completo: true })),
+        this.pagina('asistencias', 'id,trayecto_id,estudiante_user,fecha,estado', q => q.order('id'), this.LIMITE_ASIS / 1000).catch(() => ({ data: [], completo: true })),
         op('datos_estudiante', 'dni,localidad,fecha_nacimiento,telefono'),
         op('profiles', 'dni,nombre,apellido,rol'),
         op('dias_sin_clase', 'trayecto_id,fecha'),
         op('licencias_docentes', 'tipo,desde,hasta,docente_id'),
         op('cooperadora_movimientos', 'fecha,tipo,monto'),
         op('eps_estudiantes', 'id,estado'),
-        op('eps_asistencia', 'mes,dias_clase,presentes')
+        op('eps_asistencia', 'mes,dias_clase,presentes'),
+        op('seguimiento_contactos', 'trayecto_id,estudiante_user,fecha,tipo,resultado')
       ]);
       const perIdx = {}; (per || []).forEach(p => { perIdx[String(p.dni)] = p; });
       const datIdx = {}; (dat || []).forEach(x => { datIdx[String(x.dni)] = x; });
       this.d = {
         tray: tray || [], insc: insc || [], pre, asis: asisR.data || [], asisCompleta: asisR.completo !== false,
-        dat: dat || [], datIdx, per: per || [], perIdx, sinClase: sinClase || [], lic, mov, epsE, epsA,
+        dat: dat || [], datIdx, per: per || [], perIdx, sinClase: sinClase || [], lic, mov, epsE, epsA, cont,
         doc: per ? per.filter(p => String(p.rol || '').toLowerCase() === 'docente') : null
       };
       this.t = Date.now();
@@ -149,7 +151,7 @@ const InteligenciaModulo = {
     this.pendCargando[ciclo] = true;
     try {
       const tr = this.d.tray.filter(t => this.cicloDe(t) === String(ciclo) && this.d.insc.some(i => String(i.trayecto_id) === String(t.id) && !this.esBaja(i)));
-      const lista = [], cola = tr.slice();
+      const lista = [], cierres = {}, cola = tr.slice();
       const trabajar = async () => {
         while (cola.length) {
           const t = cola.shift();
@@ -157,12 +159,16 @@ const InteligenciaModulo = {
             const s = await ReglasFP.cargarSituacion(t.id);
             Object.entries((s && s.alumnos) || {}).forEach(([dni, x]) => {
               if (x.cursada && x.cursada.baja && !x.cursada.guardada) lista.push({ dni, tid: t.id, trayecto: t.nombre, motivo: x.cursada.motivo });
+              else if (!(x.cursada && x.cursada.baja) && ReglasFP.cierresProximos) {
+                const cp = ReglasFP.cierresProximos(x.ev, s.modulos, 14);
+                if (cp.length) cierres[t.id + '|' + dni] = cp;
+              }
             });
           } catch (e) { console.warn('Bajas pendientes', t.id, e); }
         }
       };
       await Promise.all([trabajar(), trabajar(), trabajar()]);
-      this.pend[ciclo] = { t: Date.now(), lista };
+      this.pend[ciclo] = { t: Date.now(), lista, cierres };
     } finally { this.pendCargando[ciclo] = false; }
     if (this.ciclo() === ciclo) this.render();
   },
@@ -180,24 +186,19 @@ const InteligenciaModulo = {
       reg[k][f] = reg[k][f] || this.esPres(a);   // si hay varios módulos el mismo día, alcanza con un presente
     });
     const pend = {}; (this.pendientes(ciclo) || []).forEach(p => { pend[p.tid + '|' + p.dni] = p; });
+    const cierres = (this.pend[ciclo] && this.pend[ciclo].cierres) || {};
+    const ultCont = {}; (this.d.cont || []).forEach(x => { const k = x.trayecto_id + '|' + x.estudiante_user; if (!ultCont[k] || String(x.fecha) > String(ultCont[k].fecha)) ultCont[k] = x; });
     const lista = [];
     c.ins.filter(i => !this.esBaja(i)).forEach(i => {
       const t = tIdx[String(i.trayecto_id)];
       if (!t || (t.fecha_cierre && this.f10(t.fecha_cierre) < hoy)) return;
-      const k = i.trayecto_id + '|' + i.estudiante_user, dias = Object.entries(reg[k] || {}).sort((a, b) => a[0] < b[0] ? -1 : 1);
-      let seguidas = 0; for (let j = dias.length - 1; j >= 0 && !dias[j][1]; j--) seguidas++;
-      const pres = dias.filter(x => x[1]).length, pc = this.pct(pres, dias.length);
-      const ult = [...dias].reverse().find(x => x[1]);
-      const pb = pend[k];
-      const motivos = [];
-      if (pb) motivos.push('Baja automática sin registrar');
-      if (seguidas >= 2) motivos.push(`${seguidas} faltas seguidas`);
-      if (dias.length >= 4 && pc != null && pc < 75) motivos.push(`asistencia ${this.fp(pc)}`);
-      if (!motivos.length) return;
-      const nivel = pb || seguidas >= 3 || (pc != null && pc < 60 && dias.length >= 4) ? 'alto' : 'medio';
+      const k = i.trayecto_id + '|' + i.estudiante_user, pb = pend[k];
+      // Mismo criterio que Seguimiento (ReglasFP.riesgo). Acá no se miran las entregas: solo asistencia, cierres y bajas.
+      const rr = ReglasFP.riesgo({ dias: Object.entries(reg[k] || {}), bajaPendiente: !!pb, cierres: pb ? [] : (cierres[k] || []) });
+      if (!rr.nivel) return;
       const dat = this.d.datIdx[String(i.estudiante_user)] || {};
       lista.push({ dni: i.estudiante_user, nombre: this.nombre(i.estudiante_user), trayecto: t.nombre, tid: t.id, docente: this.nombre(t.docente_user),
-        asis: pc, seguidas, ultima: ult ? ult[0] : null, tel: dat.telefono || '', motivos, nivel, detalleBaja: pb ? pb.motivo : '' });
+        asis: rr.pct, seguidas: rr.seguidas, ultima: rr.ultima, tel: dat.telefono || '', motivos: rr.motivos, nivel: rr.nivel, detalleBaja: pb ? pb.motivo : '', contacto: ultCont[k] || null });
     });
     lista.sort((a, b) => (a.nivel === b.nivel ? 0 : a.nivel === 'alto' ? -1 : 1) || b.seguidas - a.seguidas || (a.asis ?? 101) - (b.asis ?? 101));
     return { lista, cerrado: false };
@@ -429,11 +430,11 @@ const InteligenciaModulo = {
     const filas = ver.map(x => `<tr><td>${x.nivel === 'alto' ? '<span style="color:#B42318" title="Riesgo alto">▲ Alto</span>' : '<span style="color:#B7791F" title="Riesgo medio">● Medio</span>'}</td>
       <td>${this.esc(x.nombre)}<br><small style="color:var(--text-muted)">${/^DNI /.test(x.nombre) ? '' : 'DNI ' + this.esc(x.dni)}${x.tel ? (/^DNI /.test(x.nombre) ? '' : ' · ') + 'Tel. ' + this.esc(x.tel) : ''}</small></td>
       <td>${this.esc(x.trayecto)}<br><small style="color:var(--text-muted)">${this.esc(x.docente)}</small></td>
-      <td title="${this.esc(x.detalleBaja)}">${this.esc(x.motivos.join(' · '))}</td><td>${this.fecha(x.ultima)}</td></tr>`).join('');
+      <td title="${this.esc(x.detalleBaja)}">${this.esc(x.motivos.join(' · '))}</td><td>${this.fecha(x.ultima)}</td>${this.d.cont ? `<td>${x.contacto ? this.fecha(x.contacto.fecha) + '<br><small>' + this.esc(this.RES[x.contacto.resultado] || '') + '</small>' : '<small style="color:#94a3b8">sin contacto</small>'}</td>` : ''}</tr>`).join('');
     const mas = max && al.lista.length > max ? `<button type="button" class="btn-secondary" style="margin-top:8px;padding:.3rem .7rem;font-size:.8rem" onclick="InteligenciaModulo.verTodasAlertas=!InteligenciaModulo.verTodasAlertas;InteligenciaModulo.render()">${this.verTodasAlertas ? 'Ver menos' : `Ver las ${al.lista.length}`}</button>` : '';
     return this.bloque(`Alertas tempranas · ${al.lista.length} estudiante${al.lista.length > 1 ? 's' : ''} en riesgo`,
-      `<div style="overflow-x:auto"><table class="tabla-simple intel-t intel-alertas" style="width:100%"><thead><tr><th>Riesgo</th><th>Estudiante</th><th>Trayecto / docente</th><th>Motivo</th><th>Último presente</th></tr></thead><tbody>${filas}</tbody></table></div>${mas}`,
-      'Riesgo medio: 2 faltas seguidas o menos de 75 % de asistencia (con 4 clases o más). Alto: 3 faltas seguidas, menos de 60 %, o una baja automática que todavía no se registró. Los justificados cuentan como falta. El listado completo sale en el Excel.');
+      `<div style="overflow-x:auto"><table class="tabla-simple intel-t intel-alertas" style="width:100%"><thead><tr><th>Riesgo</th><th>Estudiante</th><th>Trayecto / docente</th><th>Motivo</th><th>Último presente</th>${this.d.cont ? '<th>Último contacto</th>' : ''}</tr></thead><tbody>${filas}</tbody></table></div>${mas}`,
+      'Mismo criterio que Seguimiento. Medio: 2 faltas seguidas, menos de 75 % de asistencia (con 4 clases o más) o asistencia en baja. Alto: 3 faltas seguidas, menos de 60 %, un módulo que cierra en 14 días con nota menor a 70, o una baja automática sin registrar. Los justificados cuentan como falta. Para contactar y anotar el seguimiento, entrá a Seguimiento. El listado completo sale en el Excel.');
   },
 
   /* ---------- áreas institucionales ---------- */
@@ -567,9 +568,9 @@ const InteligenciaModulo = {
     c.porT.forEach(x => w2.addRow([x.nombre, x.sector || '', x.insc, x.bajas, x.bajaPct ?? '', x.virtual ? 'virtual' : x.asis ?? '', x.aprob, x.aprobPct ?? '']));
     const al = this.alertas(ciclo);
     if (!al.cerrado) {
-      const w3 = wb.addWorksheet('Alertas'); w3.columns = [{ width: 10 }, { width: 32 }, { width: 14 }, { width: 18 }, { width: 36 }, { width: 28 }, { width: 40 }, { width: 14 }];
-      neg(w3.addRow(['Riesgo', 'Estudiante', 'DNI', 'Teléfono', 'Trayecto', 'Docente', 'Motivo', 'Último presente']));
-      al.lista.forEach(x => w3.addRow([x.nivel, x.nombre, x.dni, x.tel, x.trayecto, x.docente, x.motivos.join(' · ') + (x.detalleBaja ? ' — ' + x.detalleBaja : ''), this.fecha(x.ultima)]));
+      const w3 = wb.addWorksheet('Alertas'); w3.columns = [{ width: 10 }, { width: 32 }, { width: 14 }, { width: 18 }, { width: 36 }, { width: 28 }, { width: 40 }, { width: 14 }, { width: 28 }];
+      neg(w3.addRow(['Riesgo', 'Estudiante', 'DNI', 'Teléfono', 'Trayecto', 'Docente', 'Motivo', 'Último presente', 'Último contacto']));
+      al.lista.forEach(x => w3.addRow([x.nivel, x.nombre, x.dni, x.tel, x.trayecto, x.docente, x.motivos.join(' · ') + (x.detalleBaja ? ' — ' + x.detalleBaja : ''), this.fecha(x.ultima), x.contacto ? `${this.fecha(x.contacto.fecha)} · ${this.RES[x.contacto.resultado] || ''}` : '']));
     }
     const ev = this.evolucion(ciclo);
     if (ev) {
