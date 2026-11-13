@@ -78,6 +78,7 @@ const EpsModulo = {
         <label style="font-size:.85rem"><input type="checkbox" ${this.verBajas ? 'checked' : ''} onchange="EpsModulo.verBajas=this.checked;EpsModulo.render()"> Ver bajas y egresados</label>
         <button class="btn-primary" onclick="EpsModulo.formEstudiante()">+ Nuevo estudiante</button>
         <button class="btn-secundario" onclick="EpsModulo.exportar()">⬇️ Excel</button>
+        <button class="btn-secundario" onclick="VistaPDF.ver(() => EpsModulo.exportar(), 'Estudiantes EPS')" title="Se abre en otra pestaña, sin descargar">👁️ Ver PDF</button>
       </div>
       <div style="overflow-x:auto"><table class="tabla-simple" style="width:100%">
         <thead><tr><th>Apellido y nombre</th><th>DNI</th><th>Trayecto</th><th>Escuela de origen</th><th>Dejó en</th><th>Estado</th><th></th></tr></thead>
@@ -275,7 +276,7 @@ const EpsModulo = {
       <label style="font-size:.8rem">Nivel<input id="ptf-pend-nivel" class="form-control" value="${this.esc(p.pendientes.nivel || '')}" style="width:100px"></label>${pend}
       <label style="display:block;font-size:.8rem;margin:10px 0 2px"><b>OBSERVACIONES</b></label><textarea id="ptf-obs" class="form-control" rows="3" style="width:100%">${this.esc(p.observaciones || '')}</textarea>
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-primary" onclick="EpsModulo.guardarPtf()">💾 Guardar PTF</button><button class="btn-secundario" onclick="EpsModulo.exportarPtf()">⬇️ Excel del PTF</button></div>`;
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-primary" onclick="EpsModulo.guardarPtf()">💾 Guardar PTF</button><button class="btn-secundario" onclick="EpsModulo.exportarPtf()">⬇️ Excel del PTF</button><button class="btn-secundario" onclick="VistaPDF.ver(() => EpsModulo.exportarPtf(), 'PTF')" title="Se abre en otra pestaña, sin descargar">👁️ Ver PDF del PTF</button></div>`;
   },
 
   leerPtf() {
@@ -385,7 +386,8 @@ const EpsModulo = {
   vistaCifras() {
     const c = this.cifras(), f = v => v == null ? '—' : v + '%';
     return `<div style="display:flex;gap:8px;align-items:end;margin-bottom:10px;flex-wrap:wrap"><label style="font-size:.8rem">Año<input type="number" class="form-control" style="width:100px" value="${this.anioCifras}" onchange="EpsModulo.anioCifras=Number(this.value)||EpsModulo.anioCifras;EpsModulo.render()"></label>
-        <button class="btn-secundario" onclick="EpsModulo.exportarCifras()">⬇️ Excel</button></div>
+        <button class="btn-secundario" onclick="EpsModulo.exportarCifras()">⬇️ Excel</button>
+        <button class="btn-secundario" onclick="VistaPDF.ver(() => EpsModulo.exportarCifras(), 'Cifras EPS')" title="Se abre en otra pestaña, sin descargar">👁️ Ver PDF</button></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px">
         <div class="seg-card"><small>Matrícula activa</small><div style="font-size:1.6rem"><b>${c.activos}</b></div></div>
         <div class="seg-card"><small>Bajas / egresados</small><div style="font-size:1.6rem"><b>${c.bajas} / ${c.egresados}</b></div></div>

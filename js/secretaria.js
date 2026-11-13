@@ -135,11 +135,13 @@ const SecretariaModulo = {
           </select></label>
         <div class="sec-acciones">
           <button type="button" class="btn btn-outline" onclick="PlanillaMatricula.descargar(SecretariaModulo.ciclo)">📑 Planilla de matrícula (POF/POFA)</button>
+          <button type="button" class="btn btn-outline" onclick="VistaPDF.ver(() => PlanillaMatricula.descargar(SecretariaModulo.ciclo), 'Planilla de matrícula POF/POFA')" title="Se abre en otra pestaña, sin descargar">👁️ Ver PDF</button>
           ${window.Auth && Auth.esAdmin(Auth.usuarioActual && Auth.usuarioActual.rol) ? '<button type="button" class="btn btn-outline" onclick="UI.showTab(\'dashboard\')">📊 Rendimiento académico (Dashboard)</button>' : ''}
           <button type="button" class="btn btn-outline" onclick="MatriculaEscolar.abrir()">🏫 Matrícula escolar</button>
           ${window.Auth && Auth.esAdmin(Auth.usuarioActual && Auth.usuarioActual.rol) ? '<button type="button" class="btn btn-outline" onclick="SisgeModulo.abrir()">📤 Exportar para SISGE</button>' : ''}
           <button type="button" class="btn btn-outline" onclick="SecretariaModulo.copiar()">📋 Copiar tabla</button>
           <button type="button" class="btn btn-gold" onclick="SecretariaModulo.excel()" ${this.filas.length ? '' : 'disabled'}>📊 Descargar Excel</button>
+          <button type="button" class="btn btn-gold" onclick="VistaPDF.ver(() => SecretariaModulo.excel(), 'Cifras por trayecto')" title="Se abre en otra pestaña, sin descargar" ${this.filas.length ? '' : 'disabled'}>👁️ Ver PDF</button>
         </div>
       </div>
 

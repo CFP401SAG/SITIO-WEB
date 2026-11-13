@@ -179,7 +179,7 @@ const EncuestaFinal = {
     cont.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
         <label style="font-size:.8rem;display:flex;flex-direction:column;gap:3px">Trayecto<select class="form-control" style="min-width:280px" onchange="EncuestaFinal.sel=this.value;EncuestaFinal.tema='';EncuestaFinal.render()">${opts || '<option>—</option>'}</select></label>
         ${ciclos.length > 1 ? `<label style="font-size:.8rem;display:flex;flex-direction:column;gap:3px">Ciclo<select class="form-control" onchange="EncuestaFinal.ciclo=this.value;EncuestaFinal.sel='';const v=EncuestaFinal.datos.filter(d=>!EncuestaFinal.ciclo||String(d.ciclo)===EncuestaFinal.ciclo);EncuestaFinal.sel=(v.find(x=>x.n>0)||v[0]||{}).trayecto_id||'';EncuestaFinal.render()"><option value="">Todos</option>${ciclos.map(c => `<option ${this.ciclo === c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>` : ''}
-        ${t && !t.oculto && t.n ? '<button class="btn-secondary" style="padding:.4rem .8rem" onclick="EncuestaFinal.exportar()">⬇️ Excel</button>' : ''}</div>${cuerpo}${comp}`;
+        ${t && !t.oculto && t.n ? '<button class="btn-secondary" style="padding:.4rem .8rem" onclick="EncuestaFinal.exportar()">⬇️ Excel</button><button class="btn-secondary" style="padding:.4rem .8rem" onclick="VistaPDF.ver(() => EncuestaFinal.exportar(), \'Encuesta final\')" title="Se abre en otra pestaña, sin descargar">👁️ Ver PDF</button>' : ''}</div>${cuerpo}${comp}`;
   },
 
   vistaTrayecto(t) {

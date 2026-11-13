@@ -275,7 +275,8 @@ const SeguimientoModulo = {
     cont.innerHTML = `
       <div class="card-panel seg-panel seg-resumen-txt">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><h3 style="margin:0">Resumen</h3>
-          <button type="button" class="btn-secondary" style="padding:.3rem .7rem;font-size:.8rem" onclick="SeguimientoModulo.exportar()">⬇️ Excel</button></div>
+          <button type="button" class="btn-secondary" style="padding:.3rem .7rem;font-size:.8rem" onclick="SeguimientoModulo.exportar()">⬇️ Excel</button>
+          <button type="button" class="btn-secondary" style="padding:.3rem .7rem;font-size:.8rem" onclick="VistaPDF.ver(() => SeguimientoModulo.exportar(), 'Seguimiento')" title="Se abre en otra pestaña, sin descargar">👁️ Ver PDF</button></div>
         <ul>${frases.map(f => `<li>${f}</li>`).join('')}</ul>
         ${this.contactosOK ? '' : '<p class="seg-ayuda" style="margin:0">El registro de seguimiento (📝) se activa al ejecutar <code>sql/61_seguimiento_contactos.sql</code> en Supabase.</p>'}
       </div>

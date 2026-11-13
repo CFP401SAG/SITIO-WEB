@@ -206,6 +206,7 @@ const LicenciasModulo = {
         <button class="act-btn-sec" onclick="LicenciasModulo.modo='libre'; LicenciasModulo.hasta=LicenciasModulo.hoyISO() < '${cf.fin}' ? LicenciasModulo.hoyISO() : '${cf.fin}'; LicenciasModulo.desde=null; LicenciasModulo.render();">Hasta hoy</button>
         <button class="act-btn-sec" onclick="LicenciasModulo.modo='ciclo'; LicenciasModulo.desde=null; LicenciasModulo.hasta=null; LicenciasModulo.render();">Ciclo completo</button>
         <button class="act-btn-sec" onclick="LicenciasModulo.exportar()">⬇️ Excel</button>
+        <button class="act-btn-sec" onclick="VistaPDF.ver(() => LicenciasModulo.exportar(), 'Licencias docentes')" title="Se abre en otra pestaña, sin descargar">👁️ Ver PDF</button>
       </div>
       ${this.docentes.length ? '' : `<p class="plan-meta" style="color:#b91c1c;">⚠️ No se pudo leer la lista de docentes${this.errDocentes ? ': ' + this.esc(this.errDocentes) : ' (la consulta no devolvió ninguno)'}.</p>`}
       ${cf.definido ? '' : `<p class="plan-meta" style="color:#b45309;">⚠️ El ciclo lectivo ${this.ciclo} todavía no tiene fechas cargadas: se usa del 01/03 al 31/12 de forma provisoria. Cargalas en «Ciclo lectivo».</p>`}

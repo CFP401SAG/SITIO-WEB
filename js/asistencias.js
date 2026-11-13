@@ -251,6 +251,7 @@ const AsistenciasModulo = {
             <label for="asis-mes" class="sr-only">Mes</label>
             <input type="month" id="asis-mes" class="form-control" value="${mesActual}">
             <button type="button" class="btn btn-primary" onclick="AsistenciasModulo.descargarPlanilla()">Planilla del mes (Excel)</button>
+            <button type="button" class="btn btn-primary" onclick="VistaPDF.ver(() => AsistenciasModulo.descargarPlanilla(), 'Planilla de asistencia')" title="Se abre en otra pestaña, sin descargar">👁️ Ver PDF</button>
           </div>
         </div>
         <div id="asis-historial"></div>

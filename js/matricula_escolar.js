@@ -91,6 +91,7 @@ const MatriculaEscolar = {
           <p class="acta-ayuda">Alumnos por certificado/constancia, por sexo y por edad en años cumplidos al 30 de junio de ${this.esc(ciclo)} · ${activos ? 'sin bajas' : 'con bajas'} · mismo orden de columnas que el cuadro 1.1 del formulario.</p></div>
         <div class="sec-acciones">
           <button type="button" class="btn btn-gold" onclick="MatriculaEscolar.excel()" ${filas.length ? '' : 'disabled'}>📊 Descargar Excel</button>
+          <button type="button" class="btn btn-gold" onclick="VistaPDF.ver(() => MatriculaEscolar.excel(), 'Matrícula escolar')" title="Se abre en otra pestaña, sin descargar" ${filas.length ? '' : 'disabled'}>👁️ Ver PDF</button>
           <button type="button" class="btn btn-outline" onclick="MatriculaEscolar.cerrar()">Cerrar</button>
         </div>
       </div>
