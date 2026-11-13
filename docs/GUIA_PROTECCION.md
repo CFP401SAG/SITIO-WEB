@@ -46,3 +46,9 @@ Los títulos, comentarios y nombres que se escriben en la plataforma ahora se mu
 
 ## 7. Tablas viejas (archivo)
 `sql/13_revision_y_limpieza.sql` mueve las tablas que la plataforma ya no usa (`usuarios_legacy`, `profiles_respaldo_20261021`, `notas_modulares`, `contenidos`, `entregas`, `actividades`, `excepciones_modulos`) a un esquema aparte llamado **archivo**: no se borran, pero dejan de estar al alcance de internet. Al final muestra una lista de controles de seguridad que tienen que decir **OK**. Para volver a traer una tabla: `alter table archivo.NOMBRE set schema public;`.
+
+## 8. Funciones automáticas y preinscripción pública (sql/66)
+- **Orden:** 1) ejecutar `sql/66_proteccion_preinscripcion_y_funciones.sql` en el SQL Editor; 2) volver a desplegar las funciones `resguardo-semanal` y `subir-preinscripcion-drive` (pegar su `index.ts`, con «Verify JWT» desactivado, como siempre); 3) probar: Preinscripciones → reintentar una subida a Drive, y en Supabase → Edge Functions → `resguardo-semanal` → Test con el cuerpo `{}` (tiene que devolver «No autorizado»; la ejecución del domingo sí funciona porque la base manda el secreto).
+- **Qué hace:** la base guarda un secreto interno (tabla `secretos_internos`, ilegible desde la web) y lo manda al avisar a las funciones. Las funciones solo obedecen a la base o a una persona de Dirección/Secretaría con sesión. Si ejecutás las funciones nuevas **antes** del SQL, dejan de funcionar hasta que lo ejecutes.
+- **Preinscripción:** tope de 30 por hora por conexión (se guarda una huella irreversible de la IP) además del tope de 5 por DNI y ciclo y del campo trampa para robots. No frena a un ataque desde muchas conexiones distintas; para eso existe el tope general de 150 cada 10 minutos, que protege la base pero puede frenar inscripciones reales mientras dure el ataque.
+

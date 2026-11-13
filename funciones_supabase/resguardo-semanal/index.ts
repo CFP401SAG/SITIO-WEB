@@ -26,6 +26,31 @@ const celda = (v: unknown) => {
 };
 const hoyAR = () => new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);
 
+// Solo pueden dispararla: (1) la base, con el secreto interno en la cabecera «x-interno» (sql/66), o
+// (2) una persona con sesión de Dirección o Secretaría (botón «reintentar» de la plataforma).
+function igual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+// deno-lint-ignore no-explicit-any
+async function autorizado(req: Request, admin: any): Promise<boolean> {
+  const interno = req.headers.get('x-interno') || '';
+  if (interno) {
+    const { data } = await admin.from('secretos_internos').select('valor').eq('nombre', 'interno').maybeSingle();
+    if (data && data.valor && igual(interno, String(data.valor))) return true;
+  }
+  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  if (token) {
+    const { data: u } = await admin.auth.getUser(token);
+    if (u && u.user) {
+      const { data: p } = await admin.from('profiles').select('rol, estado').eq('id', u.user.id).maybeSingle();
+      if (p && String(p.estado || '').toUpperCase() === 'ACTIVO' && ['admin', 'administrador', 'secretaria'].includes(String(p.rol || '').toLowerCase())) return true;
+    }
+  }
+  return false;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
   let todo = false;
@@ -35,6 +60,7 @@ Deno.serve(async (req: Request) => {
   try { const c = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}'); claveAdmin = c['default'] || (Object.values(c)[0] as string) || ''; } catch (_) { /* nada */ }
   if (!claveAdmin) claveAdmin = env('SUPABASE_SERVICE_ROLE_KEY');
   const admin = createClient(env('SUPABASE_URL'), claveAdmin, { auth: { persistSession: false, autoRefreshToken: false } });
+  if (!(await autorizado(req, admin))) return json({ error: 'No autorizado' }, 401);
 
   try {
     if (!env('APPS_SCRIPT_URL') || !env('APPS_SCRIPT_SECRET')) throw new Error('Faltan los secretos APPS_SCRIPT_URL y APPS_SCRIPT_SECRET');

@@ -10,6 +10,7 @@ El contacto del CFP no está en el código: se edita en Preinscripciones → "Co
 ## Seguridad (no deshacer)
 - Clave inicial: estudiantes `CFP401_<DNI>`; cualquier otro rol recibe una **clave temporal aleatoria** (`Auth.claveTemporal()` / SQL 65) y debe elegir una propia al ingresar (`must_change_password`). No volver a usar claves predecibles para docentes, Secretaría, EPS ni administración.
 - Librerías externas: van en `js/vendor/` (no CDN). Para sumar o actualizar una, editar `tools/vendorizar-librerias.js` y correr el workflow «Librerías propias».
+- Funciones del servidor disparadas por la base (`resguardo-semanal`, `subir-preinscripcion-drive`): exigen el secreto `x-interno` (sql/66) o una sesión de Dirección/Secretaría. Si se agrega otra función disparada por la base, usar el mismo `autorizado()`.
 - `sw.js` (service worker): solo toca archivos de la propia plataforma y CDN conocidos; nunca las consultas a Supabase.
 
 ## Al publicar
