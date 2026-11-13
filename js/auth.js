@@ -248,21 +248,65 @@ const Auth = {
 
   /* ---------- cambio de contraseña (cualquier usuario con sesión) ---------- */
 
-  async cambiarMiClave() {
+  // Clave temporal aleatoria (10 caracteres sin letras confusas, ej. «Kp7mX-4tRzW»). Se usa para cuentas
+  // con acceso ampliado (docente, Secretaría, coord. EPS, administración): la clave CFP401_<DNI> es predecible.
+  claveTemporal() {
+    const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    const lim = 256 - (256 % alfabeto.length);
+    let out = '';
+    while (out.replace('-', '').length < 10) {
+      const b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      for (const x of b) {
+        if (x >= lim) continue;
+        out += alfabeto[x % alfabeto.length];
+        if (out.length === 5) out += '-';
+        if (out.replace('-', '').length >= 10) break;
+      }
+    }
+    return out;
+  },
+
+  esRolConAccesoAmpliado(rol) {
+    return String(rol || '').toLowerCase().trim() !== 'estudiante';
+  },
+
+  // Si la cuenta entró con una clave temporal (user_metadata.must_change_password), obliga a elegir una propia.
+  async exigirCambioClave() {
+    if (this._pidiendoClave || !navigator.onLine || typeof Swal === 'undefined') return;
+    try {
+      const { data } = await supabase.auth.getUser();
+      if (!data?.user?.user_metadata?.must_change_password) return;
+    } catch (e) { return; }
+    this._pidiendoClave = true;
+    try {
+      let hecho = false;
+      while (!hecho) hecho = await this.cambiarMiClave({ obligatorio: true });
+    } finally { this._pidiendoClave = false; }
+  },
+
+  // Devuelve true si la contraseña se cambió. Con { obligatorio: true } no se puede cancelar ni cerrar.
+  async cambiarMiClave(opciones) {
+    const obligatorio = !!(opciones && opciones.obligatorio);
     if (typeof Swal === 'undefined') {
       this.avisar('No se pudo abrir el formulario. Recargá la página e intentá de nuevo.');
-      return;
+      return false;
     }
+    const minimo = obligatorio ? 10 : 8;
+    const dni = String((this.usuarioActual && this.usuarioActual.dni) || '').replace(/\D/g, '');
 
     const { value: datos } = await Swal.fire({
-      title: 'Cambiar mi contraseña',
+      title: obligatorio ? 'Elegí tu contraseña' : 'Cambiar mi contraseña',
       html: `
-        <input id="clave-actual" type="password" class="swal2-input" placeholder="Contraseña actual" autocomplete="current-password">
-        <input id="clave-nueva" type="password" class="swal2-input" placeholder="Contraseña nueva (mínimo 8 caracteres)" autocomplete="new-password">
+        ${obligatorio ? '<p style="font-size:.9rem;text-align:left">Ingresaste con una <b>clave temporal</b>. Para seguir, elegí una contraseña propia (mínimo 10 caracteres, que no incluya tu DNI ni «CFP401»).</p>' : ''}
+        <input id="clave-actual" type="password" class="swal2-input" placeholder="${obligatorio ? 'Clave temporal que te dieron' : 'Contraseña actual'}" autocomplete="current-password">
+        <input id="clave-nueva" type="password" class="swal2-input" placeholder="Contraseña nueva (mínimo ${minimo} caracteres)" autocomplete="new-password">
         <input id="clave-repetir" type="password" class="swal2-input" placeholder="Repetir la contraseña nueva" autocomplete="new-password">
       `,
       focusConfirm: false,
-      showCancelButton: true,
+      showCancelButton: !obligatorio,
+      allowOutsideClick: !obligatorio,
+      allowEscapeKey: !obligatorio,
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
       preConfirm: () => {
@@ -270,41 +314,48 @@ const Auth = {
         const nueva = document.getElementById('clave-nueva').value;
         const repetir = document.getElementById('clave-repetir').value;
         if (!actual || !nueva || !repetir) { Swal.showValidationMessage('Completá los tres campos.'); return false; }
-        if (nueva.length < 8) { Swal.showValidationMessage('La contraseña nueva debe tener al menos 8 caracteres.'); return false; }
+        if (nueva.length < minimo) { Swal.showValidationMessage(`La contraseña nueva debe tener al menos ${minimo} caracteres.`); return false; }
         if (nueva !== repetir) { Swal.showValidationMessage('Las contraseñas nuevas no coinciden.'); return false; }
         if (nueva === actual) { Swal.showValidationMessage('La contraseña nueva debe ser distinta de la actual.'); return false; }
+        if (obligatorio && (/cfp401/i.test(nueva) || (dni.length >= 6 && nueva.includes(dni)))) {
+          Swal.showValidationMessage('No uses tu DNI ni «CFP401» en la contraseña.'); return false;
+        }
         return { actual, nueva };
       }
     });
 
-    if (!datos) return;
+    if (!datos) return false;
 
     try {
       const { data: u } = await supabase.auth.getUser();
       const email = u?.user?.email;
       if (!email) {
         this.avisar('Tu sesión venció. Volvé a ingresar.');
-        return;
+        return false;
       }
 
       // Se verifica la contraseña actual antes de cambiarla
       const { error: errActual } = await supabase.auth.signInWithPassword({ email, password: datos.actual });
       if (errActual) {
-        this.avisar('La contraseña actual no es correcta.');
-        return;
+        this.avisar(obligatorio ? 'La clave temporal no es correcta.' : 'La contraseña actual no es correcta.');
+        return false;
       }
 
-      const { error } = await supabase.auth.updateUser({ password: datos.nueva, current_password: datos.actual });
+      const cambios = { password: datos.nueva, current_password: datos.actual };
+      if (obligatorio) cambios.data = { must_change_password: false };
+      const { error } = await supabase.auth.updateUser(cambios);
       if (error) {
         this.avisar('No se pudo cambiar la contraseña: ' + error.message);
-        return;
+        return false;
       }
 
       if (typeof alertSuccess === 'function') alertSuccess('Contraseña actualizada', 'La próxima vez que ingreses usá tu contraseña nueva.');
       else alert('Contraseña actualizada.');
+      return true;
     } catch (err) {
       console.error('Error al cambiar la contraseña:', err);
       this.avisar('No se pudo conectar. Intentá de nuevo en unos minutos.');
+      return false;
     }
   },
 

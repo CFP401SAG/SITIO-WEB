@@ -7,6 +7,11 @@ rol en `js/ayuda.js` y la fecha `AYUDA_ACTUALIZADA`.** También cuando cambien p
 También hay un botón «?» por pantalla y un recorrido guiado (primera vez que entra cada persona): se alimentan de `PANTALLAS` y `BOTON_TEMA` en el mismo `js/ayuda.js`; si cambia el menú o una pantalla, actualizarlos también (la Dirección no los ve).
 El contacto del CFP no está en el código: se edita en Preinscripciones → "Contacto del CFP" (SQL 48).
 
+## Seguridad (no deshacer)
+- Clave inicial: estudiantes `CFP401_<DNI>`; cualquier otro rol recibe una **clave temporal aleatoria** (`Auth.claveTemporal()` / SQL 65) y debe elegir una propia al ingresar (`must_change_password`). No volver a usar claves predecibles para docentes, Secretaría, EPS ni administración.
+- Librerías externas: van en `js/vendor/` (no CDN). Para sumar o actualizar una, editar `tools/vendorizar-librerias.js` y correr el workflow «Librerías propias».
+- `sw.js` (service worker): solo toca archivos de la propia plataforma y CDN conocidos; nunca las consultas a Supabase.
+
 ## Al publicar
 - Subir el `?v=` del script/CSS modificado en `index.html` (y en `preinscripcion.html` si es la ficha pública).
 - Subir `VERSION` en `sw.js`.

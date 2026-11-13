@@ -300,7 +300,7 @@ const AyudaModulo = {
   },
 
   /* ------------------------------ CONTENIDO ------------------------------ */
-  claveCambiar: `<ol><li>Tocá <b>Cambiar mi contraseña</b>, abajo a la izquierda del menú (en el celular, abrí el menú con ☰).</li><li>Escribí la contraseña nueva (mínimo 8 caracteres) y guardá.</li><li>La próxima vez ingresás con la nueva.</li></ol><div class="ay-tip">No compartas tu contraseña con nadie. Si la olvidás, pedí en el CFP que te la restablezcan.</div>`,
+  claveCambiar: `<ol><li>Tocá <b>Cambiar mi contraseña</b>, abajo a la izquierda del menú (en el celular, abrí el menú con ☰).</li><li>Escribí la contraseña nueva (mínimo 8 caracteres) y guardá.</li><li>La próxima vez ingresás con la nueva.</li></ol><div class="ay-tip">No compartas tu contraseña con nadie. Si la olvidás, pedí en el CFP que te la restablezcan.</div><p><b>Docentes, Secretaría y coordinación EPS:</b> la primera vez que entrás con la clave temporal que te dio la Dirección, la plataforma te pide elegir una contraseña propia (mínimo 10 caracteres, sin tu DNI ni «CFP401»). Si te restablecen la clave, vuelve a pasar lo mismo.</p>`,
   instalarApp: `<p>Podés usar la plataforma como una app, con su ícono en el celular o en la computadora.</p><ol><li>Tocá <b>📲 Instalar la app</b>, abajo en el menú.</li><li>Confirmá la instalación. Si no aparece el botón, en el celular abrí el menú del navegador y elegí <b>"Agregar a la pantalla de inicio"</b>.</li></ol><p>Es la misma plataforma: los datos siempre se leen de internet, así que necesitás conexión para ver y guardar información.</p>`,
 
   temas(rol) {

@@ -58,7 +58,7 @@ const CuentasModulo = {
     const vista = resto.slice(0, this.LIMITE);
 
     cont.innerHTML = `
-      <p class="acta-ayuda">Acá podés restablecer la clave de estudiantes y docentes (queda <b>CFP401_</b> seguido del DNI) y aprobar a los estudiantes que se registraron. Los roles y el resto de las cuentas los gestiona administración. Cada restablecimiento queda registrado en la auditoría.</p>
+      <p class="acta-ayuda">Acá podés restablecer la clave de estudiantes (queda <b>CFP401_</b> seguido del DNI) y de docentes (clave temporal aleatoria que deben cambiar al ingresar) y aprobar a los estudiantes que se registraron. Los roles y el resto de las cuentas los gestiona administración. Cada restablecimiento queda registrado en la auditoría.</p>
       ${pendientes.length ? `
         <h3 class="cuentas-tit">Pendientes de aprobación (${pendientes.length})</h3>
         <div class="sec-tabla-wrap"><table class="sec-tabla"><tbody>${pendientes.map(u => this.fila(u)).join('')}</tbody></table></div>` : ''}
@@ -83,13 +83,15 @@ const CuentasModulo = {
     if (!u) return;
     const ok = await Swal.fire({
       title: 'Restablecer contraseña',
-      html: `La clave de <b>${this.esc(this.nombre(u))}</b> (DNI ${this.esc(u.dni || '')}) pasa a ser <b>CFP401_${this.esc(u.dni || '')}</b>. Se cierran sus sesiones abiertas.`,
+      html: String(u.rol || '').toLowerCase() === 'estudiante'
+        ? `La clave de <b>${this.esc(this.nombre(u))}</b> (DNI ${this.esc(u.dni || '')}) pasa a ser <b>CFP401_${this.esc(u.dni || '')}</b>. Se cierran sus sesiones abiertas.`
+        : `Se genera una <b>clave temporal aleatoria</b> para <b>${this.esc(this.nombre(u))}</b> (DNI ${this.esc(u.dni || '')}). Se cierran sus sesiones y al ingresar va a elegir una propia.`,
       icon: 'question', showCancelButton: true, confirmButtonText: 'Restablecer', cancelButtonText: 'Cancelar'
     });
     if (!ok.isConfirmed) return;
     const { data, error } = await supabase.rpc('restablecer_clave_basica', { p_user_id: id });
     if (error) { Swal.fire({ icon: 'error', title: 'No se pudo restablecer', text: error.message }); return; }
-    Swal.fire({ icon: 'success', title: 'Contraseña restablecida', html: `Pasásela a la persona: <b>${this.esc(data || '')}</b><br><small>Puede cambiarla desde «Cambiar mi contraseña».</small>` });
+    Swal.fire({ icon: 'success', title: 'Contraseña restablecida', html: `Pasásela a la persona: <b>${this.esc(data || '')}</b><br><small>${String(u.rol || '').toLowerCase() === 'estudiante' ? 'Puede cambiarla desde «Cambiar mi contraseña».' : '<b>No se vuelve a mostrar.</b> Al ingresar va a elegir una contraseña propia.'}</small>` });
   },
 
   async aprobar(id) {

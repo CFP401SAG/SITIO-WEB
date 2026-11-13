@@ -250,7 +250,9 @@ const UsuariosAdmin = {
     }
 
     const emailSintetico = emailRaw ? emailRaw.toLowerCase() : `${dniVal.toLowerCase()}@cfp401.ar`;
-    const passwordTemp = `CFP401_${dniVal}`;
+    // Estudiantes: CFP401_<DNI>. Cuentas con acceso ampliado: clave aleatoria, se muestra una sola vez y debe cambiarse al ingresar
+    const ampliado = Auth.esRolConAccesoAmpliado(rol);
+    const passwordTemp = ampliado ? Auth.claveTemporal() : `CFP401_${dniVal}`;
 
     try {
       // Cliente temporal: así la sesión del administrador no se cierra al crear la cuenta
@@ -258,7 +260,7 @@ const UsuariosAdmin = {
       const { data: authRes, error: authError } = await clienteAlta.auth.signUp({
         email: emailSintetico,
         password: passwordTemp,
-        options: { data: { dni: dniVal, nombre: nombre, apellido: apellido } }
+        options: { data: Object.assign({ dni: dniVal, nombre: nombre, apellido: apellido }, ampliado ? { must_change_password: true } : {}) }
       });
 
       if (authError) {
@@ -317,8 +319,8 @@ const UsuariosAdmin = {
         title: 'Usuario creado',
         html: `<b>${Trayectos.esc(nombre)} ${Trayectos.esc(apellido)}</b> (${Trayectos.esc(rol)})<br><br>
                Usuario: <b>${Trayectos.esc(dniVal)}</b><br>
-               Contraseña inicial: <code style="font-size:1.1rem; user-select:all;">${Trayectos.esc(passwordTemp)}</code><br><br>
-               <small>La persona puede cambiarla desde "Cambiar mi contraseña".</small>`
+               ${ampliado ? 'Clave temporal' : 'Contraseña inicial'}: <code style="font-size:1.1rem; user-select:all;">${Trayectos.esc(passwordTemp)}</code><br><br>
+               <small>${ampliado ? '<b>Anotala ahora: no se vuelve a mostrar.</b> Al ingresar por primera vez la persona va a tener que elegir una contraseña propia.' : 'La persona puede cambiarla desde "Cambiar mi contraseña".'}</small>`
       });
 
     } catch (err) {
@@ -335,6 +337,18 @@ const UsuariosAdmin = {
     if (!u) return;
 
     const nombre = u.apellido ? `${u.apellido}, ${u.nombre}` : (u.nombre || u.dni);
+    if (Auth.esRolConAccesoAmpliado(u.rol)) {
+      const ok = await Swal.fire({
+        title: 'Restablecer contraseña',
+        html: `Se genera una <b>clave temporal aleatoria</b> para <b>${Trayectos.esc(nombre)}</b> (DNI ${Trayectos.esc(u.dni)}). Se cierran sus sesiones y al ingresar tendrá que elegir una propia.`,
+        icon: 'question', showCancelButton: true, confirmButtonText: 'Generar clave', cancelButtonText: 'Cancelar'
+      });
+      if (!ok.isConfirmed) return;
+      const { data: temporal, error: errT } = await supabase.rpc('admin_restablecer_clave_temporal', { p_user_id: userId });
+      if (errT) { alert('No se pudo restablecer la contraseña: ' + errT.message + (/function|schema cache/i.test(errT.message) ? '\n\nFalta ejecutar sql/65_claves_temporales.sql en Supabase.' : '')); return; }
+      Swal.fire({ icon: 'success', title: 'Clave temporal', html: `Pasásela a la persona: <code style="font-size:1.1rem;user-select:all">${Trayectos.esc(temporal || '')}</code><br><small><b>No se vuelve a mostrar.</b> Al ingresar va a elegir una contraseña propia.</small>` });
+      return;
+    }
     const { value: nueva } = await Swal.fire({
       title: 'Restablecer contraseña',
       html: `Contraseña nueva para <b>${Trayectos.esc(nombre)}</b><br><small>DNI ${Trayectos.esc(u.dni)}</small>`,
@@ -469,12 +483,14 @@ const UsuariosAdmin = {
       return;
     }
     try {
+      const eraEstudiante = !!destino && !Auth.esRolConAccesoAmpliado(destino.rol);
       const { error } = await supabase
         .from('profiles')
         .update({ rol: nuevoRol })
         .eq('id', userId);
 
       if (error) throw error;
+      if (eraEstudiante && Auth.esRolConAccesoAmpliado(nuevoRol)) await this.claveTemporalTrasCambioDeRol(userId, destino);
       
       const idx = this.listaUsuarios.findIndex(u => u.id === userId || u.usuario === userId);
       if (idx !== -1) this.listaUsuarios[idx].rol = nuevoRol;
@@ -484,6 +500,17 @@ const UsuariosAdmin = {
       alert('No se pudo cambiar el rol: ' + (err.message || ''));
       this.renderizarTabla();
     }
+  },
+
+  // Una cuenta de estudiante tiene la clave predecible CFP401_<DNI>: al pasar a un rol con más acceso se reemplaza por una temporal.
+  async claveTemporalTrasCambioDeRol(userId, destino) {
+    const nombre = destino ? (destino.apellido ? `${destino.apellido}, ${destino.nombre}` : (destino.nombre || destino.dni)) : '';
+    const { data: temporal, error } = await supabase.rpc('admin_restablecer_clave_temporal', { p_user_id: userId });
+    if (error) {
+      await Swal.fire({ icon: 'warning', title: 'Cambiá la clave de esta cuenta', html: `<b>${Trayectos.esc(nombre)}</b> pasó a un rol con más acceso pero <b>sigue con la clave inicial</b> (CFP401_ + DNI). Restablecela ahora con el botón 🔑.${/function|schema cache/i.test(error.message) ? '<br><small>Falta ejecutar sql/65_claves_temporales.sql en Supabase.</small>' : ''}` });
+      return;
+    }
+    await Swal.fire({ icon: 'success', title: 'Rol cambiado', html: `Por seguridad se reemplazó la clave de <b>${Trayectos.esc(nombre)}</b>. Clave temporal: <code style="font-size:1.1rem;user-select:all">${Trayectos.esc(temporal || '')}</code><br><small><b>No se vuelve a mostrar.</b> Al ingresar va a elegir una contraseña propia.</small>` });
   },
 
   // Baja de una persona. Lo recomendable es INHABILITAR (conserva el historial);

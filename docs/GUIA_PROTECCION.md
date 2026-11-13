@@ -11,7 +11,7 @@ El archivo `.github/workflows/backup-semanal.yml` copia la base de datos y la gu
 1. En Supabase: botón **Connect** (arriba) → pestaña **Session pooler** → copiá la cadena `postgresql://postgres.xxxx:[YOUR-PASSWORD]@...:5432/postgres` y reemplazá `[YOUR-PASSWORD]` por la contraseña de la base (*Project Settings → Database → Reset database password* si no la recordás).
 2. En GitHub: repositorio → **Settings → Secrets and variables → Actions → New repository secret**. Creá dos:
    - `SUPABASE_DB_URL` → la cadena del paso 1.
-   - `BACKUP_PASSPHRASE` → una frase larga inventada por vos. **Guardala en un lugar seguro: sin ella no se puede abrir ningún backup.**
+   - `BACKUP_PASSPHRASE` → una frase **aleatoria de 24 o más caracteres** (generala con el administrador de contraseñas del navegador, o con `openssl rand -base64 32`; no una frase inventada). **Es lo único que protege el backup**: el repositorio es público y cualquiera con cuenta de GitHub puede bajar el archivo cifrado, que incluye las cuentas de acceso. El workflow falla si la frase tiene menos de 24 caracteres. **Guardala en un lugar seguro: sin ella no se puede abrir ningún backup.** Si algún día la cambiás, los respaldos anteriores se siguen abriendo con la frase vieja.
 3. Pestaña **Actions → Backup semanal de la base de datos → Run workflow** para probar. Tiene que quedar en verde.
 4. Para bajar un backup: Actions → la ejecución → *Artifacts* → `respaldo-cifrado`. Para abrirlo (en una PC con GnuPG): `gpg -o respaldo.tar.gz -d respaldo-AAAA-MM-DD.tar.gz.gpg`.
 5. **Restaurar** (solo ante un problema grave, idealmente con ayuda técnica y en un proyecto nuevo de Supabase): descomprimir (`tar xzf respaldo.tar.gz`) y ejecutar con `psql "URI_DEL_PROYECTO"` primero `respaldo_auth.sql` (cuentas) y después `respaldo_public.sql` (plataforma). Luego volver a desplegar las funciones de `funciones_supabase/` y, si el proyecto es nuevo, actualizar `js/supabase-config.js`.
@@ -37,7 +37,7 @@ Regla de oro: cualquier cambio nuevo se prueba primero ahí.
 2. En la plataforma, como administrador: menú **🕵️ Auditoría**. Muestra quién cambió notas, roles, inscripciones, asistencias, clases, trayectos y módulos, con el valor anterior y el nuevo.
 
 ## 5. Contraseñas iniciales, bajas y eliminación
-- Las cuentas nuevas (importación CSV o alta manual) se crean con la contraseña inicial **`CFP401_` + DNI** (por ejemplo `CFP401_30123456`). Conviene pedir a cada persona que la cambie con **Cambiar mi contraseña** la primera vez que entra.
+- Las cuentas de **estudiantes** (importación CSV, preinscripción o alta manual) se crean con la contraseña inicial **`CFP401_` + DNI** (por ejemplo `CFP401_30123456`). Las cuentas de **docentes, Secretaría, coordinación EPS y administración** reciben una **clave temporal aleatoria** que se muestra una sola vez y deben cambiarla al primer ingreso (`sql/65_claves_temporales.sql`). Conviene pedir a cada persona que la cambie con **Cambiar mi contraseña** la primera vez que entra.
 - **Inhabilitar** (recomendado): la persona no puede ingresar y conserva su historial; se puede **Reactivar**.
 - **Eliminar definitivamente**: requiere la función `eliminar-usuario` desplegada en Supabase. Si la persona tiene historial pide confirmación extra, y lo borrado queda copiado en la Auditoría.
 

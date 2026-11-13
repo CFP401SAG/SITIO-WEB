@@ -62,6 +62,8 @@ const UI = {
   // Muestra la plataforma adaptada estrictamente al rol del usuario
   mostrarDashboard(perfil) {
     if (!perfil) return;
+    // Cuenta con clave temporal (docente, Secretaría, EPS, administración): exige elegir una propia
+    if (window.Auth && typeof Auth.exigirCambioClave === 'function') setTimeout(() => Auth.exigirCambioClave(), 300);
 
     if (perfil.usuario) perfil.usuario = String(perfil.usuario).split(':')[0].trim();
     if (perfil.dni) perfil.dni = String(perfil.dni).split(':')[0].trim();

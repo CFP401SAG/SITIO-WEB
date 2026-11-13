@@ -20,6 +20,11 @@ jobs:
           if [ -z "$DB" ] || [ -z "$PASS" ]; then
             echo "Faltan los secretos SUPABASE_DB_URL y/o BACKUP_PASSPHRASE (ver docs/GUIA_PROTECCION.md)"; exit 1
           fi
+          # El repositorio es público: cualquiera con cuenta de GitHub puede bajar el archivo cifrado.
+          # Lo único que lo protege es la frase, así que se exige una larga (24 o más caracteres).
+          if [ "${#PASS}" -lt 24 ]; then
+            echo "BACKUP_PASSPHRASE es demasiado corta (${#PASS} caracteres). Usá 24 o más, aleatoria (ver docs/GUIA_PROTECCION.md, sección 1)."; exit 1
+          fi
 
       - name: Volcar tablas de la plataforma (schema public)
         env:
