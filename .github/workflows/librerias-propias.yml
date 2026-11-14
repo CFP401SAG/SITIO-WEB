@@ -20,6 +20,7 @@ jobs:
       - name: Bajar librerías y cambiar los <script>
         run: node tools/vendorizar-librerias.js
       - name: Guardar los cambios
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
