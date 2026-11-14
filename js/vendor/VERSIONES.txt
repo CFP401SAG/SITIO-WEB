@@ -1,0 +1,7 @@
+Librerías propias (generado por tools/vendorizar-librerias.js el 2026-11-14)
+supabase.js  ←  @supabase/supabase-js@2.119.0/dist/umd/supabase.js  ·  sha384-uteMfOloLDGt042uDz+xHGF3ym63/WQ6rFq7murQRG8Ih7QrXGEGNtWd8688sb4O
+sweetalert2.all.min.js  ←  sweetalert2@11.26.25/dist/sweetalert2.all.min.js  ·  sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2
+confetti.browser.min.js  ←  canvas-confetti@1.6.0/dist/confetti.browser.js  ·  sha384-qmDHVszK26iWDlfhGzXz71t2qRopa/FvIuOkCTJJT4QRkIZf9h+OiJZzco9XtgPX
+exceljs.min.js  ←  exceljs@4.3.0/dist/exceljs.min.js  ·  sha384-P7KKlGD3Ng66Ds7oTliLzTnol6DbK+k7PafNYXIBDQ4b5eFWtmqctplDVOxslglR
+qrcode.js  ←  qrcode-generator@1.4.4/qrcode.js  ·  sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k
+pdf-lib.min.js  ←  pdf-lib@1.17.1/dist/pdf-lib.min.js
