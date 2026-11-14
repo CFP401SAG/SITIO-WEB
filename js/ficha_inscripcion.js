@@ -42,7 +42,7 @@ const FichaInscripcion = {
         { k: 'fecha_nac', l: 'Fecha de nacimiento', t: 'date', w: 0.25, req: true },
         { k: 'lugar_nac_tipo', l: 'Lugar de nacimiento', t: 'radio', op: [['ba', 'Provincia de Buenos Aires'], ['otra_provincia', 'Otra provincia'], ['otro_pais', 'Otro país']], w: 0.6 },
         { k: 'lugar_nac', l: 'Ciudad / localidad de nacimiento', t: 'text', w: 0.4, max: 120 },
-        { k: 'cuil', l: 'CUIL (sin guiones; si no lo sabe, lo completa el CFP)', t: 'text', w: 0.5, max: 15 },
+        { k: 'cuil', l: 'CUIL (sin guiones; si no lo sabés, se calcula solo con tu DNI y sexo)', t: 'text', w: 0.5, max: 15 },
         { k: 'calle', l: 'Domicilio: calle', t: 'text', w: 0.4, req: true, max: 100 },
         { k: 'altura', l: 'Altura', t: 'text', w: 0.15, max: 10 },
         { k: 'entre_calles', l: 'Entre calles', t: 'text', w: 0.4, max: 100 },
@@ -185,8 +185,57 @@ const FichaInscripcion = {
       </fieldset>`).join('');
   },
 
+  /* CUIL = prefijo (27 mujer, 20 varón, 23 si el dígito da 10 o sexo X) + DNI de 8 cifras + dígito verificador.
+     Es la misma fórmula que usa SISGE (js/sisge.js). */
+  calcularCuil(dni, sexo) {
+    const d = String(dni || '').replace(/\D/g, '').padStart(8, '0');
+    if (d.length !== 8) return '';
+    const dv = pref => {
+      const n = pref + d, pesos = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+      const suma = n.split('').reduce((a, c, i) => a + Number(c) * pesos[i], 0);
+      return 11 - (suma % 11);
+    };
+    let pref = sexo === 'M' ? '20' : sexo === 'X' ? '23' : '27';
+    let v = dv(pref);
+    if (v === 11) v = 0;
+    else if (v === 10) { pref = '23'; v = sexo === 'M' ? 9 : 4; }
+    return pref + d + v;
+  },
+
+  /* Si la persona no escribe el CUIL, se completa solo con el DNI y el sexo. Lo que ella escriba nunca se pisa. */
+  autoCuil(raiz) {
+    const cuilEl = raiz.querySelector('[name="fi_cuil"]'), dniEl = raiz.querySelector('[name="fi_dni"]'), sexoEl = raiz.querySelector('[name="fi_sexo_dni"]');
+    if (!cuilEl || !dniEl || !sexoEl || cuilEl.readOnly || cuilEl.disabled) return;
+    const campo = cuilEl.closest('.fi-campo');
+    let aviso = campo && campo.querySelector('.fi-cuil-aviso');
+    if (campo && !aviso) {
+      aviso = document.createElement('div');
+      aviso.className = 'fi-cuil-aviso';
+      aviso.style.cssText = 'font-size:.78rem;color:#92400e;margin-top:.2rem;display:none';
+      aviso.textContent = 'Calculado con tu DNI y sexo. Verificalo y corregilo si no coincide con tu constancia de CUIL.';
+      campo.appendChild(aviso);
+    }
+    const mostrar = si => { if (aviso) aviso.style.display = si ? '' : 'none'; };
+    const calcular = () => {
+      if (cuilEl.value.trim() && cuilEl.dataset.auto !== '1') return;   // lo escribió la persona
+      const dni = dniEl.value.replace(/\D/g, '');
+      const calc = dni.length >= 6 && dni.length <= 9 && sexoEl.value ? this.calcularCuil(dni, sexoEl.value) : '';
+      cuilEl.value = calc;
+      cuilEl.dataset.auto = calc ? '1' : '0';
+      mostrar(!!calc);
+    };
+    if (!cuilEl.dataset.autoListo) {
+      cuilEl.dataset.autoListo = '1';
+      dniEl.addEventListener('input', calcular);
+      sexoEl.addEventListener('change', calcular);
+      cuilEl.addEventListener('input', () => { cuilEl.dataset.auto = '0'; mostrar(false); });
+    }
+    calcular();
+  },
+
   /* Muestra u oculta los campos condicionales y avisa cuando algo cambia */
   activar(raiz, alCambiar) {
+    this.autoCuil(raiz);
     const aplicar = () => {
       raiz.querySelectorAll('.fi-campo[data-si-k]').forEach(el => {
         const k = el.getAttribute('data-si-k'), v = el.getAttribute('data-si-v');

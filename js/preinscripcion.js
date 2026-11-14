@@ -125,9 +125,16 @@ const Preinscripcion = {
         <button type="button" class="pi-btn" onclick="Preinscripcion.pdf()">Descargar ficha en PDF</button>
         <button type="button" class="pi-btn sec" onclick="Preinscripcion.imprimir()">Imprimir</button>
       </div>
+      <p class="pi-nota">La ficha se descarga sola. Si no la ves en tus descargas, tocá <b>Descargar ficha en PDF</b>.</p>
+      <div class="pi-acciones" style="justify-content:center">
+        <a class="pi-btn sec" href="index.html" style="text-decoration:none;display:inline-block">Volver a la página principal</a>
+        <a class="pi-btn sec" href="preinscripcion.html" style="text-decoration:none;display:inline-block">Preinscribirme a otro curso</a>
+      </div>
       <p class="pi-nota">Curso: ${this.esc(e.trayecto.nombre)}${e.trayecto.horario ? ' · ' + this.esc(e.trayecto.horario) : ''}</p>
       <p class="pi-nota">Si te equivocaste en algún dato, avisá en el CFP: lo pueden corregir.</p></div>`;
     window.scrollTo({ top: 0 });
+    // Descarga automática de la ficha (si el navegador la bloquea, queda el botón)
+    setTimeout(() => this.pdf(true), 500);
   },
 
   async opcionesPDF() {
@@ -135,9 +142,9 @@ const Preinscripcion = {
     return { datos: e.datos, trayecto: e.trayecto, numero: e.numero, ciclo: this.estado.ciclo };
   },
 
-  async pdf() {
+  async pdf(silencioso) {
     try { await FichaInscripcion.descargarPDF(await this.opcionesPDF(), `Ficha_inscripcion_${this.enviada.numero}.pdf`); }
-    catch (err) { alert('No se pudo armar el PDF: ' + (err.message || err)); }
+    catch (err) { if (!silencioso) alert('No se pudo armar el PDF: ' + (err.message || err)); }
   },
 
   async imprimir() {

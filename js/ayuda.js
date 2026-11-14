@@ -10,7 +10,7 @@
    (Regla anotada también en CLAUDE.md.)
    ========================================================================== */
 
-const AYUDA_ACTUALIZADA = '13/11/2026';
+const AYUDA_ACTUALIZADA = '14/11/2026';
 
 const AyudaModulo = {
   contacto: null,    // texto editable desde Preinscripciones → "Contacto del CFP"
@@ -68,7 +68,7 @@ const AyudaModulo = {
     preinscripciones: {
       t: 'Preinscripciones', corto: 'Solicitudes de inscripción online.',
       que: 'Bandeja de las preinscripciones que llegan por el formulario público.',
-      pasos: ['Cada preinscripción trae la ficha completa; «Ver / editar» permite corregirla.', '«Confirmar» crea la cuenta (si no tenía) y la inscribe en el trayecto; también se puede rechazar.', 'Arriba se abre o cierra la inscripción del ciclo y se copia el link o descarga el QR.'],
+      pasos: ['Cada preinscripción trae la ficha completa; «Ver / editar» permite corregirla. Si la persona no escribió el CUIL, la ficha lo calcula sola con el DNI y el sexo: conviene verificarlo.', '«Confirmar» crea la cuenta (si no tenía) y la inscribe en el trayecto; también se puede rechazar.', 'Arriba se abre o cierra la inscripción del ciclo y se copia el link o descarga el QR.'],
       ojo: ['Cada ficha se guarda sola como PDF en el Drive del CFP.'],
       porRol: { docente: { que: 'Podés consultar las preinscripciones de tus trayectos (solo lectura).', pasos: ['Revisá quiénes se anotaron en tus cursos.', 'Confirmar o rechazar lo hacen Secretaría o Dirección.'], ojo: [] } }
     },
